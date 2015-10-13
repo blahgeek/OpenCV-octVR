@@ -6,11 +6,10 @@
 */
 
 #include <iostream>
+#include <gtest/gtest.h>
 
 using namespace std;
 
-namespace vr {
-    void map() {
-        std::cout << "Hi there!" << std::endl;
-    }
+TEST(LIBMAP, general) {
+    EXPECT_EQ(1+1, 2);
 }
