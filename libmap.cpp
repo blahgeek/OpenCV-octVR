@@ -38,7 +38,7 @@ in_width(in_width), in_height(in_height), out_width(out_width), out_height(out_h
     if(!this->in_map || !this->out_map)
         throw std::string("Invalid map type");
 
-    if(this->out_height <= 0 || this->out_width <= 0)
+    if(this->out_height <= 0 && this->out_width <= 0)
         throw std::string("Output width/height invalid");
     double output_aspect_ratio = this->out_map->get_aspect_ratio();
     if(this->out_height <= 0)
