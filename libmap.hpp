@@ -11,13 +11,14 @@
 #include "json.hpp"
 #include <utility>
 #include <math.h>
+#include <assert.h>
 #include <exception>
 #include <vector>
 #include <string>
 
-using json = nlohmann::json;
-
 namespace vr {
+
+using json = nlohmann::json;
 
 class NotImplemented: std::exception {};
 class OutOfRange: std::exception {};
@@ -77,6 +78,11 @@ public:
              int in_width, int in_height, int out_width, int out_height);
     std::pair<int, int> get_output_size() {
         return std::make_pair(this->out_width, this->out_height);
+    }
+    std::pair<std::pair<double, double>, bool> get_map(int w, int h) {
+        assert(w >= 0 && w < out_width && h >= 0 && h < out_height);
+        int index = h * out_width + w;
+        return std::make_pair(map_cache[index], map_valid[index]);
     }
 };
 
