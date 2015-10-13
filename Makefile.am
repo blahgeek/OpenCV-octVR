@@ -1,11 +1,13 @@
-AM_CPPFLAGS = -I../ -I../gtest/include
+AM_CPPFLAGS = -I../json -I../gtest/include
 AM_CXXFLAGS = -Wall
 
+include_HEADERS = libmap.hpp
 lib_LIBRARIES = libmap.a
 
 libmap_a_SOURCES = \
-	base.cpp \
-	equirectangular.cpp
+	libmap.cpp \
+	equirectangular.cpp \
+	normal.cpp 
 
 check_PROGRAMS = testall
 

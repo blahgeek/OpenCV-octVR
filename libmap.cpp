@@ -6,9 +6,10 @@
 */
 
 #include <iostream>
-#include "./base.hpp"
+#include "./libmap.hpp"
 
 #include "./equirectangular.hpp"
+#include "./normal.hpp"
 
 using namespace vr;
 
@@ -18,6 +19,7 @@ std::unique_ptr<Map> NewMap(const std::string & type, const json & options) {
 
     if(false){}
 
+    X("normal", Normal)
     X("equirectangular", Equirectangular)
 
     return nullptr;

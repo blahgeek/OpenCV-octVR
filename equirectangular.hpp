@@ -8,7 +8,7 @@
 #ifndef VR_LIBMAP_EQUIRECTANGULAR_H
 #define VR_LIBMAP_EQUIRECTANGULAR_H value
 
-#include "./base.hpp"
+#include "./libmap.hpp"
 
 namespace vr {
 

@@ -8,7 +8,7 @@
 #ifndef VR_LIBMAP_BASE_H
 #define VR_LIBMAP_BASE_H value
 
-#include "json/json.hpp"
+#include "json.hpp"
 #include <utility>
 #include <math.h>
 #include <exception>
