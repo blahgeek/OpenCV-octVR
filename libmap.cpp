@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-10-13
+* @Last Modified time: 2015-10-14
 */
 
 #include <iostream>
@@ -10,6 +10,7 @@
 
 #include "./equirectangular.hpp"
 #include "./normal.hpp"
+#include "./pinhole_cam.hpp"
 
 using namespace vr;
 
@@ -20,6 +21,7 @@ std::unique_ptr<Map> vr::NewMap(const std::string & type, const json & options) 
     if(false){}
 
     X("normal", Normal)
+    X("pinhole", PinholeCamera)
     X("equirectangular", Equirectangular)
 
     return nullptr;
@@ -65,6 +67,13 @@ in_width(in_width), in_height(in_height), out_width(out_width), out_height(out_h
                 auto dst_xy = in_map->lonlat_to_xy(lonlat.first, lonlat.second);
                 this->map_cache[index].first = int(dst_xy.first * this->in_width);
                 this->map_cache[index].second = int(dst_xy.second * this->in_height);
+
+                if(this->map_cache[index].first < 0 || 
+                   this->map_cache[index].first >= this->in_width ||
+                   this->map_cache[index].second < 0 || 
+                   this->map_cache[index].second >= this->in_height)
+                    throw OutOfRange();
+
             } catch(OutOfRange & e) {
                 this->map_valid[index] = false;
             }
