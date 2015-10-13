@@ -22,7 +22,7 @@ public:
         return this->aspect_ratio;
     }
 
-    std::pair<double, double> lonlat_to_xy(double lon, double lat) override;
+    // std::pair<double, double> lonlat_to_xy(double lon, double lat) override;
     std::pair<double, double> xy_to_lonlat(double x, double y) override;
 
 };

@@ -13,7 +13,7 @@
 
 using namespace vr;
 
-std::unique_ptr<Map> NewMap(const std::string & type, const json & options) {
+std::unique_ptr<Map> vr::NewMap(const std::string & type, const json & options) {
     #define X(s, t) \
         else if (type == s) return std::unique_ptr<Map>(new t(options));
 
