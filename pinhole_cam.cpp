@@ -29,6 +29,11 @@ PinholeCamera::PinholeCamera(const json & options): Map(options) {
 }
 
 std::pair<double, double> PinholeCamera::lonlat_to_xy(double lon, double lat) {
+    if(lon > 0)
+        throw OutOfRange();
+    lon = -lon;
+    lat = -lat;
+
     std::vector<cv::Point3f> objectPoints;
     std::vector<cv::Point2f> imagePoints;
 
