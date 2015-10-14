@@ -8,6 +8,7 @@ libmap_a_SOURCES = \
 	libmap.cpp \
 	equirectangular.cpp \
 	pinhole_cam.cpp \
+	fisheye_cam.cpp \
 	normal.cpp 
 
 check_PROGRAMS = testall

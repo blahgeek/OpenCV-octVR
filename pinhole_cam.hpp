@@ -20,10 +20,13 @@
 namespace vr {
 
 class PinholeCamera: public Map {
-private:
+protected:
     cv::Mat camera_matrix;
     std::vector<double> dist_coeffs;
     int width, height;
+
+    virtual void _project(std::vector<cv::Point3f> & objectPoints,
+                          std::vector<cv::Point2f> & imagePoints);
 public:
     PinholeCamera(const json & options);
     double get_aspect_ratio() override {

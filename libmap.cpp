@@ -11,6 +11,7 @@
 #include "./equirectangular.hpp"
 #include "./normal.hpp"
 #include "./pinhole_cam.hpp"
+#include "./fisheye_cam.hpp"
 
 using namespace vr;
 
@@ -22,6 +23,7 @@ std::unique_ptr<Map> vr::NewMap(const std::string & type, const json & options) 
 
     X("normal", Normal)
     X("pinhole", PinholeCamera)
+    X("fisheye", FisheyeCamera)
     X("equirectangular", Equirectangular)
 
     return nullptr;

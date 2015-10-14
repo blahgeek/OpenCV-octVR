@@ -42,6 +42,7 @@ std::vector<PointAndFlag> PinholeCamera::
         auto & point = points[i];
         double lon = -point.first;
         double lat = -point.second;
+        // FIXME: for fisheye?
         if(lon < 0) {
             ret[i] = std::make_tuple(0, 0, false);
             continue;
@@ -53,9 +54,7 @@ std::vector<PointAndFlag> PinholeCamera::
         index.push_back(i);
     }
 
-    cv::projectPoints(objectPoints, 
-                      cv::Mat::zeros(1, 3, CV_64F), cv::Mat::zeros(1, 3, CV_64F),
-                      camera_matrix, dist_coeffs, imagePoints);
+    this->_project(objectPoints, imagePoints);
 
     for(int i = 0 ; i < index.size() ; i += 1) {
         cv::Point2f image_p = imagePoints[i];
@@ -64,4 +63,11 @@ std::vector<PointAndFlag> PinholeCamera::
     }
 
     return ret;
+}
+
+void PinholeCamera::_project(std::vector<cv::Point3f> & objectPoints,
+                             std::vector<cv::Point2f> & imagePoints) {
+    cv::projectPoints(objectPoints, 
+                      cv::Mat::zeros(1, 3, CV_64F), cv::Mat::zeros(1, 3, CV_64F),
+                      camera_matrix, dist_coeffs, imagePoints);
 }
