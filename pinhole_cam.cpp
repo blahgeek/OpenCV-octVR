@@ -28,25 +28,40 @@ PinholeCamera::PinholeCamera(const json & options): Map(options) {
     std::cerr << "Camera size: " << width << " x " << height << std::endl;
 }
 
-std::pair<double, double> PinholeCamera::lonlat_to_xy(double lon, double lat) {
-    if(lon > 0)
-        throw OutOfRange();
-    lon = -lon;
-    lat = -lat;
+std::vector<PointAndFlag> PinholeCamera::
+    lonlat_to_xy_batch(const std::vector<std::pair<double, double>> & points) {
+
+    std::vector<std::tuple<double, double, bool>> ret;
+    ret.resize(points.size());
 
     std::vector<cv::Point3f> objectPoints;
     std::vector<cv::Point2f> imagePoints;
+    std::vector<int> index;
 
-    double x = cos(lon) * cos(lat);
-    double z = sin(lon) * cos(lat);
-    double y = sin(lat);
-    // FIXME: project only one point at a time is SLOW
-    objectPoints.push_back(cv::Point3f(x, y, z));
+    for(int i = 0 ; i < points.size() ; i += 1) {
+        auto & point = points[i];
+        double lon = -point.first;
+        double lat = -point.second;
+        if(lon < 0) {
+            ret[i] = std::make_tuple(0, 0, false);
+            continue;
+        }
+        double x = cos(lon) * cos(lat);
+        double z = sin(lon) * cos(lat);
+        double y = sin(lat);
+        objectPoints.push_back(cv::Point3f(x, y, z));
+        index.push_back(i);
+    }
 
     cv::projectPoints(objectPoints, 
                       cv::Mat::zeros(1, 3, CV_64F), cv::Mat::zeros(1, 3, CV_64F),
                       camera_matrix, dist_coeffs, imagePoints);
 
-    return std::make_pair(imagePoints[0].x / width, 
-                          imagePoints[0].y / height);
+    for(int i = 0 ; i < index.size() ; i += 1) {
+        cv::Point2f image_p = imagePoints[i];
+        ret[index[i]] = std::make_tuple(image_p.x / this->width, 
+                                        image_p.y / this->height, true);
+    }
+
+    return ret;
 }

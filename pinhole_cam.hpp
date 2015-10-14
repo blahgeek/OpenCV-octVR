@@ -29,7 +29,7 @@ public:
     double get_aspect_ratio() override {
         return double(width) / double(height);
     }
-    std::pair<double, double> lonlat_to_xy(double lon, double lat) override;
+    std::vector<PointAndFlag> lonlat_to_xy_batch(const std::vector<std::pair<double, double>> & points) override;
 };
 
 }

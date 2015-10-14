@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-10-13
+* @Last Modified time: 2015-10-14
 */
 
 #ifndef VR_LIBMAP_BASE_H
@@ -15,6 +15,7 @@
 #include <exception>
 #include <vector>
 #include <string>
+#include <tuple>
 
 namespace vr {
 
@@ -22,6 +23,8 @@ using json = nlohmann::json;
 
 class NotImplemented: std::exception {};
 class OutOfRange: std::exception {};
+
+using PointAndFlag = std::tuple<double, double, bool>;
 
 class Map {
 public:
@@ -35,6 +38,7 @@ public:
         return 1.0;
     }
 
+protected:
     /**
      * Map sphere coordinate to image
      * @param lon [-PI, +PI]
@@ -52,6 +56,16 @@ public:
     virtual std::pair<double, double> xy_to_lonlat(double x, double y) {
         throw NotImplemented();
     }
+
+public:
+    /**
+     * @return tuple of (x, y, valid)
+     */
+    virtual std::vector<PointAndFlag> 
+        lonlat_to_xy_batch(const std::vector<std::pair<double, double>> & points);
+
+    virtual std::vector<PointAndFlag>
+        xy_to_lonlat_batch(const std::vector<std::pair<double, double>> & points);
 };
 
 std::unique_ptr<Map> NewMap(const std::string & type, const json & options);
@@ -64,8 +78,7 @@ private:
     int in_width, in_height;
     int out_width, out_height;
 
-    std::vector<std::pair<double, double>> map_cache;
-    std::vector<bool> map_valid;
+    std::vector<PointAndFlag> map_cache;
 
     std::pair<double, double> rotate(double lon, double lat);
 public:
@@ -79,10 +92,10 @@ public:
     std::pair<int, int> get_output_size() {
         return std::make_pair(this->out_width, this->out_height);
     }
-    std::pair<std::pair<double, double>, bool> get_map(int w, int h) {
+    PointAndFlag get_map(int w, int h) {
         assert(w >= 0 && w < out_width && h >= 0 && h < out_height);
         int index = h * out_width + w;
-        return std::make_pair(map_cache[index], map_valid[index]);
+        return this->map_cache[index];
     }
 };
 
