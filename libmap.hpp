@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-10-14
+* @Last Modified time: 2015-10-18
 */
 
 #ifndef VR_LIBMAP_BASE_H
@@ -66,9 +66,10 @@ public:
 
     virtual std::vector<PointAndFlag>
         xy_to_lonlat_batch(const std::vector<std::pair<double, double>> & points);
-};
 
-std::unique_ptr<Map> NewMap(const std::string & type, const json & options);
+public:
+    static std::unique_ptr<Map> New(const std::string & type, const json & opts);
+};
 
 class Remapper {
 private:

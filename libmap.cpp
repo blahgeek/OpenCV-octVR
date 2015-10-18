@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-10-14
+* @Last Modified time: 2015-10-18
 */
 
 #include <iostream>
@@ -15,7 +15,7 @@
 
 using namespace vr;
 
-std::unique_ptr<Map> vr::NewMap(const std::string & type, const json & options) {
+std::unique_ptr<Map> Map::New(const std::string & type, const json & options) {
     #define X(s, t) \
         else if (type == s) return std::unique_ptr<Map>(new t(options));
 
@@ -71,8 +71,8 @@ Remapper::Remapper(const std::string & from, const json & from_opts,
                    int in_width, int in_height, int out_width, int out_height):
 rotate_z(rotate_z), rotate_y(rotate_y), rotate_x(rotate_x),
 in_width(in_width), in_height(in_height), out_width(out_width), out_height(out_height) {
-    this->in_map = NewMap(from, from_opts);
-    this->out_map = NewMap(to, to_opts);
+    this->in_map = Map::New(from, from_opts);
+    this->out_map = Map::New(to, to_opts);
     if(!this->in_map || !this->out_map)
         throw std::string("Invalid map type");
 
