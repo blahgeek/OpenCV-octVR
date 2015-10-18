@@ -10,25 +10,34 @@
 
 #include "json.hpp"
 #include <utility>
-#include <math.h>
-#include <assert.h>
+#include <cmath>
+#include <cassert>
 #include <exception>
 #include <vector>
 #include <string>
 #include <tuple>
+#include <opencv2/core/core.hpp>
 
 namespace vr {
 
 using json = nlohmann::json;
 
 class NotImplemented: std::exception {};
-class OutOfRange: std::exception {};
-
-using PointAndFlag = std::tuple<double, double, bool>;
 
 class Map {
+protected:
+    std::vector<double> rotate_vector;
+    cv::Mat rotate_matrix;
+
+protected:
+    cv::Point2d sphere_xyz_to_lonlat(const cv::Point3d & xyz);
+    cv::Point3d sphere_lonlat_to_xyz(const cv::Point2d & lonlat);
+
 public:
-    Map(const json & options) {}
+    /**
+     * Provide "rotate" optionally
+     */
+    Map(const json & options);
 
     /**
      * Return aspect ratio of mapped image
@@ -40,32 +49,33 @@ public:
 
 protected:
     /**
-     * Map sphere coordinate to image
-     * @param lon [-PI, +PI]
-     * @param lat [-PI/2, +PI/2]
-     * @return x, y in [0, 1), may raise OutOfRange
+     * Map object point in sphere, to image point in rectangle
+     * @param  lonlat lon in [-PI, +PI), lat in [-PI/2, +PI/2)
+     * @return        x, y in [0, 1) or NAN
      */
-    virtual std::pair<double, double> lonlat_to_xy(double lon, double lat) {
+    virtual cv::Point2d obj_to_image_single(const cv::Point2d & lonlat) {
         throw NotImplemented();
     }
 
     /**
-     * Map image coordinate to sphere
-     * may raise std::string on error
+     * Map image point in rectangle, to object point in sphere
+     * @param  xy x, y in [0, 1)
+     * @return    lonlat, lon in [-PI, +PI), lat in [-PI/2, +PI/2), may be NAN
      */
-    virtual std::pair<double, double> xy_to_lonlat(double x, double y) {
+    virtual cv::Point2d image_to_obj_single(const cv::Point2d & xy) {
         throw NotImplemented();
     }
 
 public:
     /**
-     * @return tuple of (x, y, valid)
+     * Map object points to image points
      */
-    virtual std::vector<PointAndFlag> 
-        lonlat_to_xy_batch(const std::vector<std::pair<double, double>> & points);
+    virtual std::vector<cv::Point2d> obj_to_image(const std::vector<cv::Point2d> & lonlats);
 
-    virtual std::vector<PointAndFlag>
-        xy_to_lonlat_batch(const std::vector<std::pair<double, double>> & points);
+    /**
+     * Map image points to object points
+     */
+    virtual std::vector<cv::Point2d> image_to_obj(const std::vector<cv::Point2d> & xys);
 
 public:
     static std::unique_ptr<Map> New(const std::string & type, const json & opts);
@@ -74,26 +84,24 @@ public:
 class Remapper {
 private:
     std::unique_ptr<Map> in_map, out_map;
-    double rotate_z, rotate_y, rotate_x;
 
     int in_width, in_height;
     int out_width, out_height;
 
-    std::vector<PointAndFlag> map_cache;
-
-    std::pair<double, double> rotate(double lon, double lat);
+    std::vector<cv::Point2d> map_cache;
 public:
     /**
      * @param rotate in degree
      */
     Remapper(const std::string & from, const json & from_opts, 
              const std::string & to, const json & to_opts,
-             double rotate_z, double rotate_y, double rotate_x,
              int in_width, int in_height, int out_width, int out_height);
-    std::pair<int, int> get_output_size() {
-        return std::make_pair(this->out_width, this->out_height);
+
+    cv::Size get_output_size() {
+        return cv::Size(this->out_width, this->out_height);
     }
-    PointAndFlag get_map(int w, int h) {
+
+    cv::Point2d get_map(int w, int h) {
         assert(w >= 0 && w < out_width && h >= 0 && h < out_height);
         int index = h * out_width + w;
         return this->map_cache[index];
