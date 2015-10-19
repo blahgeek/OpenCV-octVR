@@ -108,6 +108,30 @@ public:
     }
 };
 
+class MultiMapper {
+private:
+    std::unique_ptr<Map> out_map;
+    std::vector<std::unique_ptr<Map>> in_maps;
+
+    cv::Size out_size;
+    std::vector<cv::Size> in_sizes;
+
+    std::vector<cv::Point2d> output_map_points;
+    std::vector<std::vector<cv::Point2d>> map_caches;
+
+public:
+    MultiMapper(const std::string & to, const json & to_opts, 
+                int out_width, int out_height);
+    void add_input(const std::string & from, const json & from_opts,
+                   int in_width, int in_height);
+
+    cv::Size get_output_size() {
+        return this->out_size;
+    }
+
+    std::pair<int, cv::Point2d> get_map(int w, int h);
+};
+
 }
 
 #endif
