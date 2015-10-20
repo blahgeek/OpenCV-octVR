@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-10-18
+* @Last Modified time: 2015-10-20
 */
 
 #include <iostream>
@@ -10,7 +10,7 @@
 
 using namespace vr;
 
-Normal::Normal(const json & options): Map(options) {
+Normal::Normal(const json & options): Camera(options) {
     this->aspect_ratio = options["aspect_ratio"].get<double>();
 
     cam_x = options["cam_opt"].get<double>();

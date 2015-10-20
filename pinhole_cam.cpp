@@ -10,7 +10,7 @@
 
 using namespace vr;
 
-PinholeCamera::PinholeCamera(const json & options): Map(options) {
+PinholeCamera::PinholeCamera(const json & options): Camera(options) {
     this->camera_matrix = cv::Mat::eye(3, 3, CV_64F);
     this->camera_matrix.at<double>(0, 0) = options["fx"];
     this->camera_matrix.at<double>(1, 1) = options["fy"];

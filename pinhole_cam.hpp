@@ -2,13 +2,14 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-10-18
+* @Last Modified time: 2015-10-20
 */
 
 #ifndef VR_LIBMAP_PINHOLE_CAM_H
 #define VR_LIBMAP_PINHOLE_CAM_H value
 
 #include "./libmap.hpp"
+#include "./libmap_impl.hpp"
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -19,7 +20,7 @@
 
 namespace vr {
 
-class PinholeCamera: public Map {
+class PinholeCamera: public Camera {
 protected:
     cv::Mat camera_matrix;
     std::vector<double> dist_coeffs;
