@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-10-19
+* @Last Modified time: 2015-10-20
 */
 
 #include <iostream>
@@ -54,52 +54,49 @@ cv::Point3d Map::sphere_lonlat_to_xyz(const cv::Point2d & lonlat) {
                        sin(lon) * cos(lat));
 }
 
+void Map::sphere_rotate(std::vector<cv::Point3d> & points, bool reverse) {
+    cv::Mat m(points.size(), 3, CV_64F, points.data(), sizeof(cv::Point3d));
+    cv::Mat r = rotate_matrix;
+    if(reverse) r = r.inv();
+
+    cv::Mat rotated = m * r.t();
+    rotated.copyTo(m);
+    assert(m.data == static_cast<void *>(points.data()));
+}
+
 std::vector<cv::Point2d> Map::obj_to_image(const std::vector<cv::Point2d> & lonlats) {
     // convert lon/lat to xyz in sphere
-    cv::Mat obj_points(3, lonlats.size(), CV_64FC1);
-    for(int i = 0 ; i < lonlats.size() ; i += 1) {
-        auto xyz = sphere_lonlat_to_xyz(lonlats[i]);
-        obj_points.at<double>(0, i) = xyz.x;
-        obj_points.at<double>(1, i) = xyz.y;
-        obj_points.at<double>(2, i) = xyz.z;
-    }
-
+    std::vector<cv::Point3d> xyzs;
+    xyzs.reserve(lonlats.size());
+    for(auto & ll: lonlats)
+        xyzs.push_back(sphere_lonlat_to_xyz(ll));
     // rotate it
-    obj_points = rotate_matrix * obj_points;
+    sphere_rotate(xyzs, false);
 
+    // prepare for return value
     std::vector<cv::Point2d> ret;
     ret.reserve(lonlats.size());
 
-    for(int i = 0 ; i < lonlats.size() ; i += 1) {
-        cv::Mat xyz = obj_points.col(i);
-        auto lonlat = sphere_xyz_to_lonlat(cv::Point3d(xyz));
-        ret.push_back(this->obj_to_image_single(lonlat));
-    }
+    // compute
+    for(auto & xyz: xyzs)
+        ret.push_back(obj_to_image_single(sphere_xyz_to_lonlat(xyz)));
     return ret;
 }
 
 std::vector<cv::Point2d> Map::image_to_obj(const std::vector<cv::Point2d> & xys) {
-    cv::Mat obj_points(3, xys.size(), CV_64FC1);
-
-    for(int i = 0 ; i < xys.size() ; i += 1) {
-        auto lonlat = this->image_to_obj_single(xys[i]);
-        auto xyz = sphere_lonlat_to_xyz(lonlat);
-        obj_points.at<double>(0, i) = xyz.x;
-        obj_points.at<double>(1, i) = xyz.y;
-        obj_points.at<double>(2, i) = xyz.z;
-    }
+    std::vector<cv::Point3d> points;
+    points.reserve(xys.size());
+    for(auto & xy: xys)
+        points.push_back(sphere_lonlat_to_xyz(image_to_obj_single(xy)));
 
     // rotate it
-    obj_points = rotate_matrix.inv() * obj_points;
+    sphere_rotate(points, true);
 
-    // convert xyz back to lonlat
+    // convert back
     std::vector<cv::Point2d> ret;
-    ret.reserve(xys.size());
-    for(int i = 0 ; i < xys.size() ; i += 1) {
-        cv::Mat xyz = obj_points.col(i);
-        ret.push_back(sphere_xyz_to_lonlat(cv::Point3d(xyz)));
-    }
-
+    ret.reserve(points.size());
+    for(auto & p: points)
+        ret.push_back(sphere_xyz_to_lonlat(p));
     return ret;
 }
 

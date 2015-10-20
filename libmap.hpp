@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-10-18
+* @Last Modified time: 2015-10-20
 */
 
 #ifndef VR_LIBMAP_BASE_H
@@ -32,6 +32,8 @@ protected:
 protected:
     cv::Point2d sphere_xyz_to_lonlat(const cv::Point3d & xyz);
     cv::Point3d sphere_lonlat_to_xyz(const cv::Point2d & lonlat);
+
+    void sphere_rotate(std::vector<cv::Point3d> & points, bool reverse);
 
 public:
     /**

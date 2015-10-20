@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-10-18
+* @Last Modified time: 2015-10-20
 */
 
 #include <iostream>
@@ -30,12 +30,13 @@ PinholeCamera::PinholeCamera(const json & options): Map(options) {
 
 std::vector<cv::Point2d> PinholeCamera::obj_to_image(const std::vector<cv::Point2d> & lonlats) {
     std::vector<cv::Point3d> objectPoints;
-    for(const auto & lonlat: lonlats) {
-        if(lonlat.x < 0)
-            objectPoints.push_back(cv::Point3d(NAN, NAN, NAN));
-        else
-            objectPoints.push_back(this->sphere_lonlat_to_xyz(-lonlat));
-    }
+    for(auto & lonlat: lonlats)
+        objectPoints.push_back(sphere_lonlat_to_xyz(-lonlat));
+    this->sphere_rotate(objectPoints, false);
+
+    for(auto & p: objectPoints)
+        if(p.z < 0)
+            p.x = p.y = p.z = NAN;
 
     std::vector<cv::Point2d> imagePoints;
     this->_project(objectPoints, imagePoints);
