@@ -16,6 +16,8 @@ check_PROGRAMS = testall
 
 testall_SOURCES = \
 	test_camera.cpp \
+	test_equirectangular.cpp \
+	test_pinhole.cpp \
 	test.cpp
 
 testall_LDADD = ../gtest/libgtest.a ../gtest/libgtest_main.a libmap.a

@@ -42,11 +42,12 @@ TEST_F(CameraTest, sphere_transform_test) {
 
     srand(time(NULL));
     for(int i = 0 ; i < 100 ; i += 1) {
-        lonlat = cv::Point2d(double(rand()) / RAND_MAX * M_PI * 2 - M_PI,
-                             double(rand()) / RAND_MAX * M_PI - M_PI / 2);
+        lonlat = RAND_LONLAT;
         auto xyz = sphere_lonlat_to_xyz(lonlat);
         EXPECT_POINT2_EQ(sphere_xyz_to_lonlat(xyz), lonlat.x, lonlat.y, 1e-3);
     }
 }
+
+// TODO: test sphere_rotate()
 
 }
