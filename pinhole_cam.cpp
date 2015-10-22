@@ -44,7 +44,7 @@ std::vector<cv::Point2d> PinholeCamera::obj_to_image(const std::vector<cv::Point
     std::vector<cv::Point2d> ret;
     ret.reserve(imagePoints.size());
     for(auto & p: imagePoints)
-        ret.push_back(cv::Point2d(p.x / this->width, p.y / this->height));
+        ret.push_back(cv::Point2d(p.x / this->width, 1.0 - p.y / this->height));
     return ret;
 }
 

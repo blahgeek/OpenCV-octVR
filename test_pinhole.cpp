@@ -47,10 +47,11 @@ protected:
 };
 
 TEST_F(PinholeTest, map) {
+    // Y坐标是反的
     test_map(cv::Point2d(-M_PI / 2, 0), 0.5, 0.5);
     test_map(cv::Point2d(M_PI / 2, 0), NAN, NAN);
     test_map(cv::Point2d(-M_PI / 2 + atan(0.4), 0), 52.0/64, 0.5);
-    test_map(cv::Point2d(-M_PI / 2, atan(0.2)), 0.5, 340.0 / 480);
+    test_map(cv::Point2d(-M_PI / 2, atan(0.2)), 0.5, 1.0 - 340.0 / 480);
     test_map(cv::Point2d(-M_PI / 2, -M_PI / 4), NAN, NAN);
 }
 
