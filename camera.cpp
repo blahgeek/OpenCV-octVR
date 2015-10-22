@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-20
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-10-20
+* @Last Modified time: 2015-10-22
 */
 
 #include <iostream>
@@ -42,7 +42,7 @@ Camera::Camera(const json & options) {
 
 cv::Point2d Camera::sphere_xyz_to_lonlat(const cv::Point3d & xyz) {
     auto p = xyz * (1.0 / cv::norm(xyz));
-    return cv::Point2d(atan2(p.z, p.x), asin(p.y));
+    return cv::Point2d(-atan2(p.z, p.x), asin(p.y));
 }
 
 cv::Point3d Camera::sphere_lonlat_to_xyz(const cv::Point2d & lonlat) {
@@ -50,7 +50,7 @@ cv::Point3d Camera::sphere_lonlat_to_xyz(const cv::Point2d & lonlat) {
     auto lat = lonlat.y;
     return cv::Point3d(cos(lon) * cos(lat),
                        sin(lat),
-                       sin(lon) * cos(lat));
+                       -sin(lon) * cos(lat));
 }
 
 void Camera::sphere_rotate(std::vector<cv::Point3d> & points, bool reverse) {

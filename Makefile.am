@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -I../json -I../gtest/include
+AM_CPPFLAGS = -I../json -I../gtest/include $(OPENCV_CFLAGS)
 AM_CXXFLAGS = -Wall
 
 include_HEADERS = libmap.hpp
@@ -14,9 +14,12 @@ libmap_a_SOURCES = \
 
 check_PROGRAMS = testall
 
-testall_SOURCES = test.cpp
+testall_SOURCES = \
+	test_camera.cpp \
+	test.cpp
 
-testall_LDADD = ../gtest/libgtest.a ../gtest/libgtest_main.a
+testall_LDADD = ../gtest/libgtest.a ../gtest/libgtest_main.a libmap.a
+testall_LDFLAGS = $(subst -lopencv_ts,,$(OPENCV_LIBS))
 
 
 TESTS = testall
