@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-10-20
+* @Last Modified time: 2015-10-23
 */
 
 #include <iostream>
@@ -80,4 +80,25 @@ std::pair<int, cv::Point2d> MultiMapperImpl::get_map(int w, int h) {
         return std::make_pair(i, p);
     }
     return std::make_pair(0, cv::Point2d(NAN, NAN));
+}
+
+void MultiMapperImpl::get_output(const std::vector<cv::Mat> & inputs, cv::Mat & output) {
+    for(int i = 0 ; i < inputs.size() ; i += 1) {
+        assert(inputs[i].type() == CV_8UC3);
+        assert(inputs[i].size() == in_sizes[i]);
+    }
+    assert(output.type() == CV_8UC3 && output.size() == this->out_size);
+
+    for(int j = 0 ; j < out_size.height ; j += 1) {
+        for(int i = 0 ; i < out_size.width ; i += 1) {
+            auto map = get_map(i, j);
+            if(isnan(map.second.x) || isnan(map.second.y))
+                continue;
+            const auto & input = inputs[map.first];
+            for(int k = 0 ; k < 3 ; k += 1)
+                output.at<unsigned char>(j, i*3 + k) = 
+                    input.at<unsigned char>(floor(map.second.y),
+                                            floor(map.second.x) * 3 + k);
+        }
+    }
 }

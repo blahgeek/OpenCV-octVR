@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-10-20
+* @Last Modified time: 2015-10-23
 */
 
 #ifndef VR_LIBMAP_BASE_H
@@ -33,6 +33,11 @@ public:
 
     virtual cv::Size get_output_size() = 0;
     virtual std::pair<int, cv::Point2d> get_map(int w, int h) = 0;
+    /**
+     * Generate output image
+     * @param  inputs Input images, in BGR (CV_8UC3)
+     */
+    virtual void get_output(const std::vector<cv::Mat> & inputs, cv::Mat & output) = 0;
 };
 
 }
