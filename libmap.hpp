@@ -32,7 +32,6 @@ public:
                            int in_width, int in_height) = 0;
 
     virtual cv::Size get_output_size() = 0;
-    virtual std::pair<int, cv::Point2d> get_map(int w, int h) = 0;
     /**
      * Generate output image
      * @param  inputs Input images, in BGR (CV_8UC3)

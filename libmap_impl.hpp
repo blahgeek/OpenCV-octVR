@@ -21,8 +21,11 @@ private:
     cv::Size out_size;
     std::vector<cv::Size> in_sizes;
 
+    std::vector<cv::Mat> map1s;
+    std::vector<cv::Mat> map2s; // see opencv: convertMaps()
+    std::vector<cv::Mat> masks; 
+
     std::vector<cv::Point2d> output_map_points;
-    std::vector<std::vector<cv::Point2d>> map_caches;
 
 public:
     MultiMapperImpl(const std::string & to, const json & to_opts, 
@@ -34,7 +37,6 @@ public:
         return this->out_size;
     }
 
-    std::pair<int, cv::Point2d> get_map(int w, int h);
     void get_output(const std::vector<cv::Mat> & inputs, cv::Mat & output);
 };
 

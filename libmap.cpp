@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-10-23
+* @Last Modified time: 2015-10-25
 */
 
 #include <iostream>
@@ -11,6 +11,16 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <opencv2/stitching/detail/autocalib.hpp>
+#include <opencv2/stitching/detail/blenders.hpp>
+#include <opencv2/stitching/detail/camera.hpp>
+#include <opencv2/stitching/detail/exposure_compensate.hpp>
+#include <opencv2/stitching/detail/matchers.hpp>
+#include <opencv2/stitching/detail/motion_estimators.hpp>
+#include <opencv2/stitching/detail/seam_finders.hpp>
+#include <opencv2/stitching/detail/util.hpp>
+#include <opencv2/stitching/detail/warpers.hpp>
+#include <opencv2/stitching/warpers.hpp>
 
 using namespace vr;
 
@@ -52,34 +62,35 @@ void MultiMapperImpl::add_input(const std::string & from, const json & from_opts
     this->in_cameras.push_back(std::move(_cam));
 
     auto tmp = this->in_cameras.back()->obj_to_image(this->output_map_points);
+    cv::Mat orig_map1(out_size, CV_32FC1), orig_map2(out_size, CV_32FC1);
+    cv::Mat mask(out_size, CV_8U);
+    for(int h = 0 ; h < out_size.height ; h += 1) {
+        unsigned char * mask_row = mask.ptr(h);
+        float * map1_row = orig_map1.ptr<float>(h);
+        float * map2_row = orig_map2.ptr<float>(h);
 
-    std::vector<cv::Point2d> map_cache;
-    map_cache.reserve(tmp.size());
-    for(auto & p: tmp) {
-        double x = p.x * in_width;
-        double y = p.y * in_height;
-        if(x < 0 || x >= in_width)
-            x = NAN;
-        if(y < 0 || y >= in_height)
-            y = NAN;
-        map_cache.push_back(cv::Point2d(x, y));
+        for(int w = 0 ; w < out_size.width ; w += 1) {
+            auto index = w + out_size.width * h;
+            float x = tmp[index].x * in_width;
+            float y = tmp[index].y * in_height;
+            if(isnan(x) || isnan(y) ||
+               x < 0 || x >= in_width || y < 0 || y >= in_height) {
+                mask_row[w] = 0;
+                map1_row[w] = map2_row[w] = NAN;
+            }
+            else {
+                mask_row[w] = 255;
+                map1_row[w] = x;
+                map2_row[w] = y;
+            }
+        }
     }
-    this->map_caches.push_back(map_cache);
-}
+    cv::Mat map1(out_size, CV_16SC2), map2(out_size, CV_16UC1);
+    cv::convertMaps(orig_map1, orig_map2, map1, map2, CV_16SC2);
 
-std::pair<int, cv::Point2d> MultiMapperImpl::get_map(int w, int h) {
-    for(int i = 0 ; i < this->in_cameras.size() ; i += 1) {
-        if(w < 0 || w >= this->out_size.width ||
-           h < 0 || h >= this->out_size.height)
-            continue;
-        int index = h * this->out_size.width + w;
-        auto p = this->map_caches[i][index];
-        if(isnan(p.x) || isnan(p.y))
-            continue;
-
-        return std::make_pair(i, p);
-    }
-    return std::make_pair(0, cv::Point2d(NAN, NAN));
+    this->map1s.push_back(std::move(map1));
+    this->map2s.push_back(std::move(map2));
+    this->masks.push_back(std::move(mask));
 }
 
 void MultiMapperImpl::get_output(const std::vector<cv::Mat> & inputs, cv::Mat & output) {
@@ -88,17 +99,41 @@ void MultiMapperImpl::get_output(const std::vector<cv::Mat> & inputs, cv::Mat & 
         assert(inputs[i].size() == in_sizes[i]);
     }
     assert(output.type() == CV_8UC3 && output.size() == this->out_size);
+    
+    std::vector<cv::Point2i> corners;
+    std::vector<cv::Size> sizes;
+    std::vector<cv::Mat> warped_imgs_float, warped_imgs_uchar;
+    std::vector<cv::Mat> masks_clone;
+    for(int i = 0 ; i < inputs.size() ; i += 1) {
+        cv::Mat warped_img_uchar;
+        cv::Mat warped_img_float;
 
-    for(int j = 0 ; j < out_size.height ; j += 1) {
-        for(int i = 0 ; i < out_size.width ; i += 1) {
-            auto map = get_map(i, j);
-            if(isnan(map.second.x) || isnan(map.second.y))
-                continue;
-            const auto & input = inputs[map.first];
-            for(int k = 0 ; k < 3 ; k += 1)
-                output.at<unsigned char>(j, i*3 + k) = 
-                    input.at<unsigned char>(floor(map.second.y),
-                                            floor(map.second.x) * 3 + k);
-        }
+        cv::remap(inputs[i], warped_img_uchar, map1s[i], map2s[i], CV_INTER_CUBIC);
+        warped_img_uchar.convertTo(warped_img_float, CV_32FC3, 1.0/255);
+
+        warped_imgs_uchar.push_back(std::move(warped_img_uchar));
+        warped_imgs_float.push_back(std::move(warped_img_float));
+
+        corners.emplace_back(0, 0);
+        sizes.push_back(out_size);
+        masks_clone.push_back(this->masks[i].clone());
     }
+
+    // TODO
+    // GraphCut would run into a infinity loop if mask is cut by border
+    // auto seam_finder = new cv::detail::GraphCutSeamFinder(cv::detail::GraphCutSeamFinderBase::COST_COLOR);
+    auto seam_finder = new cv::detail::DpSeamFinder(cv::detail::DpSeamFinder::COLOR);
+    seam_finder->find(warped_imgs_float, corners, masks_clone);
+
+    auto blender = cv::detail::Blender::createDefault(cv::detail::Blender::MULTI_BAND, false);
+    // TODO set band number
+    dynamic_cast<cv::detail::MultiBandBlender *>(static_cast<cv::detail::Blender *>(blender))->setNumBands(5);
+    blender->prepare(corners, sizes);
+    for(int i = 0 ; i < inputs.size() ; i += 1)
+        blender->feed(warped_imgs_uchar[i], masks[i], corners[i]);
+
+    cv::Mat result, result_mask;
+    blender->blend(result, result_mask);
+
+    result.convertTo(output, CV_8UC3);
 }
