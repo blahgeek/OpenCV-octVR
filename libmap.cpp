@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-10-25
+* @Last Modified time: 2015-10-27
 */
 
 #include <iostream>
@@ -102,17 +102,20 @@ void MultiMapperImpl::get_output(const std::vector<cv::Mat> & inputs, cv::Mat & 
     
     std::vector<cv::Point2i> corners;
     std::vector<cv::Size> sizes;
-    std::vector<cv::Mat> warped_imgs_float, warped_imgs_uchar;
+    std::vector<cv::Mat> warped_imgs_float, warped_imgs_uchar, warped_imgs_short;
     std::vector<cv::Mat> masks_clone;
     for(int i = 0 ; i < inputs.size() ; i += 1) {
         cv::Mat warped_img_uchar;
         cv::Mat warped_img_float;
+        cv::Mat warped_img_short;
 
         cv::remap(inputs[i], warped_img_uchar, map1s[i], map2s[i], CV_INTER_CUBIC);
         warped_img_uchar.convertTo(warped_img_float, CV_32FC3, 1.0/255);
+        warped_img_uchar.convertTo(warped_img_short, CV_16SC3);
 
         warped_imgs_uchar.push_back(std::move(warped_img_uchar));
         warped_imgs_float.push_back(std::move(warped_img_float));
+        warped_imgs_short.push_back(std::move(warped_img_short));
 
         corners.emplace_back(0, 0);
         sizes.push_back(out_size);
@@ -123,14 +126,16 @@ void MultiMapperImpl::get_output(const std::vector<cv::Mat> & inputs, cv::Mat & 
     // GraphCut would run into a infinity loop if mask is cut by border
     // auto seam_finder = new cv::detail::GraphCutSeamFinder(cv::detail::GraphCutSeamFinderBase::COST_COLOR);
     auto seam_finder = new cv::detail::DpSeamFinder(cv::detail::DpSeamFinder::COLOR);
+    // cv::Ptr<cv::detail::SeamFinder> seam_finder = new cv::detail::VoronoiSeamFinder();
     seam_finder->find(warped_imgs_float, corners, masks_clone);
 
     auto blender = cv::detail::Blender::createDefault(cv::detail::Blender::MULTI_BAND, false);
+    // auto blender = cv::detail::Blender::createDefault(cv::detail::Blender::NO, false);
     // TODO set band number
-    dynamic_cast<cv::detail::MultiBandBlender *>(static_cast<cv::detail::Blender *>(blender))->setNumBands(5);
+    dynamic_cast<cv::detail::MultiBandBlender *>(static_cast<cv::detail::Blender *>(blender))->setNumBands(3);
     blender->prepare(corners, sizes);
     for(int i = 0 ; i < inputs.size() ; i += 1)
-        blender->feed(warped_imgs_uchar[i], masks[i], corners[i]);
+        blender->feed(warped_imgs_short[i], masks[i], corners[i]);
 
     cv::Mat result, result_mask;
     blender->blend(result, result_mask);
