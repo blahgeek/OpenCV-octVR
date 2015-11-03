@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-20
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-10-22
+* @Last Modified time: 2015-11-04
 */
 
 #include <iostream>
@@ -14,6 +14,7 @@
 #include "./normal.hpp"
 #include "./pinhole_cam.hpp"
 #include "./fisheye_cam.hpp"
+#include "./fullframe_fisheye_cam.hpp"
 
 using namespace vr;
 
@@ -27,6 +28,7 @@ std::unique_ptr<Camera> Camera::New(const std::string & type, const json & optio
     X("pinhole", PinholeCamera)
     X("fisheye", FisheyeCamera)
     X("equirectangular", Equirectangular)
+    X("fullframe_fisheye", FullFrameFisheyeCamera)
 
     return nullptr;
 
@@ -37,7 +39,20 @@ Camera::Camera(const json & options) {
     this->rotate_vector = std::vector<double>({0, 0, 0});
     if(options.find("rotate") != options.end())
         this->rotate_vector = options["rotate"].get<std::vector<double>>();
-    cv::Rodrigues(rotate_vector, this->rotate_matrix);
+    // cv::Rodrigues(rotate_vector, this->rotate_matrix);
+
+    // std::cerr << "Camera rotation: " << rotate_vector[0] << ", "
+    //                                  << rotate_vector[1] << ", "
+    //                                  << rotate_vector[2] << std::endl;
+
+    cv::Mat rotate_x, rotate_y, rotate_z;
+    std::vector<double> v;
+
+    v = rotate_vector; v[1] = v[2] = 0; cv::Rodrigues(v, rotate_x);
+    v = rotate_vector; v[0] = v[2] = 0; cv::Rodrigues(v, rotate_y);
+    v = rotate_vector; v[0] = v[1] = 0; cv::Rodrigues(v, rotate_z);
+
+    this->rotate_matrix = (rotate_x * rotate_z) * rotate_y;
 }
 
 cv::Point2d Camera::sphere_xyz_to_lonlat(const cv::Point3d & xyz) {

@@ -10,6 +10,7 @@ libmap_a_SOURCES = \
 	equirectangular.cpp \
 	pinhole_cam.cpp \
 	fisheye_cam.cpp \
+	fullframe_fisheye_cam.cpp \
 	normal.cpp 
 
 check_PROGRAMS = testall
