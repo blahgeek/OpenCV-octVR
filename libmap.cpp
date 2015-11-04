@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-10-27
+* @Last Modified time: 2015-11-05
 */
 
 #include <iostream>
@@ -21,6 +21,14 @@
 #include <opencv2/stitching/detail/util.hpp>
 #include <opencv2/stitching/detail/warpers.hpp>
 #include <opencv2/stitching/warpers.hpp>
+
+#include <sys/time.h>
+
+static int64_t gettime(void) {
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    return (int64_t)tv.tv_sec * 1000000 + tv.tv_usec;
+}
 
 using namespace vr;
 
@@ -93,7 +101,37 @@ void MultiMapperImpl::add_input(const std::string & from, const json & from_opts
     this->masks.push_back(std::move(mask));
 }
 
+#ifdef DEBUG_SAVE_MAT
+
+#define SAVE_MAT(N, S, MAT) \
+    do { \
+        char tmp[64]; \
+        snprintf(tmp, 64, S "_%d.jpg", N);\
+        imwrite(tmp, MAT); \
+    } while(false)
+
+#define SAVE_MAT_VEC(S, MATS) \
+    do { \
+        for(int __i = 0 ; __i < MATS.size() ; __i += 1) \
+            SAVE_MAT(__i, S, MATS[__i]); \
+    } while(false)
+
+#else
+
+#define SAVE_MAT_VEC(S, MATS)
+
+#endif
+
+#define TIMER(S) \
+    do { \
+        auto __t = gettime(); \
+        std::cerr << S << ": " << (__t - _timer) / 1000.0 << "ms" << std::endl; \
+        _timer = __t; \
+    } while(false)
+
 void MultiMapperImpl::get_output(const std::vector<cv::Mat> & inputs, cv::Mat & output) {
+    auto _timer = gettime();
+
     for(int i = 0 ; i < inputs.size() ; i += 1) {
         assert(inputs[i].type() == CV_8UC3);
         assert(inputs[i].size() == in_sizes[i]);
@@ -102,43 +140,60 @@ void MultiMapperImpl::get_output(const std::vector<cv::Mat> & inputs, cv::Mat & 
     
     std::vector<cv::Point2i> corners;
     std::vector<cv::Size> sizes;
-    std::vector<cv::Mat> warped_imgs_float, warped_imgs_uchar, warped_imgs_short;
+    std::vector<cv::Mat> warped_imgs_uchar(inputs.size());
+    std::vector<cv::Mat> warped_imgs_float(inputs.size());
     std::vector<cv::Mat> masks_clone;
+    
     for(int i = 0 ; i < inputs.size() ; i += 1) {
-        cv::Mat warped_img_uchar;
-        cv::Mat warped_img_float;
-        cv::Mat warped_img_short;
-
-        cv::remap(inputs[i], warped_img_uchar, map1s[i], map2s[i], CV_INTER_CUBIC);
-        warped_img_uchar.convertTo(warped_img_float, CV_32FC3, 1.0/255);
-        warped_img_uchar.convertTo(warped_img_short, CV_16SC3);
-
-        warped_imgs_uchar.push_back(std::move(warped_img_uchar));
-        warped_imgs_float.push_back(std::move(warped_img_float));
-        warped_imgs_short.push_back(std::move(warped_img_short));
+        cv::remap(inputs[i], warped_imgs_uchar[i], map1s[i], map2s[i], CV_INTER_CUBIC);
+        warped_imgs_uchar[i].convertTo(warped_imgs_float[i], CV_32FC3, 1.0/255);
+        // warped_img_uchar.convertTo(warped_img_short, CV_16SC3);
 
         corners.emplace_back(0, 0);
         sizes.push_back(out_size);
         masks_clone.push_back(this->masks[i].clone());
     }
+    TIMER("Remapping images");
 
-    // TODO
-    // GraphCut would run into a infinity loop if mask is cut by border
+    SAVE_MAT_VEC("warped_img", warped_imgs_uchar);
+    SAVE_MAT_VEC("warped_mask", masks_clone);
+
+    // TODO GAIN_BLOCKS bugs?
+    auto compensator = cv::detail::ExposureCompensator::createDefault(
+                        cv::detail::ExposureCompensator::GAIN); // TODO
+    compensator->feed(corners, warped_imgs_uchar, masks_clone);
+    TIMER("Compensator");
+
+    for(int i = 0 ; i < inputs.size() ; i += 1)
+        compensator->apply(i, corners[i], warped_imgs_uchar[i], masks_clone[i]);
+    TIMER("Compensator apply");
+
+    SAVE_MAT_VEC("warped_img_compensator", warped_imgs_uchar);
+    SAVE_MAT_VEC("warped_mask_compensator", masks_clone);
+
+    // TODO GraphCut and DpSeamFinder has bugs?
     // auto seam_finder = new cv::detail::GraphCutSeamFinder(cv::detail::GraphCutSeamFinderBase::COST_COLOR);
-    auto seam_finder = new cv::detail::DpSeamFinder(cv::detail::DpSeamFinder::COLOR);
-    // cv::Ptr<cv::detail::SeamFinder> seam_finder = new cv::detail::VoronoiSeamFinder();
+    // auto seam_finder = new cv::detail::DpSeamFinder(cv::detail::DpSeamFinder::COLOR);
+    cv::Ptr<cv::detail::SeamFinder> seam_finder = new cv::detail::VoronoiSeamFinder();
     seam_finder->find(warped_imgs_float, corners, masks_clone);
+    TIMER("Seam finder");
+
+    SAVE_MAT_VEC("warped_mask_seam", masks_clone);
 
     auto blender = cv::detail::Blender::createDefault(cv::detail::Blender::MULTI_BAND, false);
     // auto blender = cv::detail::Blender::createDefault(cv::detail::Blender::NO, false);
     // TODO set band number
-    dynamic_cast<cv::detail::MultiBandBlender *>(static_cast<cv::detail::Blender *>(blender))->setNumBands(3);
+    dynamic_cast<cv::detail::MultiBandBlender *>(static_cast<cv::detail::Blender *>(blender))->setNumBands(9);
     blender->prepare(corners, sizes);
-    for(int i = 0 ; i < inputs.size() ; i += 1)
-        blender->feed(warped_imgs_short[i], masks[i], corners[i]);
+    for(int i = 0 ; i < inputs.size() ; i += 1) {
+        cv::Mat m;
+        warped_imgs_uchar[i].convertTo(m, CV_16SC3);
+        blender->feed(m, masks_clone[i], corners[i]);
+    }
 
     cv::Mat result, result_mask;
     blender->blend(result, result_mask);
+    TIMER("Blender");
 
     result.convertTo(output, CV_8UC3);
 }
