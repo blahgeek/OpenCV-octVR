@@ -132,6 +132,9 @@ void MultiMapperImpl::add_input(const std::string & from, const json & from_opts
 void MultiMapperImpl::get_output(const std::vector<cv::Mat> & inputs, cv::Mat & output) {
     auto _timer = gettime();
 
+    // TODO set scale
+    auto scale = 0.5;
+
     for(int i = 0 ; i < inputs.size() ; i += 1) {
         assert(inputs[i].type() == CV_8UC3);
         assert(inputs[i].size() == in_sizes[i]);
@@ -141,46 +144,53 @@ void MultiMapperImpl::get_output(const std::vector<cv::Mat> & inputs, cv::Mat & 
     std::vector<cv::Point2i> corners;
     std::vector<cv::Size> sizes;
     std::vector<cv::Mat> warped_imgs_uchar(inputs.size());
-    std::vector<cv::Mat> warped_imgs_float(inputs.size());
-    std::vector<cv::Mat> masks_clone;
     
     for(int i = 0 ; i < inputs.size() ; i += 1) {
         cv::remap(inputs[i], warped_imgs_uchar[i], map1s[i], map2s[i], CV_INTER_CUBIC);
-        warped_imgs_uchar[i].convertTo(warped_imgs_float[i], CV_32FC3, 1.0/255);
-        // warped_img_uchar.convertTo(warped_img_short, CV_16SC3);
-
         corners.emplace_back(0, 0);
         sizes.push_back(out_size);
-        masks_clone.push_back(this->masks[i].clone());
     }
     TIMER("Remapping images");
 
     SAVE_MAT_VEC("warped_img", warped_imgs_uchar);
     SAVE_MAT_VEC("warped_mask", masks_clone);
 
+    std::vector<cv::Mat> warped_imgs_uchar_scale(inputs.size());
+    std::vector<cv::Mat> masks_scale(inputs.size());
+    for(int i = 0 ; i < inputs.size() ; i += 1) {
+        cv::resize(warped_imgs_uchar[i], warped_imgs_uchar_scale[i], cv::Size(), scale, scale);
+        cv::resize(this->masks[i], masks_scale[i], cv::Size(), scale, scale);
+    }
+    TIMER("Scale");
+
     // TODO GAIN_BLOCKS bugs?
-    auto compensator = cv::detail::ExposureCompensator::createDefault(
-                        cv::detail::ExposureCompensator::GAIN); // TODO
-    compensator->feed(corners, warped_imgs_uchar, masks_clone);
+    cv::Ptr<cv::detail::ExposureCompensator> compensator = 
+        cv::detail::ExposureCompensator::createDefault(cv::detail::ExposureCompensator::GAIN);
+    compensator->feed(corners, warped_imgs_uchar_scale, masks_scale);
     TIMER("Compensator");
 
     for(int i = 0 ; i < inputs.size() ; i += 1)
-        compensator->apply(i, corners[i], warped_imgs_uchar[i], masks_clone[i]);
+        compensator->apply(i, corners[i], warped_imgs_uchar[i], this->masks[i]);
     TIMER("Compensator apply");
 
     SAVE_MAT_VEC("warped_img_compensator", warped_imgs_uchar);
     SAVE_MAT_VEC("warped_mask_compensator", masks_clone);
 
+    std::vector<cv::Mat> masks_seam(inputs.size());
     // TODO GraphCut and DpSeamFinder has bugs?
     // auto seam_finder = new cv::detail::GraphCutSeamFinder(cv::detail::GraphCutSeamFinderBase::COST_COLOR);
     // auto seam_finder = new cv::detail::DpSeamFinder(cv::detail::DpSeamFinder::COLOR);
     cv::Ptr<cv::detail::SeamFinder> seam_finder = new cv::detail::VoronoiSeamFinder();
-    seam_finder->find(warped_imgs_float, corners, masks_clone);
+    seam_finder->find(warped_imgs_uchar_scale, corners, masks_scale);
+    for(int i = 0 ; i < inputs.size() ; i += 1)
+        cv::resize(masks_scale[i], masks_seam[i], cv::Size(), 1.0/scale, 1.0/scale);
     TIMER("Seam finder");
+    // TODO dilate mask?
 
     SAVE_MAT_VEC("warped_mask_seam", masks_clone);
 
-    auto blender = cv::detail::Blender::createDefault(cv::detail::Blender::MULTI_BAND, false);
+    cv::Ptr<cv::detail::Blender> blender = 
+        cv::detail::Blender::createDefault(cv::detail::Blender::MULTI_BAND, true);
     // auto blender = cv::detail::Blender::createDefault(cv::detail::Blender::NO, false);
     // TODO set band number
     dynamic_cast<cv::detail::MultiBandBlender *>(static_cast<cv::detail::Blender *>(blender))->setNumBands(9);
@@ -188,7 +198,7 @@ void MultiMapperImpl::get_output(const std::vector<cv::Mat> & inputs, cv::Mat & 
     for(int i = 0 ; i < inputs.size() ; i += 1) {
         cv::Mat m;
         warped_imgs_uchar[i].convertTo(m, CV_16SC3);
-        blender->feed(m, masks_clone[i], corners[i]);
+        blender->feed(m, masks_seam[i], corners[i]);
     }
 
     cv::Mat result, result_mask;
