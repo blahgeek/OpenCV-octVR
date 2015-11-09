@@ -35,6 +35,11 @@ public:
     cv::Size get_output_size() override {
         return this->out_size;
     }
+    cv::Size get_input_size(int index) override {
+        if(index >= in_sizes.size())
+            return cv::Size(0, 0);
+        return in_sizes[index];
+    }
 
     void get_output(const std::vector<cv::Mat> & inputs, cv::Mat & output) override;
 
