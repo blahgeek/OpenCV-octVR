@@ -3,15 +3,21 @@ AM_CXXFLAGS = -Wall
 
 include_HEADERS = libmap.hpp
 lib_LIBRARIES = libmap.a
+noinst_PROGRAMS = dumper
 
 libmap_a_SOURCES = \
 	libmap.cpp \
+	libmap_loaddump.cpp \
 	camera.cpp \
 	equirectangular.cpp \
 	pinhole_cam.cpp \
 	fisheye_cam.cpp \
 	fullframe_fisheye_cam.cpp \
 	normal.cpp 
+
+dumper_SOURCES = dumper.cpp
+dumper_LDADD = libmap.a
+dumper_LDFLAGS = $(OPENCV_LIBS)
 
 check_PROGRAMS = testall
 

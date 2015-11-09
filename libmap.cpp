@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-11-05
+* @Last Modified time: 2015-11-09
 */
 
 #include <iostream>
@@ -37,15 +37,19 @@ MultiMapper * MultiMapper::New(const std::string & to, const json & to_opts,
     return new MultiMapperImpl(to, to_opts, out_width, out_height);
 }
 
+MultiMapper * MultiMapper::New(std::ifstream & f) {
+    return new MultiMapperImpl(f);
+}
+
 MultiMapperImpl::MultiMapperImpl(const std::string & to, const json & to_opts,
                                  int out_width, int out_height) {
-    this->out_camera = Camera::New(to, to_opts);
-    if(!this->out_camera)
+    std::unique_ptr<Camera> out_camera = Camera::New(to, to_opts);
+    if(!out_camera)
         throw std::string("Invalid output camera type");
 
     if(out_height <= 0 && out_width <= 0)
         throw std::string("Output width/height invalid");
-    double output_aspect_ratio = this->out_camera->get_aspect_ratio();
+    double output_aspect_ratio = out_camera->get_aspect_ratio();
     if(out_height <= 0)
         out_height = int(double(out_width) / output_aspect_ratio);
     if(out_width <= 0)
@@ -58,18 +62,20 @@ MultiMapperImpl::MultiMapperImpl(const std::string & to, const json & to_opts,
         for(int i = 0 ; i < out_width ; i += 1)
             tmp.push_back(cv::Point2d(double(i) / out_width,
                                       double(j) / out_height));
-    this->output_map_points = this->out_camera->image_to_obj(tmp);
+    this->output_map_points = out_camera->image_to_obj(tmp);
 }
 
 void MultiMapperImpl::add_input(const std::string & from, const json & from_opts,
                                 int in_width, int in_height) {
-    this->in_sizes.push_back(cv::Size(in_width, in_height));
-    auto _cam = Camera::New(from, from_opts);
-    if(!_cam)
-        throw std::string("Invalid input camera type");
-    this->in_cameras.push_back(std::move(_cam));
+    // If this is constructed using dumped data file, add_input is not available
+    assert(!this->output_map_points.empty());
 
-    auto tmp = this->in_cameras.back()->obj_to_image(this->output_map_points);
+    this->in_sizes.push_back(cv::Size(in_width, in_height));
+    std::unique_ptr<Camera> cam = Camera::New(from, from_opts);
+    if(!cam)
+        throw std::string("Invalid input camera type");
+
+    auto tmp = cam->obj_to_image(this->output_map_points);
     cv::Mat orig_map1(out_size, CV_32FC1), orig_map2(out_size, CV_32FC1);
     cv::Mat mask(out_size, CV_8U);
     for(int h = 0 ; h < out_size.height ; h += 1) {
