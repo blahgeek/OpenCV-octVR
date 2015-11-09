@@ -3,7 +3,7 @@ AM_CXXFLAGS = -Wall
 
 include_HEADERS = libmap.hpp
 lib_LIBRARIES = libmap.a
-noinst_PROGRAMS = dumper
+bin_PROGRAMS = dumper mapper
 
 libmap_a_SOURCES = \
 	libmap.cpp \
@@ -18,6 +18,10 @@ libmap_a_SOURCES = \
 dumper_SOURCES = dumper.cpp
 dumper_LDADD = libmap.a
 dumper_LDFLAGS = $(OPENCV_LIBS)
+
+mapper_SOURCES = mapper.cpp
+mapper_LDADD = libmap.a
+mapper_LDFLAGS = $(OPENCV_LIBS)
 
 check_PROGRAMS = testall
 
