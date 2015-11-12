@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-20
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-11-04
+* @Last Modified time: 2015-11-12
 */
 
 #include <iostream>
@@ -15,6 +15,7 @@
 #include "./pinhole_cam.hpp"
 #include "./fisheye_cam.hpp"
 #include "./fullframe_fisheye_cam.hpp"
+#include "./stupidoval.hpp"
 
 using namespace vr;
 
@@ -29,6 +30,7 @@ std::unique_ptr<Camera> Camera::New(const std::string & type, const json & optio
     X("fisheye", FisheyeCamera)
     X("equirectangular", Equirectangular)
     X("fullframe_fisheye", FullFrameFisheyeCamera)
+    X("stupidoval", StupidOval)
 
     return nullptr;
 

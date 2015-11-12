@@ -90,7 +90,7 @@ void MultiMapperImpl::add_input(const std::string & from, const json & from_opts
             if(isnan(x) || isnan(y) ||
                x < 0 || x >= in_width || y < 0 || y >= in_height) {
                 mask_row[w] = 0;
-                map1_row[w] = map2_row[w] = NAN;
+                map1_row[w] = map2_row[w] = -1.0; // out of border, should be black when doing remap()
             }
             else {
                 mask_row[w] = 255;
