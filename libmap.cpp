@@ -175,6 +175,9 @@ void MultiMapperImpl::get_output(const std::vector<cv::Mat> & inputs, cv::Mat & 
     compensator->feed(corners, warped_imgs_uchar_scale, masks_scale);
     TIMER("Compensator");
 
+    // TODO Optimize this
+    // GainCompensator::apply does img *= gain for every image
+    // while size of image is large (output size), and only part of it is valid (mask)
     for(int i = 0 ; i < inputs.size() ; i += 1)
         compensator->apply(i, corners[i], warped_imgs_uchar[i], this->masks[i]);
     TIMER("Compensator apply");
