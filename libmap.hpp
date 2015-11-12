@@ -23,6 +23,9 @@ namespace vr {
 
 using json = nlohmann::json;
 
+/**
+ * Stitch multiple images into single one
+ */
 class MultiMapper {
 public:
     // Construct MultiMapper using json model.
@@ -42,6 +45,13 @@ public:
      * @param  inputs Input images, in BGR (CV_8UC3)
      */
     virtual void get_output(const std::vector<cv::UMat> & inputs, cv::UMat & output) = 0;
+
+    /**
+     * Generate single output image, call this if and if only there's only one input
+     * @param input  Input image, in BGR
+     * @param output Output image, in BGR
+     */
+    virtual void get_single_output(const cv::UMat & input, cv::UMat & output) = 0;
 
     virtual void dump(std::ofstream & f) = 0;
 };

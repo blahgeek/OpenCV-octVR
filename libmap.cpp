@@ -218,3 +218,15 @@ void MultiMapperImpl::get_output(const std::vector<cv::UMat> & inputs, cv::UMat 
 
     result.convertTo(output, CV_8UC3);
 }
+
+void MultiMapperImpl::get_single_output(const cv::UMat & input, cv::UMat & output) {
+    assert(input.type() == CV_8UC3);
+    assert(output.type() == CV_8UC3 && output.size() == this->out_size);
+    assert(this->in_sizes.size() > 0);
+
+    auto _timer = gettime();
+
+    cv::remap(input, output, map1s[0], map2s[0], CV_INTER_LINEAR);
+
+    TIMER("Remapping single image");
+}

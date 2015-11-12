@@ -43,6 +43,8 @@ public:
 
     void get_output(const std::vector<cv::UMat> & inputs, cv::UMat & output) override;
 
+    void get_single_output(const cv::UMat & input, cv::UMat & output) override;
+
     void dump(std::ofstream & f) override;
 };
 
