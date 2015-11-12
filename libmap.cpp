@@ -115,7 +115,7 @@ void MultiMapperImpl::add_input(const std::string & from, const json & from_opts
     do { \
         char tmp[64]; \
         snprintf(tmp, 64, S "_%d.jpg", N);\
-        imwrite(tmp, MAT); \
+        imwrite(tmp, MAT.getMat(cv::ACCESS_READ)); \
     } while(false)
 
 #define SAVE_MAT_VEC(S, MATS) \
@@ -161,7 +161,7 @@ void MultiMapperImpl::get_output(const std::vector<cv::UMat> & inputs, cv::UMat 
     TIMER("Remapping images");
 
     SAVE_MAT_VEC("warped_img", warped_imgs_uchar);
-    SAVE_MAT_VEC("warped_mask", masks_clone);
+    SAVE_MAT_VEC("warped_mask", masks);
 
     std::vector<cv::UMat> warped_imgs_uchar_scale(inputs.size());
     std::vector<cv::UMat> masks_scale(inputs.size());
@@ -185,12 +185,12 @@ void MultiMapperImpl::get_output(const std::vector<cv::UMat> & inputs, cv::UMat 
     TIMER("Compensator apply");
 
     SAVE_MAT_VEC("warped_img_compensator", warped_imgs_uchar);
-    SAVE_MAT_VEC("warped_mask_compensator", masks_clone);
+    SAVE_MAT_VEC("warped_mask_compensator", masks_scale);
 
     std::vector<cv::UMat> masks_seam(inputs.size());
     // TODO GraphCut and DpSeamFinder has bugs?
-    // auto seam_finder = new cv::detail::GraphCutSeamFinder(cv::detail::GraphCutSeamFinderBase::COST_COLOR);
-    // auto seam_finder = new cv::detail::DpSeamFinder(cv::detail::DpSeamFinder::COLOR);
+    // cv::Ptr<cv::detail::SeamFinder> seam_finder = new cv::detail::GraphCutSeamFinder(cv::detail::GraphCutSeamFinderBase::COST_COLOR);
+    // cv::Ptr<cv::detail::SeamFinder> seam_finder = new cv::detail::DpSeamFinder(cv::detail::DpSeamFinder::COLOR);
     cv::Ptr<cv::detail::SeamFinder> seam_finder = new cv::detail::VoronoiSeamFinder();
     seam_finder->find(warped_imgs_uchar_scale, corners, masks_scale);
     for(int i = 0 ; i < inputs.size() ; i += 1)
@@ -198,7 +198,7 @@ void MultiMapperImpl::get_output(const std::vector<cv::UMat> & inputs, cv::UMat 
     TIMER("Seam finder");
     // TODO dilate mask?
 
-    SAVE_MAT_VEC("warped_mask_seam", masks_clone);
+    SAVE_MAT_VEC("warped_mask_seam", masks_seam);
 
     cv::Ptr<cv::detail::Blender> blender = 
         cv::detail::Blender::createDefault(cv::detail::Blender::MULTI_BAND, true);
