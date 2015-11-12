@@ -5,6 +5,8 @@ include_HEADERS = libmap.hpp
 lib_LIBRARIES = libmap.a
 bin_PROGRAMS = dumper mapper
 
+LIBS = $(subst -lopencv_ts,,$(OPENCV_LIBS))
+
 libmap_a_SOURCES = \
 	libmap.cpp \
 	libmap_loaddump.cpp \
@@ -17,11 +19,9 @@ libmap_a_SOURCES = \
 
 dumper_SOURCES = dumper.cpp
 dumper_LDADD = libmap.a
-dumper_LDFLAGS = $(OPENCV_LIBS)
 
 mapper_SOURCES = mapper.cpp
 mapper_LDADD = libmap.a
-mapper_LDFLAGS = $(OPENCV_LIBS)
 
 check_PROGRAMS = testall
 
@@ -32,7 +32,6 @@ testall_SOURCES = \
 	test.cpp
 
 testall_LDADD = ../gtest/libgtest.a ../gtest/libgtest_main.a libmap.a
-testall_LDFLAGS = $(subst -lopencv_ts,,$(OPENCV_LIBS))
 
 
 TESTS = testall
