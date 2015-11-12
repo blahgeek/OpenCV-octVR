@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-20
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-11-09
+* @Last Modified time: 2015-11-12
 */
 
 #ifndef VR_LIBMAP_IMPL_H
@@ -18,9 +18,9 @@ private:
     cv::Size out_size;
     std::vector<cv::Size> in_sizes;
 
-    std::vector<cv::Mat> map1s;
-    std::vector<cv::Mat> map2s; // see opencv: convertMaps()
-    std::vector<cv::Mat> masks; 
+    std::vector<cv::UMat> map1s;
+    std::vector<cv::UMat> map2s; // see opencv: convertMaps()
+    std::vector<cv::UMat> masks; 
 
     std::vector<cv::Point2d> output_map_points;
 
@@ -41,7 +41,7 @@ public:
         return in_sizes[index];
     }
 
-    void get_output(const std::vector<cv::Mat> & inputs, cv::Mat & output) override;
+    void get_output(const std::vector<cv::UMat> & inputs, cv::UMat & output) override;
 
     void dump(std::ofstream & f) override;
 };

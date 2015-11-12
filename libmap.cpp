@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-11-09
+* @Last Modified time: 2015-11-12
 */
 
 #include <iostream>
@@ -99,12 +99,14 @@ void MultiMapperImpl::add_input(const std::string & from, const json & from_opts
             }
         }
     }
-    cv::Mat map1(out_size, CV_16SC2), map2(out_size, CV_16UC1);
+    cv::UMat map1(out_size, CV_16SC2), map2(out_size, CV_16UC1);
     cv::convertMaps(orig_map1, orig_map2, map1, map2, CV_16SC2);
 
-    this->map1s.push_back(std::move(map1));
-    this->map2s.push_back(std::move(map2));
-    this->masks.push_back(std::move(mask));
+    this->map1s.push_back(map1);
+    this->map2s.push_back(map2);
+    cv::UMat mask_u;
+    mask.copyTo(mask_u);
+    this->masks.push_back(mask_u);
 }
 
 #ifdef DEBUG_SAVE_MAT
@@ -135,7 +137,7 @@ void MultiMapperImpl::add_input(const std::string & from, const json & from_opts
         _timer = __t; \
     } while(false)
 
-void MultiMapperImpl::get_output(const std::vector<cv::Mat> & inputs, cv::Mat & output) {
+void MultiMapperImpl::get_output(const std::vector<cv::UMat> & inputs, cv::UMat & output) {
     auto _timer = gettime();
 
     // TODO set scale
@@ -149,7 +151,7 @@ void MultiMapperImpl::get_output(const std::vector<cv::Mat> & inputs, cv::Mat & 
     
     std::vector<cv::Point2i> corners;
     std::vector<cv::Size> sizes;
-    std::vector<cv::Mat> warped_imgs_uchar(inputs.size());
+    std::vector<cv::UMat> warped_imgs_uchar(inputs.size());
     
     for(int i = 0 ; i < inputs.size() ; i += 1) {
         cv::remap(inputs[i], warped_imgs_uchar[i], map1s[i], map2s[i], CV_INTER_CUBIC);
@@ -161,8 +163,8 @@ void MultiMapperImpl::get_output(const std::vector<cv::Mat> & inputs, cv::Mat & 
     SAVE_MAT_VEC("warped_img", warped_imgs_uchar);
     SAVE_MAT_VEC("warped_mask", masks_clone);
 
-    std::vector<cv::Mat> warped_imgs_uchar_scale(inputs.size());
-    std::vector<cv::Mat> masks_scale(inputs.size());
+    std::vector<cv::UMat> warped_imgs_uchar_scale(inputs.size());
+    std::vector<cv::UMat> masks_scale(inputs.size());
     for(int i = 0 ; i < inputs.size() ; i += 1) {
         cv::resize(warped_imgs_uchar[i], warped_imgs_uchar_scale[i], cv::Size(), scale, scale);
         cv::resize(this->masks[i], masks_scale[i], cv::Size(), scale, scale);
@@ -185,7 +187,7 @@ void MultiMapperImpl::get_output(const std::vector<cv::Mat> & inputs, cv::Mat & 
     SAVE_MAT_VEC("warped_img_compensator", warped_imgs_uchar);
     SAVE_MAT_VEC("warped_mask_compensator", masks_clone);
 
-    std::vector<cv::Mat> masks_seam(inputs.size());
+    std::vector<cv::UMat> masks_seam(inputs.size());
     // TODO GraphCut and DpSeamFinder has bugs?
     // auto seam_finder = new cv::detail::GraphCutSeamFinder(cv::detail::GraphCutSeamFinderBase::COST_COLOR);
     // auto seam_finder = new cv::detail::DpSeamFinder(cv::detail::DpSeamFinder::COLOR);
@@ -205,12 +207,12 @@ void MultiMapperImpl::get_output(const std::vector<cv::Mat> & inputs, cv::Mat & 
     dynamic_cast<cv::detail::MultiBandBlender *>(static_cast<cv::detail::Blender *>(blender))->setNumBands(9);
     blender->prepare(corners, sizes);
     for(int i = 0 ; i < inputs.size() ; i += 1) {
-        cv::Mat m;
+        cv::UMat m;
         warped_imgs_uchar[i].convertTo(m, CV_16SC3);
         blender->feed(m, masks_seam[i], corners[i]);
     }
 
-    cv::Mat result, result_mask;
+    cv::UMat result, result_mask;
     blender->blend(result, result_mask);
     TIMER("Blender");
 

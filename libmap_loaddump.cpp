@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-11-09
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-11-09
+* @Last Modified time: 2015-11-12
 */
 
 #include <iostream>
@@ -30,10 +30,15 @@ void MultiMapperImpl::dump(std::ofstream & f) {
         assert(map1s[i].type() == CV_16SC2 && map1s[i].size() == out_size);
         assert(map2s[i].type() == CV_16UC1 && map2s[i].size() == out_size);
         assert(masks[i].type() == CV_8UC1 && masks[i].size() == out_size);
+
+        auto map1 = map1s[i].getMat(cv::ACCESS_READ);
+        auto map2 = map2s[i].getMat(cv::ACCESS_READ);
+        auto mask = masks[i].getMat(cv::ACCESS_READ);
+
         for(int k = 0 ; k < out_size.height ; k += 1) {
-            f.write(map1s[i].ptr<char>(k), out_size.width * 4); // CV_16SC2
-            f.write(map2s[i].ptr<char>(k), out_size.width * 2); // CV_16UC1
-            f.write(masks[i].ptr<char>(k), out_size.width); // CV_8UC1
+            f.write(map1.ptr<char>(k), out_size.width * 4); // CV_16SC2
+            f.write(map2.ptr<char>(k), out_size.width * 2); // CV_16UC1
+            f.write(mask.ptr<char>(k), out_size.width); // CV_8UC1
         }
     }
 }
@@ -67,8 +72,12 @@ MultiMapperImpl::MultiMapperImpl(std::ifstream & f) {
             f.read(map2.ptr<char>(k), out_size.width * 2);
             f.read(mask.ptr<char>(k), out_size.width);
         }
-        this->map1s.push_back(map1);
-        this->map2s.push_back(map2);
-        this->masks.push_back(mask);
+        cv::UMat map1u, map2u, masku;
+        map1.copyTo(map1u);
+        map2.copyTo(map2u);
+        mask.copyTo(masku);
+        this->map1s.push_back(map1u);
+        this->map2s.push_back(map2u);
+        this->masks.push_back(masku);
     }
 }

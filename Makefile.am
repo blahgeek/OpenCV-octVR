@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -I../json -I../gtest/include $(OPENCV_CFLAGS)
+AM_CPPFLAGS = -I../json -I../gtest/include $(OPENCV_CFLAGS) -DCV_OPENCL_RUN_VERBOSE
 AM_CXXFLAGS = -Wall
 
 include_HEADERS = libmap.hpp
