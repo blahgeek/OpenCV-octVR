@@ -11,6 +11,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/calib3d/calib3d.hpp>
+#include <opencv2/core/ocl.hpp>
 #include "./libmap.hpp"
 
 using namespace vr;
@@ -21,6 +22,8 @@ int main(int argc, char const *argv[]) {
                   << "\tmap.dat can be produced by `dumper`" << std::endl;
         return 1;
     }
+
+    cv::ocl::setUseOpenCL(true);
 
     char const * map_filename = argv[1];
     char const * output_filename = argv[2];

@@ -154,7 +154,7 @@ void MultiMapperImpl::get_output(const std::vector<cv::UMat> & inputs, cv::UMat 
     std::vector<cv::UMat> warped_imgs_uchar(inputs.size());
     
     for(int i = 0 ; i < inputs.size() ; i += 1) {
-        cv::remap(inputs[i], warped_imgs_uchar[i], map1s[i], map2s[i], CV_INTER_CUBIC);
+        cv::remap(inputs[i], warped_imgs_uchar[i], map1s[i], map2s[i], CV_INTER_LINEAR);
         corners.emplace_back(0, 0);
         sizes.push_back(out_size);
     }
