@@ -199,7 +199,7 @@ void MultiMapperImpl::get_output(const std::vector<cv::UMat> & inputs, cv::UMat 
     timer.tick("Compensator apply");
 
     SAVE_MAT_VEC("warped_img_compensator", warped_imgs_uchar);
-    SAVE_MAT_VEC("warped_mask_compensator", masks_scale);
+    SAVE_MAT_VEC("warped_mask_compensator", scaled_masks);
 
     std::vector<cv::UMat> masks_seam(inputs.size());
     // TODO GraphCut and DpSeamFinder has bugs?
