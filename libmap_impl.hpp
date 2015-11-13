@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-20
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-11-12
+* @Last Modified time: 2015-11-13
 */
 
 #ifndef VR_LIBMAP_IMPL_H

@@ -139,17 +139,20 @@ void MultiMapperImpl::add_input(const std::string & from, const json & from_opts
 
 #endif
 
+#define WORKING_MEGAPIX 0.1
+
 void MultiMapperImpl::get_output(const std::vector<cv::UMat> & inputs, cv::UMat & output) {
     Timer timer("MultiMapper");
-
-    // TODO set scale
-    auto scale = 0.5;
 
     for(int i = 0 ; i < inputs.size() ; i += 1) {
         assert(inputs[i].type() == CV_8UC3);
         assert(inputs[i].size() == in_sizes[i]);
     }
     assert(output.type() == CV_8UC3 && output.size() == this->out_size);
+
+    std::vector<double> working_scales;
+    for(auto & s: this->in_sizes)
+        working_scales.push_back(std::min(1.0, sqrt(WORKING_MEGAPIX * 1e6 / s.area())));
     
     std::vector<cv::Point2i> corners;
     std::vector<cv::Size> sizes;
@@ -168,8 +171,10 @@ void MultiMapperImpl::get_output(const std::vector<cv::UMat> & inputs, cv::UMat 
     std::vector<cv::UMat> warped_imgs_uchar_scale(inputs.size());
     std::vector<cv::UMat> masks_scale(inputs.size());
     for(int i = 0 ; i < inputs.size() ; i += 1) {
-        cv::resize(warped_imgs_uchar[i], warped_imgs_uchar_scale[i], cv::Size(), scale, scale);
-        cv::resize(this->masks[i], masks_scale[i], cv::Size(), scale, scale);
+        cv::resize(warped_imgs_uchar[i], warped_imgs_uchar_scale[i], cv::Size(), 
+                   working_scales[i], working_scales[i]);
+        cv::resize(this->masks[i], masks_scale[i], cv::Size(), 
+                   working_scales[i], working_scales[i]);
     }
     timer.tick("Scale");
 
@@ -196,7 +201,8 @@ void MultiMapperImpl::get_output(const std::vector<cv::UMat> & inputs, cv::UMat 
     cv::Ptr<cv::detail::SeamFinder> seam_finder = new cv::detail::VoronoiSeamFinder();
     seam_finder->find(warped_imgs_uchar_scale, corners, masks_scale);
     for(int i = 0 ; i < inputs.size() ; i += 1)
-        cv::resize(masks_scale[i], masks_seam[i], cv::Size(), 1.0/scale, 1.0/scale);
+        cv::resize(masks_scale[i], masks_seam[i], cv::Size(), 
+                   1.0/working_scales[i], 1.0/working_scales[i]);
     timer.tick("Seam finder");
     // TODO dilate mask?
 
