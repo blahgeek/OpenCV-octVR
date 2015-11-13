@@ -10,6 +10,7 @@
 
 #include "./camera.hpp"
 #include "./libmap.hpp"
+#include <opencv2/stitching/detail/exposure_compensate.hpp>
 
 namespace vr {
 
@@ -27,6 +28,9 @@ private:
 private:
     std::vector<double> working_scales;
     std::vector<cv::UMat> scaled_masks;
+
+private:
+    cv::Ptr<cv::detail::ExposureCompensator> compensator;
 
 public:
     MultiMapperImpl(const std::string & to, const json & to_opts, 
@@ -48,6 +52,10 @@ public:
     void get_output(const std::vector<cv::UMat> & inputs, cv::UMat & output) override;
 
     void get_single_output(const cv::UMat & input, cv::UMat & output) override;
+
+    void reset_compensator() override {
+        compensator.release();
+    }
 
     void dump(std::ofstream & f) override;
 };

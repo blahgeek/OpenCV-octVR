@@ -183,11 +183,13 @@ void MultiMapperImpl::get_output(const std::vector<cv::UMat> & inputs, cv::UMat 
     }
     timer.tick("Scale");
 
-    // TODO GAIN_BLOCKS bugs?
-    cv::Ptr<cv::detail::ExposureCompensator> compensator = 
-        cv::detail::ExposureCompensator::createDefault(cv::detail::ExposureCompensator::GAIN);
-    compensator->feed(corners, warped_imgs_uchar_scale, scaled_masks_clone);
-    timer.tick("Compensator");
+    if(this->compensator.empty()) {
+        std::cerr << "Re-computing compensator gain" << std::endl;
+        // TODO GAIN_BLOCKS bugs?
+        this->compensator = cv::detail::ExposureCompensator::createDefault(cv::detail::ExposureCompensator::GAIN);
+        compensator->feed(corners, warped_imgs_uchar_scale, scaled_masks_clone);
+        timer.tick("Compensator");
+    }
 
     // TODO Optimize this
     // GainCompensator::apply does img *= gain for every image
@@ -217,7 +219,7 @@ void MultiMapperImpl::get_output(const std::vector<cv::UMat> & inputs, cv::UMat 
     cv::Ptr<cv::detail::Blender> blender = 
         cv::detail::Blender::createDefault(cv::detail::Blender::MULTI_BAND, true);
     // auto blender = cv::detail::Blender::createDefault(cv::detail::Blender::NO, false);
-    // TODO Optimize createLaplacePyr is not available in OpenCL
+    // TODO Optimize createLaplacePyr for every image with size of output may not be good
     double blend_width = sqrt(out_size.area() * 1.0f) * BLENDER_STRENGTH;
     int blend_bands = int(ceil(log(blend_width)/log(2.)) - 1.);
     std::cerr << "Using MultiBandBlender with band number = " << blend_bands << std::endl;
