@@ -24,7 +24,9 @@
 
 #include <sys/time.h>
 
+// TODO Set by options
 #define WORKING_MEGAPIX 0.1
+#define BLENDER_STRENGTH 0.05
 
 using namespace vr;
 
@@ -202,6 +204,7 @@ void MultiMapperImpl::get_output(const std::vector<cv::UMat> & inputs, cv::UMat 
     // cv::Ptr<cv::detail::SeamFinder> seam_finder = new cv::detail::GraphCutSeamFinder(cv::detail::GraphCutSeamFinderBase::COST_COLOR);
     // cv::Ptr<cv::detail::SeamFinder> seam_finder = new cv::detail::DpSeamFinder(cv::detail::DpSeamFinder::COLOR);
     cv::Ptr<cv::detail::SeamFinder> seam_finder = new cv::detail::VoronoiSeamFinder();
+    // cv::Ptr<cv::detail::SeamFinder> seam_finder = new cv::detail::NoSeamFinder();
     seam_finder->find(warped_imgs_uchar_scale, corners, scaled_masks_clone);
     for(int i = 0 ; i < inputs.size() ; i += 1)
         cv::resize(scaled_masks_clone[i], masks_seam[i], cv::Size(), 
@@ -214,8 +217,11 @@ void MultiMapperImpl::get_output(const std::vector<cv::UMat> & inputs, cv::UMat 
     cv::Ptr<cv::detail::Blender> blender = 
         cv::detail::Blender::createDefault(cv::detail::Blender::MULTI_BAND, true);
     // auto blender = cv::detail::Blender::createDefault(cv::detail::Blender::NO, false);
-    // TODO set band number
-    dynamic_cast<cv::detail::MultiBandBlender *>(static_cast<cv::detail::Blender *>(blender))->setNumBands(9);
+    // TODO Optimize createLaplacePyr is not available in OpenCL
+    double blend_width = sqrt(out_size.area() * 1.0f) * BLENDER_STRENGTH;
+    int blend_bands = int(ceil(log(blend_width)/log(2.)) - 1.);
+    std::cerr << "Using MultiBandBlender with band number = " << blend_bands << std::endl;
+    dynamic_cast<cv::detail::MultiBandBlender *>(blender.get())->setNumBands(blend_bands);
     blender->prepare(corners, sizes);
     for(int i = 0 ; i < inputs.size() ; i += 1)
         blender->feed(warped_imgs_uchar[i], masks_seam[i], corners[i]);
