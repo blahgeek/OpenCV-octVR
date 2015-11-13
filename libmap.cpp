@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-11-12
+* @Last Modified time: 2015-11-13
 */
 
 #include <iostream>
@@ -24,13 +24,22 @@
 
 #include <sys/time.h>
 
+using namespace vr;
+
 static int64_t gettime(void) {
     struct timeval tv;
     gettimeofday(&tv, NULL);
     return (int64_t)tv.tv_sec * 1000000 + tv.tv_usec;
 }
 
-using namespace vr;
+Timer::Timer(std::string name): t(gettime()), name(name) {}
+Timer::Timer(): Timer::Timer("") {}
+
+void Timer::tick(std::string msg) {
+    auto tn = gettime();
+    std::cerr << "[ Timer " << name << "] " << msg << ": " << (tn - t) / 1000.0 << "ms" << std::endl;
+    t = tn;
+}
 
 MultiMapper * MultiMapper::New(const std::string & to, const json & to_opts,
                                int out_width, int out_height) {
@@ -130,15 +139,8 @@ void MultiMapperImpl::add_input(const std::string & from, const json & from_opts
 
 #endif
 
-#define TIMER(S) \
-    do { \
-        auto __t = gettime(); \
-        std::cerr << S << ": " << (__t - _timer) / 1000.0 << "ms" << std::endl; \
-        _timer = __t; \
-    } while(false)
-
 void MultiMapperImpl::get_output(const std::vector<cv::UMat> & inputs, cv::UMat & output) {
-    auto _timer = gettime();
+    Timer timer("MultiMapper");
 
     // TODO set scale
     auto scale = 0.5;
@@ -158,7 +160,7 @@ void MultiMapperImpl::get_output(const std::vector<cv::UMat> & inputs, cv::UMat 
         corners.emplace_back(0, 0);
         sizes.push_back(out_size);
     }
-    TIMER("Remapping images");
+    timer.tick("Remapping images");
 
     SAVE_MAT_VEC("warped_img", warped_imgs_uchar);
     SAVE_MAT_VEC("warped_mask", masks);
@@ -169,20 +171,20 @@ void MultiMapperImpl::get_output(const std::vector<cv::UMat> & inputs, cv::UMat 
         cv::resize(warped_imgs_uchar[i], warped_imgs_uchar_scale[i], cv::Size(), scale, scale);
         cv::resize(this->masks[i], masks_scale[i], cv::Size(), scale, scale);
     }
-    TIMER("Scale");
+    timer.tick("Scale");
 
     // TODO GAIN_BLOCKS bugs?
     cv::Ptr<cv::detail::ExposureCompensator> compensator = 
         cv::detail::ExposureCompensator::createDefault(cv::detail::ExposureCompensator::GAIN);
     compensator->feed(corners, warped_imgs_uchar_scale, masks_scale);
-    TIMER("Compensator");
+    timer.tick("Compensator");
 
     // TODO Optimize this
     // GainCompensator::apply does img *= gain for every image
     // while size of image is large (output size), and only part of it is valid (mask)
     for(int i = 0 ; i < inputs.size() ; i += 1)
         compensator->apply(i, corners[i], warped_imgs_uchar[i], this->masks[i]);
-    TIMER("Compensator apply");
+    timer.tick("Compensator apply");
 
     SAVE_MAT_VEC("warped_img_compensator", warped_imgs_uchar);
     SAVE_MAT_VEC("warped_mask_compensator", masks_scale);
@@ -195,7 +197,7 @@ void MultiMapperImpl::get_output(const std::vector<cv::UMat> & inputs, cv::UMat 
     seam_finder->find(warped_imgs_uchar_scale, corners, masks_scale);
     for(int i = 0 ; i < inputs.size() ; i += 1)
         cv::resize(masks_scale[i], masks_seam[i], cv::Size(), 1.0/scale, 1.0/scale);
-    TIMER("Seam finder");
+    timer.tick("Seam finder");
     // TODO dilate mask?
 
     SAVE_MAT_VEC("warped_mask_seam", masks_seam);
@@ -214,7 +216,7 @@ void MultiMapperImpl::get_output(const std::vector<cv::UMat> & inputs, cv::UMat 
 
     cv::UMat result, result_mask;
     blender->blend(result, result_mask);
-    TIMER("Blender");
+    timer.tick("Blender");
 
     result.convertTo(output, CV_8UC3);
 }
@@ -224,9 +226,9 @@ void MultiMapperImpl::get_single_output(const cv::UMat & input, cv::UMat & outpu
     assert(output.type() == CV_8UC3 && output.size() == this->out_size);
     assert(this->in_sizes.size() > 0);
 
-    auto _timer = gettime();
+    Timer timer("MultiMapper");
 
     cv::remap(input, output, map1s[0], map2s[0], CV_INTER_LINEAR);
 
-    TIMER("Remapping single image");
+    timer.tick("Remapping single image");
 }

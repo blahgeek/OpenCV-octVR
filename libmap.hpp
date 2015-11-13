@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-11-12
+* @Last Modified time: 2015-11-13
 */
 
 #ifndef VR_LIBMAP_BASE_H
@@ -18,6 +18,9 @@
 #include <tuple>
 #include <fstream>
 #include <opencv2/core/core.hpp>
+#include <stdint.h>
+#include <iostream>
+#include <sys/time.h>
 
 namespace vr {
 
@@ -54,6 +57,17 @@ public:
     virtual void get_single_output(const cv::UMat & input, cv::UMat & output) = 0;
 
     virtual void dump(std::ofstream & f) = 0;
+};
+
+class Timer {
+protected:
+    int64_t t;
+    std::string name;
+
+public:
+    explicit Timer(std::string name);
+    Timer();
+    void tick(std::string msg);
 };
 
 }
