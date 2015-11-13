@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-11-09
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-11-12
+* @Last Modified time: 2015-11-13
 */
 
 #include <iostream>
@@ -18,6 +18,9 @@ void MultiMapperImpl::dump(std::ofstream & f) {
 
     auto W64i = [&](int64_t x) {
         f.write(reinterpret_cast<char *>(&x), sizeof(int64_t));
+    };
+    auto Wd = [&](double x) {
+        f.write(reinterpret_cast<char *>(&x), sizeof(double));
     };
 
     W64i(out_size.width);
@@ -40,7 +43,17 @@ void MultiMapperImpl::dump(std::ofstream & f) {
             f.write(map2.ptr<char>(k), out_size.width * 2); // CV_16UC1
             f.write(mask.ptr<char>(k), out_size.width); // CV_8UC1
         }
+
+        Wd(working_scales[i]);
+        W64i(scaled_masks[i].cols);
+        W64i(scaled_masks[i].rows);
+        auto scaled_mask = scaled_masks[i].getMat(cv::ACCESS_READ);
+
+        assert(scaled_mask.type() == CV_8UC1);
+        for(int k = 0 ; k < scaled_mask.rows ; k += 1)
+            f.write(scaled_mask.ptr<char>(k), scaled_mask.cols);
     }
+
 }
 
 MultiMapperImpl::MultiMapperImpl(std::ifstream & f) {
@@ -52,6 +65,11 @@ MultiMapperImpl::MultiMapperImpl(std::ifstream & f) {
     auto R64i = [&]() -> int64_t {
         int64_t _ret = 0;
         f.read(reinterpret_cast<char *>(&_ret), sizeof(int64_t));
+        return _ret;
+    };
+    auto Rd = [&]() -> double {
+        double _ret = 0;
+        f.read(reinterpret_cast<char *>(&_ret), sizeof(double));
         return _ret;
     };
 
@@ -79,5 +97,15 @@ MultiMapperImpl::MultiMapperImpl(std::ifstream & f) {
         this->map1s.push_back(map1u);
         this->map2s.push_back(map2u);
         this->masks.push_back(masku);
+
+        working_scales.push_back(Rd());
+        auto scaled_width = R64i();
+        auto scaled_height = R64i();
+        cv::Mat scaled_mask(cv::Size(scaled_width, scaled_height), CV_8UC1);
+        for(int k = 0 ; k < scaled_height ; k += 1)
+            f.read(scaled_mask.ptr<char>(k), scaled_width);
+        cv::UMat scaled_mask_u;
+        scaled_mask.copyTo(scaled_mask_u);
+        scaled_masks.push_back(scaled_mask_u);
     }
 }

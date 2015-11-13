@@ -24,6 +24,8 @@
 
 #include <sys/time.h>
 
+#define WORKING_MEGAPIX 0.1
+
 using namespace vr;
 
 static int64_t gettime(void) {
@@ -79,7 +81,8 @@ void MultiMapperImpl::add_input(const std::string & from, const json & from_opts
     // If this is constructed using dumped data file, add_input is not available
     assert(!this->output_map_points.empty());
 
-    this->in_sizes.push_back(cv::Size(in_width, in_height));
+    cv::Size in_size(in_width, in_height);
+    this->in_sizes.push_back(in_size);
     std::unique_ptr<Camera> cam = Camera::New(from, from_opts);
     if(!cam)
         throw std::string("Invalid input camera type");
@@ -116,6 +119,13 @@ void MultiMapperImpl::add_input(const std::string & from, const json & from_opts
     cv::UMat mask_u;
     mask.copyTo(mask_u);
     this->masks.push_back(mask_u);
+
+    double working_scale = std::min(1.0, sqrt(WORKING_MEGAPIX * 1e6 / in_size.area()));
+    this->working_scales.push_back(working_scale);
+
+    cv::UMat scaled_mask;
+    cv::resize(mask, scaled_mask, cv::Size(), working_scale, working_scale);
+    this->scaled_masks.push_back(scaled_mask);
 }
 
 #ifdef DEBUG_SAVE_MAT
@@ -139,8 +149,6 @@ void MultiMapperImpl::add_input(const std::string & from, const json & from_opts
 
 #endif
 
-#define WORKING_MEGAPIX 0.1
-
 void MultiMapperImpl::get_output(const std::vector<cv::UMat> & inputs, cv::UMat & output) {
     Timer timer("MultiMapper");
 
@@ -149,10 +157,6 @@ void MultiMapperImpl::get_output(const std::vector<cv::UMat> & inputs, cv::UMat 
         assert(inputs[i].size() == in_sizes[i]);
     }
     assert(output.type() == CV_8UC3 && output.size() == this->out_size);
-
-    std::vector<double> working_scales;
-    for(auto & s: this->in_sizes)
-        working_scales.push_back(std::min(1.0, sqrt(WORKING_MEGAPIX * 1e6 / s.area())));
     
     std::vector<cv::Point2i> corners;
     std::vector<cv::Size> sizes;
@@ -169,19 +173,18 @@ void MultiMapperImpl::get_output(const std::vector<cv::UMat> & inputs, cv::UMat 
     SAVE_MAT_VEC("warped_mask", masks);
 
     std::vector<cv::UMat> warped_imgs_uchar_scale(inputs.size());
-    std::vector<cv::UMat> masks_scale(inputs.size());
+    std::vector<cv::UMat> scaled_masks_clone(inputs.size());
     for(int i = 0 ; i < inputs.size() ; i += 1) {
         cv::resize(warped_imgs_uchar[i], warped_imgs_uchar_scale[i], cv::Size(), 
                    working_scales[i], working_scales[i]);
-        cv::resize(this->masks[i], masks_scale[i], cv::Size(), 
-                   working_scales[i], working_scales[i]);
+        scaled_masks[i].copyTo(scaled_masks_clone[i]);
     }
     timer.tick("Scale");
 
     // TODO GAIN_BLOCKS bugs?
     cv::Ptr<cv::detail::ExposureCompensator> compensator = 
         cv::detail::ExposureCompensator::createDefault(cv::detail::ExposureCompensator::GAIN);
-    compensator->feed(corners, warped_imgs_uchar_scale, masks_scale);
+    compensator->feed(corners, warped_imgs_uchar_scale, scaled_masks_clone);
     timer.tick("Compensator");
 
     // TODO Optimize this
@@ -199,9 +202,9 @@ void MultiMapperImpl::get_output(const std::vector<cv::UMat> & inputs, cv::UMat 
     // cv::Ptr<cv::detail::SeamFinder> seam_finder = new cv::detail::GraphCutSeamFinder(cv::detail::GraphCutSeamFinderBase::COST_COLOR);
     // cv::Ptr<cv::detail::SeamFinder> seam_finder = new cv::detail::DpSeamFinder(cv::detail::DpSeamFinder::COLOR);
     cv::Ptr<cv::detail::SeamFinder> seam_finder = new cv::detail::VoronoiSeamFinder();
-    seam_finder->find(warped_imgs_uchar_scale, corners, masks_scale);
+    seam_finder->find(warped_imgs_uchar_scale, corners, scaled_masks_clone);
     for(int i = 0 ; i < inputs.size() ; i += 1)
-        cv::resize(masks_scale[i], masks_seam[i], cv::Size(), 
+        cv::resize(scaled_masks_clone[i], masks_seam[i], cv::Size(), 
                    1.0/working_scales[i], 1.0/working_scales[i]);
     timer.tick("Seam finder");
     // TODO dilate mask?
@@ -214,17 +217,17 @@ void MultiMapperImpl::get_output(const std::vector<cv::UMat> & inputs, cv::UMat 
     // TODO set band number
     dynamic_cast<cv::detail::MultiBandBlender *>(static_cast<cv::detail::Blender *>(blender))->setNumBands(9);
     blender->prepare(corners, sizes);
-    for(int i = 0 ; i < inputs.size() ; i += 1) {
-        cv::UMat m;
-        warped_imgs_uchar[i].convertTo(m, CV_16SC3);
-        blender->feed(m, masks_seam[i], corners[i]);
-    }
+    for(int i = 0 ; i < inputs.size() ; i += 1)
+        blender->feed(warped_imgs_uchar[i], masks_seam[i], corners[i]);
+
+    timer.tick("Blender prepare");
 
     cv::UMat result, result_mask;
     blender->blend(result, result_mask);
-    timer.tick("Blender");
+    timer.tick("Blender blend");
 
     result.convertTo(output, CV_8UC3);
+    timer.tick("Convert result");
 }
 
 void MultiMapperImpl::get_single_output(const cv::UMat & input, cv::UMat & output) {

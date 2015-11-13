@@ -24,6 +24,10 @@ private:
 
     std::vector<cv::Point2d> output_map_points;
 
+private:
+    std::vector<double> working_scales;
+    std::vector<cv::UMat> scaled_masks;
+
 public:
     MultiMapperImpl(const std::string & to, const json & to_opts, 
                     int out_width, int out_height);
