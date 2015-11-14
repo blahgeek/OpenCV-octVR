@@ -185,7 +185,8 @@ void MultiMapperImpl::get_output(const std::vector<cv::UMat> & inputs, cv::UMat 
 
     if(this->compensator.empty()) {
         std::cerr << "Re-computing compensator gain" << std::endl;
-        // TODO GAIN_BLOCKS bugs?
+        // GAIN_BLOCKS split every image into multiple blocks to do exposure compensator
+        // That is slow and not good(?) for VR video
         this->compensator = cv::detail::ExposureCompensator::createDefault(cv::detail::ExposureCompensator::GAIN);
         compensator->feed(corners, warped_imgs_uchar_scale, scaled_masks_clone);
         timer.tick("Compensator");
