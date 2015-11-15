@@ -58,7 +58,7 @@ class CV_EXPORTS ExposureCompensator
 public:
     virtual ~ExposureCompensator() {}
 
-    enum { NO, GAIN, GAIN_BLOCKS };
+    enum { NO, GAIN, GAIN_BLOCKS, GAIN_COLOR };
     static Ptr<ExposureCompensator> createDefault(int type);
 
     /**
@@ -106,6 +106,17 @@ public:
 private:
     Mat_<double> gains_;
 };
+
+class CV_EXPORTS ColorGainCompensator: public GainCompensator {
+public:
+    void feed(const std::vector<Point> &corners, const std::vector<UMat> &images,
+              const std::vector<std::pair<UMat,uchar> > &masks);
+    void apply(int index, Point corner, InputOutputArray image, InputArray mask);
+
+private:
+    std::vector<std::vector<double> > color_gains;
+};
+
 
 /** @brief Exposure compensator which tries to remove exposure related artifacts by adjusting image block
 intensities, see @cite UES01 for details.

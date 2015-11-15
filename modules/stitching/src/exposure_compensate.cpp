@@ -41,6 +41,7 @@
 //M*/
 
 #include "precomp.hpp"
+#include <iostream>
 
 namespace cv {
 namespace detail {
@@ -53,6 +54,8 @@ Ptr<ExposureCompensator> ExposureCompensator::createDefault(int type)
         return makePtr<GainCompensator>();
     if (type == GAIN_BLOCKS)
         return makePtr<BlocksGainCompensator>();
+    if (type == GAIN_COLOR)
+        return makePtr<ColorGainCompensator>();
     CV_Error(Error::StsBadArg, "unsupported exposure compensation method");
     return Ptr<ExposureCompensator>();
 }
@@ -244,6 +247,53 @@ void BlocksGainCompensator::apply(int index, Point /*corner*/, InputOutputArray 
             row[x].x = saturate_cast<uchar>(row[x].x * gain_row[x]);
             row[x].y = saturate_cast<uchar>(row[x].y * gain_row[x]);
             row[x].z = saturate_cast<uchar>(row[x].z * gain_row[x]);
+        }
+    }
+}
+
+void ColorGainCompensator::feed(const std::vector<Point> &corners, const std::vector<UMat> &images,
+                                const std::vector<std::pair<UMat,uchar> > &masks) {
+    std::vector<std::vector<UMat> > color_images(3);
+    for(int i = 0 ; i < images.size() ; i += 1) {
+        CV_Assert(images[i].type() == CV_8UC3);
+
+        std::vector<UMat> channels(3);
+        cv::split(images[i], channels);
+        CV_Assert(channels.size() == 3);
+
+        cv::UMat empty_channel(images[i].size(), CV_8U, 0);
+        for(int k = 0 ; k < 3 ; k += 1) {
+            std::vector<cv::UMat> tmp(3, empty_channel);
+            tmp[k] = channels[k];
+            cv::UMat merged(images[i].size(), CV_8UC3);
+            cv::merge(tmp, merged);
+            color_images[k].push_back(merged);
+        }
+    }
+
+    for(int channel = 0 ; channel < 3 ; channel += 1) {
+        Ptr<GainCompensator> gain_compensator = makePtr<GainCompensator>();
+        gain_compensator->feed(corners, color_images[channel], masks);
+        std::vector<double> gain = gain_compensator->gains();
+        for(int n = 0 ; n < gain.size() ; n += 1)
+            std::cout << gain[n] << ", ";
+        std::cout << std::endl;
+        this->color_gains.push_back(gain);
+    }
+}
+
+void ColorGainCompensator::apply(int index, Point , InputOutputArray _image, InputArray ) {
+    CV_Assert(_image.type() == CV_8UC3);
+
+    Mat image = _image.getMat();
+    for (int y = 0; y < image.rows; ++y)
+    {
+        Point3_<uchar>* row = image.ptr<Point3_<uchar> >(y);
+        for (int x = 0; x < image.cols; ++x)
+        {
+            row[x].x = saturate_cast<uchar>(row[x].x * color_gains[0][index]);
+            row[x].y = saturate_cast<uchar>(row[x].y * color_gains[1][index]);
+            row[x].z = saturate_cast<uchar>(row[x].z * color_gains[2][index]);
         }
     }
 }
