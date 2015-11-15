@@ -205,7 +205,7 @@ void MultiMapperImpl::get_output(const std::vector<cv::UMat> & inputs, cv::UMat 
     std::vector<cv::UMat> masks_seam(inputs.size());
     // TODO GraphCut and DpSeamFinder has bugs?
     // cv::Ptr<cv::detail::SeamFinder> seam_finder = new cv::detail::GraphCutSeamFinder(cv::detail::GraphCutSeamFinderBase::COST_COLOR);
-    auto seam_finder = cv::makePtr<cv::detail::GraphCutSeamFinderGpu(cv::detail::GraphCutSeamFinderBase::COST_COLOR);
+    auto seam_finder = cv::makePtr<cv::detail::GraphCutSeamFinderGpu>(cv::detail::GraphCutSeamFinderBase::COST_COLOR);
     // cv::Ptr<cv::detail::SeamFinder> seam_finder = new cv::detail::DpSeamFinder(cv::detail::DpSeamFinder::COLOR);
     // cv::Ptr<cv::detail::SeamFinder> seam_finder = new cv::detail::VoronoiSeamFinder();
     // cv::Ptr<cv::detail::SeamFinder> seam_finder = new cv::detail::NoSeamFinder();
