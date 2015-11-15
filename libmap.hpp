@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-11-13
+* @Last Modified time: 2015-11-15
 */
 
 #ifndef VR_LIBMAP_BASE_H
@@ -17,7 +17,7 @@
 #include <string>
 #include <tuple>
 #include <fstream>
-#include <opencv2/core/core.hpp>
+#include <opencv2/core.hpp>
 #include <stdint.h>
 #include <iostream>
 #include <sys/time.h>

@@ -2,13 +2,13 @@
 * @Author: BlahGeek
 * @Date:   2015-10-20
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-11-14
+* @Last Modified time: 2015-11-15
 */
 
 #include <iostream>
-#include <opencv2/core/core.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
-#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/core.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/highgui.hpp>
 #include "./camera.hpp"
 #include "./equirectangular.hpp"
 #include "./normal.hpp"
