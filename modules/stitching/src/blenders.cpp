@@ -42,6 +42,7 @@
 
 #include "precomp.hpp"
 #include "opencl_kernels_stitching.hpp"
+#include <iostream>
 
 namespace cv {
 namespace detail {
@@ -314,8 +315,11 @@ void MultiBandBlender::feed(InputArray _img, InputArray mask, Point tl)
 
     // Create the source image Laplacian pyramid
     UMat img_with_border;
-    copyMakeBorder(_img, img_with_border, top, bottom, left, right,
-                   BORDER_REFLECT);
+    if(top == 0 && bottom == 0 && left == 0 && right == 0)
+        img_with_border = _img.getUMat();
+    else
+        copyMakeBorder(_img, img_with_border, top, bottom, left, right,
+                       BORDER_REFLECT);
     LOGLN("  Add border to the source image, time: " << ((getTickCount() - t) / getTickFrequency()) << " sec");
 #if ENABLE_LOG
     t = getTickCount();
@@ -348,7 +352,11 @@ void MultiBandBlender::feed(InputArray _img, InputArray mask, Point tl)
         add(weight_map, Scalar::all(1), weight_map, add_mask);
     }
 
-    copyMakeBorder(weight_map, weight_pyr_gauss[0], top, bottom, left, right, BORDER_CONSTANT);
+    if(top == 0 && bottom == 0 && left == 0 && right == 0)
+        weight_pyr_gauss[0] = weight_map;
+    else
+        copyMakeBorder(weight_map, weight_pyr_gauss[0], 
+                       top, bottom, left, right, BORDER_CONSTANT);
 
     for (int i = 0; i < num_bands_; ++i)
         pyrDown(weight_pyr_gauss[i], weight_pyr_gauss[i + 1]);
