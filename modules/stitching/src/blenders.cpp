@@ -44,6 +44,16 @@
 #include "opencl_kernels_stitching.hpp"
 #include <iostream>
 
+
+namespace cv { namespace cuda { namespace device {
+void vr_add_sub_and_multiply(const GpuMat & A, 
+                             const GpuMat & T, 
+                             const GpuMat & W, 
+                             GpuMat & D);
+}}}
+
+
+
 namespace cv {
 namespace detail {
 
@@ -487,23 +497,18 @@ void MultiBandGPUBlender::feed(cuda::GpuMat & img, cuda::GpuMat & mask) {
     for(int i = 0 ; i < num_bands ; i += 1)
         cuda::pyrDown(src_pyr_laplace[i], src_pyr_laplace[i+1]);
 
-    cuda::GpuMat tmp;
-    for(int i = 0 ; i < num_bands ; i += 1) {
-        cuda::pyrUp(src_pyr_laplace[i+1], tmp);
-        cuda::subtract(src_pyr_laplace[i], tmp, src_pyr_laplace[i]);
-    }
-
     std::vector<cuda::GpuMat> weight_pyr_gauss(num_bands + 1);
     mask.convertTo(weight_pyr_gauss[0], CV_32F, 1./255);
     for(int i = 0 ; i < num_bands ; i += 1)
         cuda::pyrDown(weight_pyr_gauss[i], weight_pyr_gauss[i+1]);
 
-    for(int i = 0 ; i <= num_bands ; i += 1) {
-        cuda::multiply(src_pyr_laplace[i], weight_pyr_gauss[i], tmp);
-        cuda::add(dst_pyr_laplace[i], tmp, dst_pyr_laplace[i]);
+    cuda::GpuMat tmp;
+    for(int i = 0 ; i < num_bands ; i += 1) {
+        cuda::pyrUp(src_pyr_laplace[i+1], tmp);
+        cuda::device::vr_add_sub_and_multiply(src_pyr_laplace[i], tmp, 
+                                              weight_pyr_gauss[i], dst_pyr_laplace[i]);
         cuda::add(dst_band_weights[i], weight_pyr_gauss[i], dst_band_weights[i]);
     }
-
 }
 
 void MultiBandGPUBlender::blend(cuda::GpuMat & dst) {
