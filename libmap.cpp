@@ -130,7 +130,7 @@ void MultiMapperImpl::add_input(const std::string & from, const json & from_opts
     this->working_scales.push_back(working_scale);
 
     GpuMat scaled_mask;
-    cv::cuda::resize(mask, scaled_mask, cv::Size(), working_scale, working_scale);
+    cv::cuda::resize(mask_u, scaled_mask, cv::Size(), working_scale, working_scale);
     this->scaled_masks.push_back(scaled_mask);
 }
 
@@ -215,7 +215,7 @@ void MultiMapperImpl::get_output(const std::vector<cv::Mat> & inputs, cv::Mat & 
     SAVE_MAT_VEC("warped_img_compensator", warped_imgs_uchar);
     SAVE_MAT_VEC("warped_mask_compensator", scaled_masks);
 
-    std::vector<cv::UMat> masks_seam(inputs.size());
+    std::vector<GpuMat> masks_seam(inputs.size());
     // TODO GraphCut and DpSeamFinder has bugs?
     // cv::Ptr<cv::detail::SeamFinder> seam_finder = new cv::detail::GraphCutSeamFinder(cv::detail::GraphCutSeamFinderBase::COST_COLOR);
     // auto seam_finder = cv::makePtr<cv::detail::GraphCutSeamFinderGpu>(cv::detail::GraphCutSeamFinderBase::COST_COLOR);
@@ -224,7 +224,7 @@ void MultiMapperImpl::get_output(const std::vector<cv::Mat> & inputs, cv::Mat & 
     // cv::Ptr<cv::detail::SeamFinder> seam_finder = new cv::detail::NoSeamFinder();
     // seam_finder->find(warped_imgs_uchar_scale, corners, scaled_masks_clone);
     for(int i = 0 ; i < inputs.size() ; i += 1)
-        cv::resize(scaled_masks_clone[i], masks_seam[i], out_size);
+        cv::cuda::resize(scaled_masks_clone[i], masks_seam[i], out_size);
     timer.tick("Seam finder");
     // TODO dilate mask?
 
@@ -260,7 +260,7 @@ void MultiMapperImpl::get_output(const std::vector<cv::Mat> & inputs, cv::Mat & 
     timer.tick("Convert result");
 }
 
-void MultiMapperImpl::get_single_output(const cv::UMat & input, cv::UMat & output) {
+void MultiMapperImpl::get_single_output(const cv::Mat & input, cv::Mat & output) {
     assert(input.type() == CV_8UC3);
     assert(output.type() == CV_8UC3 && output.size() == this->out_size);
     assert(this->in_sizes.size() > 0);
