@@ -493,7 +493,8 @@ void MultiBandGPUBlender::feed(cuda::GpuMat & img, cuda::GpuMat & mask) {
     CV_Assert(mask.type() == CV_8U);
 
     std::vector<cuda::GpuMat> src_pyr_laplace(num_bands + 1);
-    img.convertTo(src_pyr_laplace[0], CV_16SC3);
+    img.copyTo(src_pyr_laplace[0]);
+    //img.convertTo(src_pyr_laplace[0], CV_16SC3);
     for(int i = 0 ; i < num_bands ; i += 1)
         cuda::pyrDown(src_pyr_laplace[i], src_pyr_laplace[i+1]);
 
@@ -503,12 +504,22 @@ void MultiBandGPUBlender::feed(cuda::GpuMat & img, cuda::GpuMat & mask) {
         cuda::pyrDown(weight_pyr_gauss[i], weight_pyr_gauss[i+1]);
 
     cuda::GpuMat tmp;
-    for(int i = 0 ; i < num_bands ; i += 1) {
-        cuda::pyrUp(src_pyr_laplace[i+1], tmp);
+    for(int i = 0 ; i <= num_bands ; i += 1) {
+        if(i < num_bands)
+            cuda::pyrUp(src_pyr_laplace[i+1], tmp);
+        else {
+            tmp.create(src_pyr_laplace[i].size(), CV_8UC3);
+            tmp.setTo(Scalar::all(0));
+        }
         cuda::device::vr_add_sub_and_multiply(src_pyr_laplace[i], tmp, 
                                               weight_pyr_gauss[i], dst_pyr_laplace[i]);
         cuda::add(dst_band_weights[i], weight_pyr_gauss[i], dst_band_weights[i]);
     }
+
+    //cuda::multiply(src_pyr_laplace[num_bands], weight_pyr_gauss[num_bands], tmp);
+    //cuda::add(dst_pyr_laplace[num_bands], tmp, dst_pyr_laplace[num_bands]);
+    //cuda::add(dst_band_weights[num_bands], weight_pyr_gauss[num_bands], dst_band_weights[num_bands]);
+
 }
 
 void MultiBandGPUBlender::blend(cuda::GpuMat & dst) {

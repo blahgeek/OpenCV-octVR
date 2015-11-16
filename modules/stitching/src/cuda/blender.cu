@@ -1,10 +1,14 @@
 #if !defined CUDA_DISABLER
 
 #include "opencv2/core/cuda/common.hpp"
+#include "opencv2/cudev/ptr2d/glob.hpp"
+#include "opencv2/cudev/grid/transform.hpp"
 #include "opencv2/core/cuda/vec_traits.hpp"
 #include "opencv2/core/cuda/vec_math.hpp"
 #include "opencv2/core/cuda/saturate_cast.hpp"
 #include "opencv2/core/cuda/border_interpolate.hpp"
+
+using namespace cv::cudev;
 
 namespace cv { namespace cuda { namespace device {
 
@@ -32,7 +36,9 @@ __global__ void do_vr_add_sub_and_multiply(const GlobPtr<uchar3> a,
             sub.z = saturate_cast<short>(sub.z * w_elem);
 
             short3 * d_p = d.row(y) + x;
-            (*d_p) += sub;
+            (*d_p).x += sub.x;
+            (*d_p).y += sub.y;
+            (*d_p).z += sub.z;
         }
 }
 
@@ -49,7 +55,7 @@ __host__ void vr_add_sub_and_multiply(const GpuMat & A,
     CV_Assert(A.size() == T.size() && A.size() == W.size() && A.size() == D.size());
 
     const dim3 block(DefaultTransformPolicy::block_size_x, DefaultTransformPolicy::block_size_y);
-    const dim3 grid(divUp(A.cols, block.x), divUp(cols, block.y));
+    const dim3 grid(divUp(A.cols, block.x), divUp(A.rows, block.y));
 
     do_vr_add_sub_and_multiply<<<grid, block>>>(globPtr<uchar3>(A),
                                                 globPtr<uchar3>(T),
