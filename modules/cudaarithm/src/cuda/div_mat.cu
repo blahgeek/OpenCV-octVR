@@ -229,13 +229,13 @@ namespace
     };
 
     template <>
-    struct DivOpSpecial<ushort3> : binary_function<ushort3, float, ushort3>
+    struct DivOpSpecial<short3> : binary_function<short3, float, short3>
     {
-        __device__ __forceinline__ ushort3 operator ()(const ushort3& a, float b) const
+        __device__ __forceinline__ short3 operator ()(const short3& a, float b) const
         {
-            typedef typename VecTraits<ushort3>::elem_type elem_type;
+            typedef typename VecTraits<short3>::elem_type elem_type;
 
-            ushort3 res = VecTraits<ushort3>::all(0);
+            short3 res = VecTraits<short3>::all(0);
 
             if (b != 0)
             {
@@ -255,9 +255,9 @@ void divMat_8uc4_32f(const GpuMat& src1, const GpuMat& src2, GpuMat& dst, Stream
     gridTransformBinary(globPtr<uchar4>(src1), globPtr<float>(src2), globPtr<uchar4>(dst), DivOpSpecial<uchar4>(), stream);
 }
 
-void divMat_16uc3_32f(const GpuMat& src1, const GpuMat& src2, GpuMat& dst, Stream& stream)
+void divMat_16sc3_32f(const GpuMat& src1, const GpuMat& src2, GpuMat& dst, Stream& stream)
 {
-    gridTransformBinary(globPtr<ushort3>(src1), globPtr<float>(src2), globPtr<ushort3>(dst), DivOpSpecial<ushort3>(), stream);
+    gridTransformBinary(globPtr<short3>(src1), globPtr<float>(src2), globPtr<short3>(dst), DivOpSpecial<short3>(), stream);
 }
 
 void divMat_16sc4_32f(const GpuMat& src1, const GpuMat& src2, GpuMat& dst, Stream& stream)

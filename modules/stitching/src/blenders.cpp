@@ -471,7 +471,7 @@ MultiBandGPUBlender::MultiBandGPUBlender(Size s, int num_bands_) {
     dst_band_weights.resize(num_bands + 1);
     for(int i = 0 ; i <= num_bands ; i += 1) {
         Size new_size(final_size.width >> i, final_size.height >> i);
-        dst_pyr_laplace[i].create(new_size, CV_16UC3);
+        dst_pyr_laplace[i].create(new_size, CV_16SC3);
         dst_pyr_laplace[i].setTo(Scalar::all(0));
         dst_band_weights[i].create(new_size, CV_32F);
         dst_band_weights[i].setTo(1e-5f);
@@ -699,7 +699,7 @@ void createLaplacePyrGpu(InputArray img, int num_levels, std::vector<UMat> &pyr)
 void createLaplacePyrGpu_pure(cuda::GpuMat &img, int num_levels, std::vector<cuda::GpuMat> &pyr) {
 #if defined(HAVE_OPENCV_CUDAARITHM) && defined(HAVE_OPENCV_CUDAWARPING)
     pyr.resize(num_levels + 1);
-    img.convertTo(pyr[0], CV_16UC3);
+    img.convertTo(pyr[0], CV_16SC3);
     for(int i = 0 ; i < num_levels ; i += 1)
         cuda::pyrDown(pyr[i], pyr[i+1]);
 
