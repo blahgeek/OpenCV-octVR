@@ -118,19 +118,19 @@ void MultiMapperImpl::add_input(const std::string & from, const json & from_opts
         }
     }
 
-    cv::UMat map1_u, map2_u;
-    map1.copyTo(map1_u); map2.copyTo(map2_u);
+    GpuMat map1_u, map2_u;
+    map1_u.upload(map1); map2_u.upload(map2);
     this->map1s.push_back(map1_u);
     this->map2s.push_back(map2_u);
-    cv::UMat mask_u;
-    mask.copyTo(mask_u);
+    GpuMat mask_u;
+    mask_u.upload(mask);
     this->masks.push_back(mask_u);
 
     double working_scale = std::min(1.0, sqrt(WORKING_MEGAPIX * 1e6 / in_size.area()));
     this->working_scales.push_back(working_scale);
 
-    cv::UMat scaled_mask;
-    cv::resize(mask, scaled_mask, cv::Size(), working_scale, working_scale);
+    GpuMat scaled_mask;
+    cv::cuda::resize(mask, scaled_mask, cv::Size(), working_scale, working_scale);
     this->scaled_masks.push_back(scaled_mask);
 }
 
@@ -164,9 +164,14 @@ void MultiMapperImpl::get_output(const std::vector<cv::UMat> & inputs, cv::UMat 
     }
     assert(output.type() == CV_8UC3 && output.size() == this->out_size);
 
+    std::vector<cv::Mat> host_inputs(inputs.size());
+    for(int i = 0 ; i < inputs.size() ; i += 1)
+        inputs[i].copyTo(host_inputs[i]);
+
+    cv::cuda::Stream remap_stream;
     std::vector<cv::cuda::GpuMat> gpu_inputs(inputs.size());
     for(int i = 0 ; i < inputs.size() ; i += 1)
-        gpu_inputs[i].upload(inputs[i]);
+        gpu_inputs[i].upload(host_inputs[i]);
     timer.tick("Upload inputs to GPU");
     
     std::vector<cv::Point2i> corners;
@@ -175,11 +180,13 @@ void MultiMapperImpl::get_output(const std::vector<cv::UMat> & inputs, cv::UMat 
     std::vector<cv::cuda::GpuMat> gpu_warped_imgs(inputs.size());
     
     for(int i = 0 ; i < inputs.size() ; i += 1) {
-        cv::cuda::remap(gpu_inputs[i], gpu_warped_imgs[i], map1s[i], map2s[i], CV_INTER_LINEAR);
-        gpu_warped_imgs[i].download(warped_imgs_uchar[i]);
+        cv::cuda::remap(gpu_inputs[i], gpu_warped_imgs[i], map1s[i], map2s[i], CV_INTER_LINEAR,
+                        cv::BORDER_CONSTANT, cv::Scalar_<unsigned char>(0, 0, 0), remap_stream);
+        //gpu_warped_imgs[i].download(warped_imgs_uchar[i]);
         corners.emplace_back(0, 0);
         sizes.push_back(out_size);
     }
+    remap_stream.waitForCompletion();
     timer.tick("Remapping images");
 
     SAVE_MAT_VEC("warped_img", warped_imgs_uchar);
