@@ -5,7 +5,7 @@ include_HEADERS = libmap.hpp
 lib_LIBRARIES = libmap.a
 bin_PROGRAMS = dumper mapper
 
-LIBS = $(subst -lopencv_ts,,$(OPENCV_LIBS))
+LIBS = $(subst -lopencv_ts,,$(OPENCV_LIBS)) -lz
 
 libmap_a_SOURCES = \
 	libmap.cpp \
