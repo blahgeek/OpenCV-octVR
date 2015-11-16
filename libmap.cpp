@@ -22,6 +22,10 @@
 #include <opencv2/stitching/detail/warpers.hpp>
 #include <opencv2/stitching/warpers.hpp>
 
+#include <opencv2/core/cuda.hpp>
+#include <opencv2/cudawarping.hpp>
+#include <opencv2/cudaimgproc.hpp>
+
 #include <sys/time.h>
 
 // TODO Set by options
@@ -90,12 +94,12 @@ void MultiMapperImpl::add_input(const std::string & from, const json & from_opts
         throw std::string("Invalid input camera type");
 
     auto tmp = cam->obj_to_image(this->output_map_points);
-    cv::Mat orig_map1(out_size, CV_32FC1), orig_map2(out_size, CV_32FC1);
+    cv::Mat map1(out_size, CV_32FC1), map2(out_size, CV_32FC1);
     cv::Mat mask(out_size, CV_8U);
     for(int h = 0 ; h < out_size.height ; h += 1) {
         unsigned char * mask_row = mask.ptr(h);
-        float * map1_row = orig_map1.ptr<float>(h);
-        float * map2_row = orig_map2.ptr<float>(h);
+        float * map1_row = map1.ptr<float>(h);
+        float * map2_row = map2.ptr<float>(h);
 
         for(int w = 0 ; w < out_size.width ; w += 1) {
             auto index = w + out_size.width * h;
@@ -113,11 +117,11 @@ void MultiMapperImpl::add_input(const std::string & from, const json & from_opts
             }
         }
     }
-    cv::UMat map1(out_size, CV_16SC2), map2(out_size, CV_16UC1);
-    cv::convertMaps(orig_map1, orig_map2, map1, map2, CV_16SC2);
 
-    this->map1s.push_back(map1);
-    this->map2s.push_back(map2);
+    cv::UMat map1_u, map2_u;
+    map1.copyTo(map1_u); map2.copyTo(map2_u);
+    this->map1s.push_back(map1_u);
+    this->map2s.push_back(map2_u);
     cv::UMat mask_u;
     mask.copyTo(mask_u);
     this->masks.push_back(mask_u);
@@ -159,13 +163,20 @@ void MultiMapperImpl::get_output(const std::vector<cv::UMat> & inputs, cv::UMat 
         assert(inputs[i].size() == in_sizes[i]);
     }
     assert(output.type() == CV_8UC3 && output.size() == this->out_size);
+
+    std::vector<cv::cuda::GpuMat> gpu_inputs(inputs.size());
+    for(int i = 0 ; i < inputs.size() ; i += 1)
+        gpu_inputs[i].upload(inputs[i]);
+    timer.tick("Upload inputs to GPU");
     
     std::vector<cv::Point2i> corners;
     std::vector<cv::Size> sizes;
     std::vector<cv::UMat> warped_imgs_uchar(inputs.size());
+    std::vector<cv::cuda::GpuMat> gpu_warped_imgs(inputs.size());
     
     for(int i = 0 ; i < inputs.size() ; i += 1) {
-        cv::remap(inputs[i], warped_imgs_uchar[i], map1s[i], map2s[i], CV_INTER_LINEAR);
+        cv::cuda::remap(gpu_inputs[i], gpu_warped_imgs[i], map1s[i], map2s[i], CV_INTER_LINEAR);
+        gpu_warped_imgs[i].download(warped_imgs_uchar[i]);
         corners.emplace_back(0, 0);
         sizes.push_back(out_size);
     }

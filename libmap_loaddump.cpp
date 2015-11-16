@@ -30,8 +30,8 @@ void MultiMapperImpl::dump(std::ofstream & f) {
     for(int i = 0 ; i < in_sizes.size() ; i += 1) {
         W64i(in_sizes[i].width);
         W64i(in_sizes[i].height);
-        assert(map1s[i].type() == CV_16SC2 && map1s[i].size() == out_size);
-        assert(map2s[i].type() == CV_16UC1 && map2s[i].size() == out_size);
+        assert(map1s[i].type() == CV_32FC1 && map1s[i].size() == out_size);
+        assert(map2s[i].type() == CV_32FC1 && map2s[i].size() == out_size);
         assert(masks[i].type() == CV_8UC1 && masks[i].size() == out_size);
 
         auto map1 = map1s[i].getMat(cv::ACCESS_READ);
@@ -40,7 +40,7 @@ void MultiMapperImpl::dump(std::ofstream & f) {
 
         for(int k = 0 ; k < out_size.height ; k += 1) {
             f.write(map1.ptr<char>(k), out_size.width * 4); // CV_16SC2
-            f.write(map2.ptr<char>(k), out_size.width * 2); // CV_16UC1
+            f.write(map2.ptr<char>(k), out_size.width * 4); // CV_16UC1
             f.write(mask.ptr<char>(k), out_size.width); // CV_8UC1
         }
 
@@ -82,12 +82,12 @@ MultiMapperImpl::MultiMapperImpl(std::ifstream & f) {
         int height = R64i();
         this->in_sizes.push_back(cv::Size(width, height));
 
-        cv::Mat map1(out_size, CV_16SC2);
-        cv::Mat map2(out_size, CV_16UC1);
+        cv::Mat map1(out_size, CV_32FC1);
+        cv::Mat map2(out_size, CV_32FC1);
         cv::Mat mask(out_size, CV_8UC1);
         for(int k = 0 ; k < out_size.height ; k += 1) {
             f.read(map1.ptr<char>(k), out_size.width * 4);
-            f.read(map2.ptr<char>(k), out_size.width * 2);
+            f.read(map2.ptr<char>(k), out_size.width * 4);
             f.read(mask.ptr<char>(k), out_size.width);
         }
         cv::UMat map1u, map2u, masku;
