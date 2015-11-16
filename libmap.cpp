@@ -8,9 +8,9 @@
 #include <iostream>
 #include "./libmap_impl.hpp"
 
-#include <opencv2/core/core.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
-#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/core.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/highgui.hpp>
 #include <opencv2/stitching/detail/autocalib.hpp>
 #include <opencv2/stitching/detail/blenders.hpp>
 #include <opencv2/stitching/detail/camera.hpp>
@@ -179,6 +179,7 @@ void MultiMapperImpl::get_output(const std::vector<cv::UMat> & inputs, cv::UMat 
     for(int i = 0 ; i < inputs.size() ; i += 1) {
         cv::resize(warped_imgs_uchar[i], warped_imgs_uchar_scale[i], cv::Size(), 
                    working_scales[i], working_scales[i]);
+        // cv::erode(scaled_masks[i], scaled_masks_clone[i], cv::Mat(), cv::Point(-1, -1), 3);
         scaled_masks[i].copyTo(scaled_masks_clone[i]);
     }
     timer.tick("Scale");
@@ -211,10 +212,17 @@ void MultiMapperImpl::get_output(const std::vector<cv::UMat> & inputs, cv::UMat 
     // cv::Ptr<cv::detail::SeamFinder> seam_finder = new cv::detail::NoSeamFinder();
     seam_finder->find(warped_imgs_uchar_scale, corners, scaled_masks_clone);
     for(int i = 0 ; i < inputs.size() ; i += 1)
-        cv::resize(scaled_masks_clone[i], masks_seam[i], cv::Size(), 
-                   1.0/working_scales[i], 1.0/working_scales[i]);
+        cv::resize(scaled_masks_clone[i], masks_seam[i], out_size);
     timer.tick("Seam finder");
     // TODO dilate mask?
+
+    // Used when using NoSeamFinder
+    // for(int i = 0 ; i < inputs.size() ; i += 1) {
+    //     cv::UMat tmp;
+    //     std::cout << "size: " << masks[i].size() << masks_seam[i].size() << std::endl;
+    //     cv::bitwise_and(masks[i], masks_seam[i], tmp);
+    //     tmp.copyTo(masks_seam[i]);
+    // }
 
     SAVE_MAT_VEC("warped_mask_seam", masks_seam);
 
