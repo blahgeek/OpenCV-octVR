@@ -209,11 +209,33 @@ namespace
             return res;
         }
     };
+
+    template<>
+    struct MulOpSpecial<uchar3> : binary_function<uchar3, float, uchar3>
+    {
+        __device__ __forceinline__ uchar3 operator ()(const uchar3& a, float b) const
+        {
+            typedef typename VecTraits<uchar3>::elem_type elem_type;
+
+            uchar3 res;
+
+            res.x = saturate_cast<elem_type>(a.x * b);
+            res.y = saturate_cast<elem_type>(a.y * b);
+            res.z = saturate_cast<elem_type>(a.z * b);
+
+            return res;
+        }
+    };
 }
 
 void mulMat_8uc4_32f(const GpuMat& src1, const GpuMat& src2, GpuMat& dst, Stream& stream)
 {
     gridTransformBinary(globPtr<uchar4>(src1), globPtr<float>(src2), globPtr<uchar4>(dst), MulOpSpecial<uchar4>(), stream);
+}
+
+void mulMat_8uc3_32f(const GpuMat& src1, const GpuMat& src2, GpuMat& dst, Stream& stream)
+{
+    gridTransformBinary(globPtr<uchar3>(src1), globPtr<float>(src2), globPtr<uchar3>(dst), MulOpSpecial<uchar3>(), stream);
 }
 
 void mulMat_16sc4_32f(const GpuMat& src1, const GpuMat& src2, GpuMat& dst, Stream& stream)

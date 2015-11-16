@@ -463,7 +463,7 @@ MultiBandGPUBlender::MultiBandGPUBlender(Size s, int num_bands_) {
     this->num_bands = num_bands_;
 
     double max_len = static_cast<double>(std::max(s.width, s.height));
-    CV_Assert(num_bands >= static_cast<int>(ceil(std::log(max_len) / std::log(2.0))));
+    CV_Assert(num_bands <= static_cast<int>(ceil(std::log(max_len) / std::log(2.0))));
     CV_Assert(final_size.width % (1 << num_bands) == 0);
     CV_Assert(final_size.height % (1 << num_bands) == 0);
 
@@ -490,8 +490,6 @@ void MultiBandGPUBlender::feed(cuda::GpuMat & img, cuda::GpuMat & mask) {
     for(int i = 0 ; i < num_bands ; i += 1)
         cuda::pyrDown(weight_pyr_gauss[i], weight_pyr_gauss[i+1]);
 
-    int width_new = final_size.width;
-    int height_new = final_size.height;
     for(int i = 0 ; i <= num_bands ; i += 1) {
         cuda::GpuMat tmp;
         cuda::multiply(src_pyr_laplace[i], weight_pyr_gauss[i], tmp);
@@ -502,8 +500,9 @@ void MultiBandGPUBlender::feed(cuda::GpuMat & img, cuda::GpuMat & mask) {
 }
 
 void MultiBandGPUBlender::blend(cuda::GpuMat & dst) {
-    for(int i = 0 ; i <= blend_bands ; i += 1)
+    for(int i = 0 ; i <= num_bands ; i += 1) {
         cuda::divide(dst_pyr_laplace[i], dst_band_weights[i], dst_pyr_laplace[i]);
+    }
 
     cuda::GpuMat tmp;
     for(int i = num_bands ; i > 0 ; i --) {

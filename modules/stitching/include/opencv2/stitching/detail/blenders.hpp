@@ -163,7 +163,7 @@ void CV_EXPORTS createWeightMap(InputArray mask, float sharpness, InputOutputArr
 
 void CV_EXPORTS createLaplacePyr(InputArray img, int num_levels, std::vector<UMat>& pyr);
 void CV_EXPORTS createLaplacePyrGpu(InputArray img, int num_levels, std::vector<UMat>& pyr);
-void CV_EXPORTS createLaplacePyrGpu_pure(cuda::GpuMat & img, int num_levels, std::vector<UMat>& pyr);
+void CV_EXPORTS createLaplacePyrGpu_pure(cuda::GpuMat & img, int num_levels, std::vector<cuda::GpuMat>& pyr);
 
 // Restores source image
 void CV_EXPORTS restoreImageFromLaplacePyr(std::vector<UMat>& pyr);
