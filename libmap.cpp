@@ -25,6 +25,7 @@
 #include <opencv2/core/cuda.hpp>
 #include <opencv2/cudawarping.hpp>
 #include <opencv2/cudaimgproc.hpp>
+#include <opencv2/cudaarithm.hpp>
 
 #include <sys/time.h>
 
@@ -228,35 +229,42 @@ void MultiMapperImpl::get_output(const std::vector<cv::Mat> & inputs, cv::Mat & 
     timer.tick("Seam finder");
     // TODO dilate mask?
 
-    // Used when using NoSeamFinder
-    // for(int i = 0 ; i < inputs.size() ; i += 1) {
-    //     cv::UMat tmp;
-    //     std::cout << "size: " << masks[i].size() << masks_seam[i].size() << std::endl;
-    //     cv::bitwise_and(masks[i], masks_seam[i], tmp);
-    //     tmp.copyTo(masks_seam[i]);
-    // }
+     // Used when using NoSeamFinder
+     for(int i = 0 ; i < inputs.size() ; i += 1)
+         cv::cuda::bitwise_and(masks[i], masks_seam[i], masks_seam[i]);
 
     SAVE_MAT_VEC("warped_mask_seam", masks_seam);
 
-    cv::Ptr<cv::detail::Blender> blender = 
-        cv::detail::Blender::createDefault(cv::detail::Blender::MULTI_BAND, true);
-    // auto blender = cv::detail::Blender::createDefault(cv::detail::Blender::NO, false);
     // TODO Optimize createLaplacePyr for every image with size of output may not be good
     double blend_width = sqrt(out_size.area() * 1.0f) * BLENDER_STRENGTH;
     int blend_bands = int(ceil(log(blend_width)/log(2.)) - 1.);
     std::cerr << "Using MultiBandBlender with band number = " << blend_bands << std::endl;
-    dynamic_cast<cv::detail::MultiBandBlender *>(blender.get())->setNumBands(blend_bands);
-    blender->prepare(corners, sizes);
-    for(int i = 0 ; i < inputs.size() ; i += 1)
-        blender->feed(warped_imgs_uchar[i], masks_seam[i], corners[i]);
+    //cv::Ptr<cv::detail::Blender> blender = 
+        //cv::detail::Blender::createDefault(cv::detail::Blender::MULTI_BAND, false);
+    // auto blender = cv::detail::Blender::createDefault(cv::detail::Blender::NO, false);
+    //dynamic_cast<cv::detail::MultiBandBlender *>(blender.get())->setNumBands(blend_bands);
+    //blender->prepare(corners, sizes);
+    auto blender = cv::makePtr<cv::detail::MultiBandGPUBlender>(out_size, blend_bands);
+    for(int i = 0 ; i < inputs.size() ; i += 1) {
+        //cv::Mat tmp;
+        //warped_imgs_uchar[i].download(tmp);
+        //cv::Mat seam;
+        //masks_seam[i].download(seam);
+        //blender->feed(tmp, seam, corners[i]);
+        blender->feed(warped_imgs_uchar[i], masks_seam[i]);
+    }
 
     timer.tick("Blender prepare");
 
-    cv::UMat result, result_mask;
-    blender->blend(result, result_mask);
+    GpuMat result;
+    //cv::Mat result, result_mask;
+    blender->blend(result);
+    //blender->blend(result, result_mask);
     timer.tick("Blender blend");
 
-    result.convertTo(output, CV_8UC3);
+    assert(result.type() == CV_8UC3);
+    result.download(output);
+    //result.convertTo(output, CV_8UC3);
     timer.tick("Convert result");
 }
 
