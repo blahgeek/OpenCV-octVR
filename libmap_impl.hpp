@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-20
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-11-13
+* @Last Modified time: 2015-11-16
 */
 
 #ifndef VR_LIBMAP_IMPL_H
@@ -12,22 +12,26 @@
 #include "./libmap.hpp"
 #include <opencv2/stitching/detail/exposure_compensate.hpp>
 
+#include <opencv2/core/cuda.hpp>
+
 namespace vr {
+
+using cv::cuda::GpuMat;
 
 class MultiMapperImpl: public MultiMapper {
 private:
     cv::Size out_size;
     std::vector<cv::Size> in_sizes;
 
-    std::vector<cv::UMat> map1s;
-    std::vector<cv::UMat> map2s; // see opencv: convertMaps()
-    std::vector<cv::UMat> masks; 
+    std::vector<GpuMat> map1s; // CV_32FC1
+    std::vector<GpuMat> map2s;
+    std::vector<GpuMat> masks; 
 
     std::vector<cv::Point2d> output_map_points;
 
 private:
     std::vector<double> working_scales;
-    std::vector<cv::UMat> scaled_masks;
+    std::vector<GpuMat> scaled_masks;
 
 private:
     cv::Ptr<cv::detail::ExposureCompensator> compensator;

@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-11-09
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-11-13
+* @Last Modified time: 2015-11-16
 */
 
 #include <iostream>
@@ -34,9 +34,10 @@ void MultiMapperImpl::dump(std::ofstream & f) {
         assert(map2s[i].type() == CV_32FC1 && map2s[i].size() == out_size);
         assert(masks[i].type() == CV_8UC1 && masks[i].size() == out_size);
 
-        auto map1 = map1s[i].getMat(cv::ACCESS_READ);
-        auto map2 = map2s[i].getMat(cv::ACCESS_READ);
-        auto mask = masks[i].getMat(cv::ACCESS_READ);
+        cv::Mat map1, map2, mask;
+        map1s[i].download(map1);
+        map2s[i].download(map2);
+        masks[i].download(mask);
 
         for(int k = 0 ; k < out_size.height ; k += 1) {
             f.write(map1.ptr<char>(k), out_size.width * 4); // CV_16SC2
@@ -47,7 +48,8 @@ void MultiMapperImpl::dump(std::ofstream & f) {
         Wd(working_scales[i]);
         W64i(scaled_masks[i].cols);
         W64i(scaled_masks[i].rows);
-        auto scaled_mask = scaled_masks[i].getMat(cv::ACCESS_READ);
+        cv::Mat scaled_mask;
+        scaled_masks[i].download(scaled_mask);
 
         assert(scaled_mask.type() == CV_8UC1);
         for(int k = 0 ; k < scaled_mask.rows ; k += 1)
@@ -90,13 +92,13 @@ MultiMapperImpl::MultiMapperImpl(std::ifstream & f) {
             f.read(map2.ptr<char>(k), out_size.width * 4);
             f.read(mask.ptr<char>(k), out_size.width);
         }
-        cv::UMat map1u, map2u, masku;
-        map1.copyTo(map1u);
-        map2.copyTo(map2u);
-        mask.copyTo(masku);
-        this->map1s.push_back(map1u);
-        this->map2s.push_back(map2u);
-        this->masks.push_back(masku);
+        GpuMat map1_gpu, map2_gpu, mask_gpu;
+        map1_gpu.upload(map1);
+        map2_gpu.upload(map2);
+        mask_gpu.upload(mask);
+        this->map1s.push_back(map1_gpu);
+        this->map2s.push_back(map2_gpu);
+        this->masks.push_back(mask_gpu);
 
         working_scales.push_back(Rd());
         auto scaled_width = R64i();
@@ -104,8 +106,8 @@ MultiMapperImpl::MultiMapperImpl(std::ifstream & f) {
         cv::Mat scaled_mask(cv::Size(scaled_width, scaled_height), CV_8UC1);
         for(int k = 0 ; k < scaled_height ; k += 1)
             f.read(scaled_mask.ptr<char>(k), scaled_width);
-        cv::UMat scaled_mask_u;
-        scaled_mask.copyTo(scaled_mask_u);
+        GpuMat scaled_mask_u;
+        scaled_mask_u.upload(scaled_mask);
         scaled_masks.push_back(scaled_mask_u);
     }
 }
