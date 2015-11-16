@@ -211,13 +211,13 @@ namespace
     };
 
     template<>
-    struct MulOpSpecial<uchar3> : binary_function<uchar3, float, uchar3>
+    struct MulOpSpecial<ushort3> : binary_function<ushort3, float, ushort3>
     {
-        __device__ __forceinline__ uchar3 operator ()(const uchar3& a, float b) const
+        __device__ __forceinline__ ushort3 operator ()(const ushort3& a, float b) const
         {
-            typedef typename VecTraits<uchar3>::elem_type elem_type;
+            typedef typename VecTraits<ushort3>::elem_type elem_type;
 
-            uchar3 res;
+            ushort3 res;
 
             res.x = saturate_cast<elem_type>(a.x * b);
             res.y = saturate_cast<elem_type>(a.y * b);
@@ -233,9 +233,9 @@ void mulMat_8uc4_32f(const GpuMat& src1, const GpuMat& src2, GpuMat& dst, Stream
     gridTransformBinary(globPtr<uchar4>(src1), globPtr<float>(src2), globPtr<uchar4>(dst), MulOpSpecial<uchar4>(), stream);
 }
 
-void mulMat_8uc3_32f(const GpuMat& src1, const GpuMat& src2, GpuMat& dst, Stream& stream)
+void mulMat_16uc3_32f(const GpuMat& src1, const GpuMat& src2, GpuMat& dst, Stream& stream)
 {
-    gridTransformBinary(globPtr<uchar3>(src1), globPtr<float>(src2), globPtr<uchar3>(dst), MulOpSpecial<uchar3>(), stream);
+    gridTransformBinary(globPtr<ushort3>(src1), globPtr<float>(src2), globPtr<ushort3>(dst), MulOpSpecial<ushort3>(), stream);
 }
 
 void mulMat_16sc4_32f(const GpuMat& src1, const GpuMat& src2, GpuMat& dst, Stream& stream)
