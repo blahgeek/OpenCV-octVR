@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-11-15
+* @Last Modified time: 2015-11-16
 */
 
 #include <iostream>
@@ -140,7 +140,9 @@ void MultiMapperImpl::add_input(const std::string & from, const json & from_opts
     do { \
         char tmp[64]; \
         snprintf(tmp, 64, S "_%d.jpg", N);\
-        imwrite(tmp, MAT.getMat(cv::ACCESS_READ)); \
+        cv::Mat __local_mat;
+        MAT.download(__local_mat);
+        imwrite(tmp, __local_mat); \
     } while(false)
 
 #define SAVE_MAT_VEC(S, MATS) \
@@ -155,7 +157,7 @@ void MultiMapperImpl::add_input(const std::string & from, const json & from_opts
 
 #endif
 
-void MultiMapperImpl::get_output(const std::vector<cv::UMat> & inputs, cv::UMat & output) {
+void MultiMapperImpl::get_output(const std::vector<cv::Mat> & inputs, cv::Mat & output) {
     Timer timer("MultiMapper");
 
     for(int i = 0 ; i < inputs.size() ; i += 1) {
@@ -164,59 +166,51 @@ void MultiMapperImpl::get_output(const std::vector<cv::UMat> & inputs, cv::UMat 
     }
     assert(output.type() == CV_8UC3 && output.size() == this->out_size);
 
-    std::vector<cv::Mat> host_inputs(inputs.size());
+    std::vector<GpuMat> gpu_inputs(inputs.size());
     for(int i = 0 ; i < inputs.size() ; i += 1)
-        inputs[i].copyTo(host_inputs[i]);
-
-    cv::cuda::Stream remap_stream;
-    std::vector<cv::cuda::GpuMat> gpu_inputs(inputs.size());
-    for(int i = 0 ; i < inputs.size() ; i += 1)
-        gpu_inputs[i].upload(host_inputs[i]);
+        gpu_inputs[i].upload(inputs[i]);
     timer.tick("Upload inputs to GPU");
     
     std::vector<cv::Point2i> corners;
     std::vector<cv::Size> sizes;
-    std::vector<cv::UMat> warped_imgs_uchar(inputs.size());
-    std::vector<cv::cuda::GpuMat> gpu_warped_imgs(inputs.size());
+    std::vector<GpuMat> warped_imgs_uchar(inputs.size());
     
     for(int i = 0 ; i < inputs.size() ; i += 1) {
-        cv::cuda::remap(gpu_inputs[i], gpu_warped_imgs[i], map1s[i], map2s[i], CV_INTER_LINEAR,
-                        cv::BORDER_CONSTANT, cv::Scalar_<unsigned char>(0, 0, 0), remap_stream);
-        //gpu_warped_imgs[i].download(warped_imgs_uchar[i]);
+        cv::cuda::remap(gpu_inputs[i], warped_imgs_uchar[i], map1s[i], map2s[i], CV_INTER_LINEAR,
+                        cv::BORDER_CONSTANT, cv::Scalar_<unsigned char>(0, 0, 0) /* stream */);
         corners.emplace_back(0, 0);
         sizes.push_back(out_size);
     }
-    remap_stream.waitForCompletion();
     timer.tick("Remapping images");
 
     SAVE_MAT_VEC("warped_img", warped_imgs_uchar);
     SAVE_MAT_VEC("warped_mask", masks);
 
-    std::vector<cv::UMat> warped_imgs_uchar_scale(inputs.size());
-    std::vector<cv::UMat> scaled_masks_clone(inputs.size());
+    std::vector<GpuMat> warped_imgs_uchar_scale(inputs.size());
+    std::vector<GpuMat> scaled_masks_clone(inputs.size());
     for(int i = 0 ; i < inputs.size() ; i += 1) {
-        cv::resize(warped_imgs_uchar[i], warped_imgs_uchar_scale[i], cv::Size(), 
-                   working_scales[i], working_scales[i]);
+        cv::cuda::resize(warped_imgs_uchar[i], warped_imgs_uchar_scale[i], cv::Size(), 
+                         working_scales[i], working_scales[i]);
         // cv::erode(scaled_masks[i], scaled_masks_clone[i], cv::Mat(), cv::Point(-1, -1), 3);
         scaled_masks[i].copyTo(scaled_masks_clone[i]);
     }
     timer.tick("Scale");
 
-    if(this->compensator.empty()) {
-        std::cerr << "Re-computing compensator gain" << std::endl;
-        // GAIN_BLOCKS split every image into multiple blocks to do exposure compensator
-        // That is slow and not good(?) for VR video
-        this->compensator = cv::detail::ExposureCompensator::createDefault(cv::detail::ExposureCompensator::GAIN);
-        compensator->feed(corners, warped_imgs_uchar_scale, scaled_masks_clone);
-        timer.tick("Compensator");
-    }
+    // if(this->compensator.empty()) {
+    //     std::cerr << "Re-computing compensator gain" << std::endl;
+    //     // GAIN_BLOCKS split every image into multiple blocks to do exposure compensator
+    //     // That is slow and not good(?) for VR video
+    //     this->compensator = cv::detail::ExposureCompensator::createDefault(cv::detail::ExposureCompensator::GAIN);
+    //     compensator->feed(corners, warped_imgs_uchar_scale, scaled_masks_clone);
+    //     timer.tick("Compensator");
+    // }
 
     // TODO Optimize this
     // GainCompensator::apply does img *= gain for every image
     // while size of image is large (output size), and only part of it is valid (mask)
-    for(int i = 0 ; i < inputs.size() ; i += 1)
-        compensator->apply(i, corners[i], warped_imgs_uchar[i], this->masks[i]);
-    timer.tick("Compensator apply");
+    // for(int i = 0 ; i < inputs.size() ; i += 1)
+    //     compensator->apply(i, corners[i], warped_imgs_uchar[i], this->masks[i]);
+    // timer.tick("Compensator apply");
 
     SAVE_MAT_VEC("warped_img_compensator", warped_imgs_uchar);
     SAVE_MAT_VEC("warped_mask_compensator", scaled_masks);
@@ -224,11 +218,11 @@ void MultiMapperImpl::get_output(const std::vector<cv::UMat> & inputs, cv::UMat 
     std::vector<cv::UMat> masks_seam(inputs.size());
     // TODO GraphCut and DpSeamFinder has bugs?
     // cv::Ptr<cv::detail::SeamFinder> seam_finder = new cv::detail::GraphCutSeamFinder(cv::detail::GraphCutSeamFinderBase::COST_COLOR);
-    auto seam_finder = cv::makePtr<cv::detail::GraphCutSeamFinderGpu>(cv::detail::GraphCutSeamFinderBase::COST_COLOR);
+    // auto seam_finder = cv::makePtr<cv::detail::GraphCutSeamFinderGpu>(cv::detail::GraphCutSeamFinderBase::COST_COLOR);
     // cv::Ptr<cv::detail::SeamFinder> seam_finder = new cv::detail::DpSeamFinder(cv::detail::DpSeamFinder::COLOR);
     // cv::Ptr<cv::detail::SeamFinder> seam_finder = new cv::detail::VoronoiSeamFinder();
     // cv::Ptr<cv::detail::SeamFinder> seam_finder = new cv::detail::NoSeamFinder();
-    seam_finder->find(warped_imgs_uchar_scale, corners, scaled_masks_clone);
+    // seam_finder->find(warped_imgs_uchar_scale, corners, scaled_masks_clone);
     for(int i = 0 ; i < inputs.size() ; i += 1)
         cv::resize(scaled_masks_clone[i], masks_seam[i], out_size);
     timer.tick("Seam finder");

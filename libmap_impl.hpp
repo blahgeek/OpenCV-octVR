@@ -53,9 +53,9 @@ public:
         return in_sizes[index];
     }
 
-    void get_output(const std::vector<cv::UMat> & inputs, cv::UMat & output) override;
+    void get_output(const std::vector<cv::Mat> & inputs, cv::Mat & output) override;
 
-    void get_single_output(const cv::UMat & input, cv::UMat & output) override;
+    void get_single_output(const cv::Mat & input, cv::Mat & output) override;
 
     void reset_compensator() override {
         compensator.release();
