@@ -140,6 +140,19 @@ private:
     int weight_type_; //CV_32F or CV_16S
 };
 
+class CV_EXPORTS MultiBandGPUBlender {
+private:
+    int num_bands;
+    Size final_size;
+    std::vector<cuda::GpuMat> dst_pyr_laplace, dst_band_weights;
+
+public:
+    MultiBandGPUBlender(Size s, int num_bands_ = 5);
+
+    void feed(cuda::GpuMat & img, cuda::GpuMat & mask);
+    void blend(cuda::GpuMat & dst);
+};
+
 
 //////////////////////////////////////////////////////////////////////////////
 // Auxiliary functions
@@ -150,6 +163,7 @@ void CV_EXPORTS createWeightMap(InputArray mask, float sharpness, InputOutputArr
 
 void CV_EXPORTS createLaplacePyr(InputArray img, int num_levels, std::vector<UMat>& pyr);
 void CV_EXPORTS createLaplacePyrGpu(InputArray img, int num_levels, std::vector<UMat>& pyr);
+void CV_EXPORTS createLaplacePyrGpu_pure(cuda::GpuMat & img, int num_levels, std::vector<UMat>& pyr);
 
 // Restores source image
 void CV_EXPORTS restoreImageFromLaplacePyr(std::vector<UMat>& pyr);

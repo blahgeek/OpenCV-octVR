@@ -458,6 +458,62 @@ void MultiBandBlender::blend(InputOutputArray dst, InputOutputArray dst_mask)
 }
 
 
+MultiBandGPUBlender::MultiBandGPUBlender(Size s, int num_bands_) {
+    this->final_size = s;
+    this->num_bands = num_bands_;
+
+    double max_len = static_cast<double>(std::max(s.width, s.height));
+    CV_Assert(num_bands >= static_cast<int>(ceil(std::log(max_len) / std::log(2.0))));
+    CV_Assert(final_size.width % (1 << num_bands) == 0);
+    CV_Assert(final_size.height % (1 << num_bands) == 0);
+
+    dst_pyr_laplace.resize(num_bands + 1);
+    dst_band_weights.resize(num_bands + 1);
+    for(int i = 0 ; i <= num_bands ; i += 1) {
+        Size new_size(final_size.width >> i, final_size.height >> i);
+        dst_pyr_laplace[i].create(new_size, CV_8UC3);
+        dst_pyr_laplace[i].setTo(Scalar::all(0));
+        dst_band_weights[i].create(new_size, CV_32F);
+        dst_band_weights[i].setTo(1e-5f);
+    }
+}
+
+void MultiBandGPUBlender::feed(cuda::GpuMat & img, cuda::GpuMat & mask) {
+    CV_Assert(img.type() == CV_8UC3);
+    CV_Assert(mask.type() == CV_8U);
+
+    std::vector<cuda::GpuMat> src_pyr_laplace;
+    createLaplacePyrGpu_pure(img, num_bands, src_pyr_laplace);
+
+    std::vector<cuda::GpuMat> weight_pyr_gauss(num_bands + 1);
+    mask.convertTo(weight_pyr_gauss[0], CV_32F, 1./255);
+    for(int i = 0 ; i < num_bands ; i += 1)
+        cuda::pyrDown(weight_pyr_gauss[i], weight_pyr_gauss[i+1]);
+
+    int width_new = final_size.width;
+    int height_new = final_size.height;
+    for(int i = 0 ; i <= num_bands ; i += 1) {
+        cuda::GpuMat tmp;
+        cuda::multiply(src_pyr_laplace[i], weight_pyr_gauss[i], tmp);
+        cuda::add(dst_pyr_laplace[i], tmp, dst_pyr_laplace[i]);
+        cuda::add(dst_band_weights[i], weight_pyr_gauss[i], dst_band_weights[i]);
+    }
+
+}
+
+void MultiBandGPUBlender::blend(cuda::GpuMat & dst) {
+    for(int i = 0 ; i <= blend_bands ; i += 1)
+        cuda::divide(dst_pyr_laplace[i], dst_band_weights[i], dst_pyr_laplace[i]);
+
+    cuda::GpuMat tmp;
+    for(int i = num_bands ; i > 0 ; i --) {
+        cuda::pyrUp(dst_pyr_laplace[i], tmp);
+        cuda::add(tmp, dst_pyr_laplace[i-1], dst_pyr_laplace[i-1]);
+    }
+    dst = dst_pyr_laplace[0];
+}
+
+
 //////////////////////////////////////////////////////////////////////////////
 // Auxiliary functions
 
@@ -637,6 +693,24 @@ void createLaplacePyrGpu(InputArray img, int num_levels, std::vector<UMat> &pyr)
     (void)img;
     (void)num_levels;
     (void)pyr;
+    CV_Error(Error::StsNotImplemented, "CUDA optimization is unavailable");
+#endif
+}
+
+void createLaplacePyrGpu_pure(cuda::GpuMat &img, int num_levels, std::vector<cuda::GpuMat> &pyr) {
+#if defined(HAVE_OPENCV_CUDAARITHM) && defined(HAVE_OPENCV_CUDAWARPING)
+    pyr.resize(num_levels + 1);
+    img.copyTo(pyr[0]);
+    for(int i = 0 ; i < num_levels ; i += 1)
+        cuda::pyrDown(pyr[i], pyr[i+1]);
+
+    cuda::GpuMat tmp, subtracted;
+    for(int i = 0 ; i < num_levels ; i += 1) {
+        cuda::pyrUp(pyr[i+1], tmp);
+        cuda::subtract(pyr[i], tmp, subtracted);
+        subtracted.copyTo(pyr[i]);
+    }
+#else
     CV_Error(Error::StsNotImplemented, "CUDA optimization is unavailable");
 #endif
 }
