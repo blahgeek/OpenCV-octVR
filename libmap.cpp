@@ -138,19 +138,23 @@ void MultiMapperImpl::add_input(const std::string & from, const json & from_opts
 void MultiMapperImpl::prepare() {
     Timer timer("MultiMapper Prepare");
 
-    std::vector<cv::Mat> host_masks(masks.size());
+    std::vector<cv::UMat> host_masks(masks.size());
     for(int i = 0 ; i < masks.size() ; i += 1)
         masks[i].download(host_masks[i]);
     timer.tick("Download masks");
 
     // VoronoiSeamFinder does not care about images
     cv::Ptr<cv::detail::SeamFinder> seam_finder = new cv::detail::VoronoiSeamFinder();
-    seam_finder->find(std::vector<cv::Mat>(masks.size()), 
+    std::vector<cv::UMat> srcs;
+    for(auto & m: host_masks)
+        srcs.push_back(cv::UMat(m.size(), CV_8UC3));
+    seam_finder->find(srcs,
                       std::vector<cv::Point2i>(masks.size(), cv::Point2i(0, 0)), 
                       host_masks);
     timer.tick("Seam finder");
     // TODO dilate mask?
 
+    seam_masks.resize(masks.size());
     for(int i = 0 ; i < masks.size() ; i += 1)
         seam_masks[i].upload(host_masks[i]);
     timer.tick("Upload seam masks");

@@ -43,7 +43,7 @@ public:
 
     // call be after all add_input()
     // or constructing with data file
-    virtual void prepare();
+    virtual void prepare() = 0;
 
     virtual cv::Size get_output_size() = 0;
     virtual cv::Size get_input_size(int index) = 0;
