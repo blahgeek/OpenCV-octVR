@@ -135,6 +135,27 @@ void MultiMapperImpl::add_input(const std::string & from, const json & from_opts
     this->scaled_masks.push_back(scaled_mask);
 }
 
+void MultiMapperImpl::prepare() {
+    Timer timer("MultiMapper Prepare");
+
+    std::vector<cv::Mat> host_masks(masks.size());
+    for(int i = 0 ; i < masks.size() ; i += 1)
+        masks[i].download(host_masks[i]);
+    timer.tick("Download masks");
+
+    // VoronoiSeamFinder does not care about images
+    cv::Ptr<cv::detail::SeamFinder> seam_finder = new cv::detail::VoronoiSeamFinder();
+    seam_finder->find(std::vector<cv::Mat>(masks.size()), 
+                      std::vector<cv::Point2i>(masks.size(), cv::Point2i(0, 0)), 
+                      host_masks);
+    timer.tick("Seam finder");
+    // TODO dilate mask?
+
+    for(int i = 0 ; i < masks.size() ; i += 1)
+        seam_masks[i].upload(host_masks[i]);
+    timer.tick("Upload seam masks");
+}
+
 #ifdef DEBUG_SAVE_MAT
 
 #define SAVE_MAT(N, S, MAT) \
@@ -216,55 +237,21 @@ void MultiMapperImpl::get_output(const std::vector<cv::Mat> & inputs, cv::Mat & 
     SAVE_MAT_VEC("warped_img_compensator", warped_imgs_uchar);
     SAVE_MAT_VEC("warped_mask_compensator", scaled_masks);
 
-    std::vector<GpuMat> masks_seam(inputs.size());
-    // TODO GraphCut and DpSeamFinder has bugs?
-    // cv::Ptr<cv::detail::SeamFinder> seam_finder = new cv::detail::GraphCutSeamFinder(cv::detail::GraphCutSeamFinderBase::COST_COLOR);
-    // auto seam_finder = cv::makePtr<cv::detail::GraphCutSeamFinderGpu>(cv::detail::GraphCutSeamFinderBase::COST_COLOR);
-    // cv::Ptr<cv::detail::SeamFinder> seam_finder = new cv::detail::DpSeamFinder(cv::detail::DpSeamFinder::COLOR);
-    // cv::Ptr<cv::detail::SeamFinder> seam_finder = new cv::detail::VoronoiSeamFinder();
-    // cv::Ptr<cv::detail::SeamFinder> seam_finder = new cv::detail::NoSeamFinder();
-    // seam_finder->find(warped_imgs_uchar_scale, corners, scaled_masks_clone);
-    for(int i = 0 ; i < inputs.size() ; i += 1)
-        cv::cuda::resize(scaled_masks_clone[i], masks_seam[i], out_size);
-    timer.tick("Seam finder");
-    // TODO dilate mask?
-
-     // Used when using NoSeamFinder
-     for(int i = 0 ; i < inputs.size() ; i += 1)
-         cv::cuda::bitwise_and(masks[i], masks_seam[i], masks_seam[i]);
-
-    SAVE_MAT_VEC("warped_mask_seam", masks_seam);
-
-    // TODO Optimize createLaplacePyr for every image with size of output may not be good
     double blend_width = sqrt(out_size.area() * 1.0f) * BLENDER_STRENGTH;
     int blend_bands = int(ceil(log(blend_width)/log(2.)) - 1.);
     std::cerr << "Using MultiBandBlender with band number = " << blend_bands << std::endl;
-    //cv::Ptr<cv::detail::Blender> blender = 
-        //cv::detail::Blender::createDefault(cv::detail::Blender::MULTI_BAND, false);
-    // auto blender = cv::detail::Blender::createDefault(cv::detail::Blender::NO, false);
-    //dynamic_cast<cv::detail::MultiBandBlender *>(blender.get())->setNumBands(blend_bands);
-    //blender->prepare(corners, sizes);
     auto blender = cv::makePtr<cv::detail::MultiBandGPUBlender>(out_size, blend_bands);
-    for(int i = 0 ; i < inputs.size() ; i += 1) {
-        //cv::Mat tmp;
-        //warped_imgs_uchar[i].download(tmp);
-        //cv::Mat seam;
-        //masks_seam[i].download(seam);
-        //blender->feed(tmp, seam, corners[i]);
-        blender->feed(warped_imgs_uchar[i], masks_seam[i]);
-    }
+    for(int i = 0 ; i < inputs.size() ; i += 1)
+        blender->feed(warped_imgs_uchar[i], seam_masks[i]);
 
     timer.tick("Blender prepare");
 
     GpuMat result;
-    //cv::Mat result, result_mask;
     blender->blend(result);
-    //blender->blend(result, result_mask);
     timer.tick("Blender blend");
 
     assert(result.type() == CV_8UC3);
     result.download(output);
-    //result.convertTo(output, CV_8UC3);
     timer.tick("Convert result");
 }
 

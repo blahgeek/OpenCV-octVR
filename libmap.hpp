@@ -41,6 +41,10 @@ public:
     virtual void add_input(const std::string & from, const json & from_opts,
                            int in_width, int in_height) = 0;
 
+    // call be after all add_input()
+    // or constructing with data file
+    virtual void prepare();
+
     virtual cv::Size get_output_size() = 0;
     virtual cv::Size get_input_size(int index) = 0;
     /**

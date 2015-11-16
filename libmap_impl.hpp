@@ -35,6 +35,7 @@ private:
 
 private:
     cv::Ptr<cv::detail::ExposureCompensator> compensator;
+    std::vector<GpuMat> seam_masks;
 
 public:
     MultiMapperImpl(const std::string & to, const json & to_opts, 
@@ -52,6 +53,8 @@ public:
             return cv::Size(0, 0);
         return in_sizes[index];
     }
+
+    void prepare() override;
 
     void get_output(const std::vector<cv::Mat> & inputs, cv::Mat & output) override;
 

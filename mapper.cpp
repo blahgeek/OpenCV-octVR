@@ -32,6 +32,7 @@ int main(int argc, char const *argv[]) {
     std::ifstream map_file(map_filename);
     auto remapper = MultiMapper::New(map_file);
     assert(remapper != NULL);
+    remapper->prepare();
     auto output_size = remapper->get_output_size();
     std::cerr << "Done. Output size = " << output_size << std::endl;
 
