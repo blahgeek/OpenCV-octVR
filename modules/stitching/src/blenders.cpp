@@ -482,8 +482,16 @@ void MultiBandGPUBlender::feed(cuda::GpuMat & img, cuda::GpuMat & mask) {
     CV_Assert(img.type() == CV_8UC3);
     CV_Assert(mask.type() == CV_8U);
 
-    std::vector<cuda::GpuMat> src_pyr_laplace;
-    createLaplacePyrGpu_pure(img, num_bands, src_pyr_laplace);
+    std::vector<cuda::GpuMat> src_pyr_laplace(num_bands + 1);
+    img.convertTo(src_pyr_laplace[0], CV_16SC3);
+    for(int i = 0 ; i < num_bands ; i += 1)
+        cuda::pyrDown(src_pyr_laplace[i], src_pyr_laplace[i+1]);
+
+    cuda::GpuMat tmp;
+    for(int i = 0 ; i < num_bands ; i += 1) {
+        cuda::pyrUp(src_pyr_laplace[i+1], tmp);
+        cuda::subtract(src_pyr_laplace[i], tmp, src_pyr_laplace[i]);
+    }
 
     std::vector<cuda::GpuMat> weight_pyr_gauss(num_bands + 1);
     mask.convertTo(weight_pyr_gauss[0], CV_32F, 1./255);
@@ -491,7 +499,6 @@ void MultiBandGPUBlender::feed(cuda::GpuMat & img, cuda::GpuMat & mask) {
         cuda::pyrDown(weight_pyr_gauss[i], weight_pyr_gauss[i+1]);
 
     for(int i = 0 ; i <= num_bands ; i += 1) {
-        cuda::GpuMat tmp;
         cuda::multiply(src_pyr_laplace[i], weight_pyr_gauss[i], tmp);
         cuda::add(dst_pyr_laplace[i], tmp, dst_pyr_laplace[i]);
         cuda::add(dst_band_weights[i], weight_pyr_gauss[i], dst_band_weights[i]);
@@ -695,25 +702,6 @@ void createLaplacePyrGpu(InputArray img, int num_levels, std::vector<UMat> &pyr)
     CV_Error(Error::StsNotImplemented, "CUDA optimization is unavailable");
 #endif
 }
-
-void createLaplacePyrGpu_pure(cuda::GpuMat &img, int num_levels, std::vector<cuda::GpuMat> &pyr) {
-#if defined(HAVE_OPENCV_CUDAARITHM) && defined(HAVE_OPENCV_CUDAWARPING)
-    pyr.resize(num_levels + 1);
-    img.convertTo(pyr[0], CV_16SC3);
-    for(int i = 0 ; i < num_levels ; i += 1)
-        cuda::pyrDown(pyr[i], pyr[i+1]);
-
-    cuda::GpuMat tmp, subtracted;
-    for(int i = 0 ; i < num_levels ; i += 1) {
-        cuda::pyrUp(pyr[i+1], tmp);
-        cuda::subtract(pyr[i], tmp, subtracted);
-        subtracted.copyTo(pyr[i]);
-    }
-#else
-    CV_Error(Error::StsNotImplemented, "CUDA optimization is unavailable");
-#endif
-}
-
 
 void restoreImageFromLaplacePyr(std::vector<UMat> &pyr)
 {
