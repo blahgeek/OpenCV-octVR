@@ -157,7 +157,7 @@ void GainCompensator::feed(const std::vector<Point> &corners, const std::vector<
 
 
 void GainCompensatorGPU::feed(const std::vector<cv::cuda::GpuMat> & images,
-                              const std::vector<cu::cuda::GpuMat> & masks) {
+                              const std::vector<cv::cuda::GpuMat> & masks) {
     CV_Assert(images.size() == masks.size());
 
     std::vector<cv::cuda::GpuMat> norm_images(images.size());
@@ -171,17 +171,16 @@ void GainCompensatorGPU::feed(const std::vector<cv::cuda::GpuMat> & images,
     Mat_<int> N(num_images, num_images); N.setTo(0);
     Mat_<double> I(num_images, num_images); I.setTo(0);
 
-    GpuMat buf;
     for(int i = 0 ; i < images.size() ; i += 1) {
         for(int j = i ; j < images.size() ; j += 1) {
             cv::cuda::GpuMat intersect;
             cv::cuda::bitwise_and(masks[i], masks[j], intersect);
-            int n = cv::cuda::countNotZero(intersect);
-            Scalar Isum1 = cv::cuda::sum(norm_images[i], intersect, buf);
-            Scalar Isum2 = cv::cuda::sum(norm_images[j], intersect, buf);
+            int n = std::max(1, cv::cuda::countNonZero(intersect));
+            Scalar Isum1 = cv::cuda::sum(norm_images[i], intersect);
+            Scalar Isum2 = cv::cuda::sum(norm_images[j], intersect);
 
-            I(i, j) = Isum1.x / n;
-            I(j, i) = Isum2.x / n;
+            I(i, j) = Isum1[0] / n;
+            I(j, i) = Isum2[0] / n;
             N(i, j) = N(j, i) = n;
         }
     }
@@ -207,7 +206,9 @@ void GainCompensatorGPU::feed(const std::vector<cv::cuda::GpuMat> & images,
 }
 
 void GainCompensatorGPU::apply(int index, cv::cuda::GpuMat & image) {
-    cv::cuda::multiply(image, gains_(index, 0), image);
+    float g = gains_(index, 0);
+    Scalar_<float> scalar(g, g, g);
+    cv::cuda::multiply(image, scalar, image);
 }
 
 std::vector<double> GainCompensatorGPU::gains() const
@@ -345,9 +346,6 @@ void ColorGainCompensator::feed(const std::vector<Point> &corners, const std::ve
         Ptr<GainCompensator> gain_compensator = makePtr<GainCompensator>();
         gain_compensator->feed(corners, color_images[channel], masks);
         std::vector<double> gain = gain_compensator->gains();
-        for(int n = 0 ; n < gain.size() ; n += 1)
-            std::cout << gain[n] << ", ";
-        std::cout << std::endl;
         this->color_gains.push_back(gain);
     }
 }

@@ -442,11 +442,11 @@ namespace
 
     struct NormConverter_8u3c_to_32f: unary_function<uchar3, float> {
         __device__ __forceinline__ float operator()(typename TypeTraits<uchar3>::parameter_type src) const {
-            return sqrt(static_cast<float>(short(src.x) * short(src.x) + 
-                                           short(src.y) * short(src.y) + 
-                                           short(src.z) * short(src.z)));
+            return sqrt(static_cast<float>(int(src.x) * int(src.x) + 
+                                           int(src.y) * int(src.y) + 
+                                           int(src.z) * int(src.z)));
         }
-    }
+    };
 
     void convertToNorm_8u3c_to_32f(const GpuMat & src, const GpuMat & dst, Stream & stream) {
         typedef typename VecTraits<uchar3>::elem_type src_elem_type;
@@ -487,6 +487,11 @@ namespace
 
 void cv::cuda::GpuMat::convertTo(OutputArray _dst, int rtype, Stream& stream) const
 {
+    if(rtype == CV_32F && type() == CV_8UC3) {
+        _dst.create(size(), rtype);
+        return convertToNorm_8u3c_to_32f(*this, _dst.getGpuMat(), stream);
+    }
+
     if (rtype < 0)
         rtype = type();
     else
@@ -523,10 +528,7 @@ void cv::cuda::GpuMat::convertTo(OutputArray _dst, int rtype, Stream& stream) co
         {convertToNoScale<double, uchar>, convertToNoScale<double, schar>, convertToNoScale<double, ushort>, convertToNoScale<double, short>, convertToNoScale<double, int>, convertToNoScale<double, float>, 0}
     };
 
-    if(type() == CV_8UC3 && dst.type() == CV_32F)
-        convertToNorm_8u3c_to_32f(src, dst, stream);
-    else
-        funcs[sdepth][ddepth](reshape(1), dst.reshape(1), stream);
+    funcs[sdepth][ddepth](reshape(1), dst.reshape(1), stream);
 }
 
 void cv::cuda::GpuMat::convertTo(OutputArray _dst, int rtype, double alpha, double beta, Stream& stream) const
