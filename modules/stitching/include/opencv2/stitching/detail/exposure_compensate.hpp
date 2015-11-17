@@ -44,6 +44,7 @@
 #define __OPENCV_STITCHING_EXPOSURE_COMPENSATE_HPP__
 
 #include "opencv2/core.hpp"
+#include <opencv2/core/cuda.hpp>
 
 namespace cv {
 namespace detail {
@@ -101,6 +102,17 @@ public:
     void feed(const std::vector<Point> &corners, const std::vector<UMat> &images,
               const std::vector<std::pair<UMat,uchar> > &masks);
     void apply(int index, Point corner, InputOutputArray image, InputArray mask);
+    std::vector<double> gains() const;
+
+private:
+    Mat_<double> gains_;
+};
+
+class CV_EXPORTS GainCompensatorGPU {
+public:
+    void feed(const std::vector<cv::cuda::GpuMat> &images,
+              const std::vector<cv::cuda::GpuMat> &masks);
+    void apply(int index, cv::cuda::GpuMat & image);
     std::vector<double> gains() const;
 
 private:

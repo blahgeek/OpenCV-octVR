@@ -43,6 +43,14 @@
 #include "precomp.hpp"
 #include <iostream>
 
+namespace cv { namespace cuda { namespace device {
+void vr_gain_exposure(const GpuMat & img1, 
+                      const GpuMat & img2,
+                      const GpuMat & mask1, 
+                      const GpuMat & mask2,
+                      GpuMat & N, GpuMat & I, int i, int j);
+}}}
+
 namespace cv {
 namespace detail {
 
@@ -147,6 +155,68 @@ void GainCompensator::feed(const std::vector<Point> &corners, const std::vector<
     LOGLN("Exposure compensation, time: " << ((getTickCount() - t) / getTickFrequency()) << " sec");
 }
 
+
+void GainCompensatorGPU::feed(const std::vector<cv::cuda::GpuMat> & images,
+                              const std::vector<cu::cuda::GpuMat> & masks) {
+    CV_Assert(images.size() == masks.size());
+
+    std::vector<cv::cuda::GpuMat> norm_images(images.size());
+    for(int i = 0 ; i < images.size() ; i += 1) {
+        CV_Assert(images[i].type() == CV_8UC3);
+        images[i].convertTo(norm_images[i], CV_32F);
+    }
+
+    int num_images = images.size();
+
+    Mat_<int> N(num_images, num_images); N.setTo(0);
+    Mat_<double> I(num_images, num_images); I.setTo(0);
+
+    GpuMat buf;
+    for(int i = 0 ; i < images.size() ; i += 1) {
+        for(int j = i ; j < images.size() ; j += 1) {
+            cv::cuda::GpuMat intersect;
+            cv::cuda::bitwise_and(masks[i], masks[j], intersect);
+            int n = cv::cuda::countNotZero(intersect);
+            Scalar Isum1 = cv::cuda::sum(norm_images[i], intersect, buf);
+            Scalar Isum2 = cv::cuda::sum(norm_images[j], intersect, buf);
+
+            I(i, j) = Isum1.x / n;
+            I(j, i) = Isum2.x / n;
+            N(i, j) = N(j, i) = n;
+        }
+    }
+
+    double alpha = 0.01;
+    double beta = 100;
+
+    Mat_<double> A(num_images, num_images); A.setTo(0);
+    Mat_<double> b(num_images, 1); b.setTo(0);
+    for (int i = 0; i < num_images; ++i)
+    {
+        for (int j = 0; j < num_images; ++j)
+        {
+            b(i, 0) += beta * N(i, j);
+            A(i, i) += beta * N(i, j);
+            if (j == i) continue;
+            A(i, i) += 2 * alpha * I(i, j) * I(i, j) * N(i, j);
+            A(i, j) -= 2 * alpha * I(i, j) * I(j, i) * N(i, j);
+        }
+    }
+
+    solve(A, b, gains_);
+}
+
+void GainCompensatorGPU::apply(int index, cv::cuda::GpuMat & image) {
+    cv::cuda::multiply(image, gains_(index, 0), image);
+}
+
+std::vector<double> GainCompensatorGPU::gains() const
+{
+    std::vector<double> gains_vec(gains_.rows);
+    for (int i = 0; i < gains_.rows; ++i)
+        gains_vec[i] = gains_(i, 0);
+    return gains_vec;
+}
 
 void GainCompensator::apply(int index, Point /*corner*/, InputOutputArray image, InputArray /*mask*/)
 {

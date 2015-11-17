@@ -440,6 +440,24 @@ namespace
         gridTransformUnary_< ConvertToPolicy<scalar_type> >(globPtr<T>(src), globPtr<D>(dst), saturate_cast_func<T, D>(), stream);
     }
 
+    struct NormConverter_8u3c_to_32f: unary_function<uchar3, float> {
+        __device__ __forceinline__ float operator()(typename TypeTraits<uchar3>::parameter_type src) const {
+            return sqrt(static_cast<float>(short(src.x) * short(src.x) + 
+                                           short(src.y) * short(src.y) + 
+                                           short(src.z) * short(src.z)));
+        }
+    }
+
+    void convertToNorm_8u3c_to_32f(const GpuMat & src, const GpuMat & dst, Stream & stream) {
+        typedef typename VecTraits<uchar3>::elem_type src_elem_type;
+        typedef typename VecTraits<float>::elem_type dst_elem_type;
+        typedef typename LargerType<src_elem_type, float>::type larger_elem_type;
+        typedef typename LargerType<float, dst_elem_type>::type scalar_type;
+
+        gridTransformUnary_< ConvertToPolicy<scalar_type> >(globPtr<uchar3>(src), globPtr<float>(dst), 
+                                                            NormConverter_8u3c_to_32f(), stream);
+    }
+
     template <typename T, typename D, typename S> struct Convertor : unary_function<T, D>
     {
         S alpha;
@@ -505,7 +523,10 @@ void cv::cuda::GpuMat::convertTo(OutputArray _dst, int rtype, Stream& stream) co
         {convertToNoScale<double, uchar>, convertToNoScale<double, schar>, convertToNoScale<double, ushort>, convertToNoScale<double, short>, convertToNoScale<double, int>, convertToNoScale<double, float>, 0}
     };
 
-    funcs[sdepth][ddepth](reshape(1), dst.reshape(1), stream);
+    if(type() == CV_8UC3 && dst.type() == CV_32F)
+        convertToNorm_8u3c_to_32f(src, dst, stream);
+    else
+        funcs[sdepth][ddepth](reshape(1), dst.reshape(1), stream);
 }
 
 void cv::cuda::GpuMat::convertTo(OutputArray _dst, int rtype, double alpha, double beta, Stream& stream) const
