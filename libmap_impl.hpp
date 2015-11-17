@@ -34,7 +34,7 @@ private:
     std::vector<GpuMat> scaled_masks;
 
 private:
-    cv::Ptr<cv::detail::ExposureCompensator> compensator;
+    cv::Ptr<cv::detail::GainCompensatorGPU> compensator;
     std::vector<GpuMat> seam_masks;
 
 public:

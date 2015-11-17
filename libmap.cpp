@@ -212,31 +212,31 @@ void MultiMapperImpl::get_output(const std::vector<cv::Mat> & inputs, cv::Mat & 
     SAVE_MAT_VEC("warped_img", warped_imgs_uchar);
     SAVE_MAT_VEC("warped_mask", masks);
 
-    std::vector<GpuMat> warped_imgs_uchar_scale(inputs.size());
-    std::vector<GpuMat> scaled_masks_clone(inputs.size());
-    for(int i = 0 ; i < inputs.size() ; i += 1) {
-        cv::cuda::resize(warped_imgs_uchar[i], warped_imgs_uchar_scale[i], cv::Size(), 
-                         working_scales[i], working_scales[i]);
-        // cv::erode(scaled_masks[i], scaled_masks_clone[i], cv::Mat(), cv::Point(-1, -1), 3);
-        scaled_masks[i].copyTo(scaled_masks_clone[i]);
-    }
-    timer.tick("Scale");
+    if(this->compensator.empty()) {
+        std::cerr << "Re-computing compensator gain" << std::endl;
 
-    // if(this->compensator.empty()) {
-    //     std::cerr << "Re-computing compensator gain" << std::endl;
-    //     // GAIN_BLOCKS split every image into multiple blocks to do exposure compensator
-    //     // That is slow and not good(?) for VR video
-    //     this->compensator = cv::detail::ExposureCompensator::createDefault(cv::detail::ExposureCompensator::GAIN);
-    //     compensator->feed(corners, warped_imgs_uchar_scale, scaled_masks_clone);
-    //     timer.tick("Compensator");
-    // }
+        std::vector<GpuMat> warped_imgs_uchar_scale(inputs.size());
+        std::vector<GpuMat> scaled_masks_clone(inputs.size());
+        for(int i = 0 ; i < inputs.size() ; i += 1) {
+            cv::cuda::resize(warped_imgs_uchar[i], warped_imgs_uchar_scale[i], cv::Size(), 
+                             working_scales[i], working_scales[i]);
+            // cv::erode(scaled_masks[i], scaled_masks_clone[i], cv::Mat(), cv::Point(-1, -1), 3);
+            scaled_masks[i].copyTo(scaled_masks_clone[i]);
+        }
+        timer.tick("Scale");
+
+        this->compensator = cv::makePtr<cv::detail::GainCompensatorGPU>();
+        compensator->feed(warped_imgs_uchar_scale, scaled_masks_clone);
+        //compensator->feed(warped_imgs_uchar, masks);
+        timer.tick("Compensator");
+    }
 
     // TODO Optimize this
     // GainCompensator::apply does img *= gain for every image
     // while size of image is large (output size), and only part of it is valid (mask)
-    // for(int i = 0 ; i < inputs.size() ; i += 1)
-    //     compensator->apply(i, corners[i], warped_imgs_uchar[i], this->masks[i]);
-    // timer.tick("Compensator apply");
+    for(int i = 0 ; i < inputs.size() ; i += 1)
+        compensator->apply(i, warped_imgs_uchar[i]);
+    timer.tick("Compensator apply");
 
     SAVE_MAT_VEC("warped_img_compensator", warped_imgs_uchar);
     SAVE_MAT_VEC("warped_mask_compensator", scaled_masks);
