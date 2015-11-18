@@ -190,6 +190,9 @@ public:
     //! sets some of the GpuMat elements to s, according to the mask (Non-Blocking call)
     GpuMat& setTo(Scalar s, InputArray mask, Stream& stream);
 
+    void elementNorm(OutputArray dst, int rtype) const;
+    void elementNorm(OutputArray dst, int rtype, Stream &stream) const;
+
     //! converts GpuMat to another datatype (Blocking call)
     void convertTo(OutputArray dst, int rtype) const;
 

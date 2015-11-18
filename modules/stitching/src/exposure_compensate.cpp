@@ -163,7 +163,7 @@ void GainCompensatorGPU::feed(const std::vector<cv::cuda::GpuMat> & images,
     std::vector<cv::cuda::GpuMat> norm_images(images.size());
     for(int i = 0 ; i < images.size() ; i += 1) {
         CV_Assert(images[i].type() == CV_8UC3);
-        images[i].convertTo(norm_images[i], CV_32F);
+        images[i].elementNorm(norm_images[i], CV_32F);
     }
 
     int num_images = images.size();

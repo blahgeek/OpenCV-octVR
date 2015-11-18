@@ -177,6 +177,11 @@ GpuMat& GpuMat::setTo(Scalar s, InputArray mask)
 }
 
 inline
+void GpuMat::elementNorm(OutputArray dst, int rtype) const {
+    elementNorm(dst, rtype, Stream::Null());
+}
+
+inline
 void GpuMat::convertTo(OutputArray dst, int rtype) const
 {
     convertTo(dst, rtype, Stream::Null());
