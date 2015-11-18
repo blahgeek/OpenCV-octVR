@@ -468,6 +468,22 @@ void MultiBandBlender::blend(InputOutputArray dst, InputOutputArray dst_mask)
 }
 
 
+#if !defined HAVE_CUDA || defined(CUDA_DISABLER)
+
+MultiBandGPUBlender::MultiBandGPUBlender(Size s, int num_bands_) {
+    throw_no_cuda();
+}
+
+void MultiBandGPUBlender::feed(cuda::GpuMat &, cuda::GpuMat &) {
+    throw_no_cuda();
+}
+
+void MultiBandGPUBlender::blend(cuda::GpuMat &) {
+    throw_no_cuda();
+}
+
+#else
+
 MultiBandGPUBlender::MultiBandGPUBlender(Size s, int num_bands_) {
     this->final_size = s;
     this->num_bands = num_bands_;
@@ -516,10 +532,6 @@ void MultiBandGPUBlender::feed(cuda::GpuMat & img, cuda::GpuMat & mask) {
         cuda::add(dst_band_weights[i], weight_pyr_gauss[i], dst_band_weights[i]);
     }
 
-    //cuda::multiply(src_pyr_laplace[num_bands], weight_pyr_gauss[num_bands], tmp);
-    //cuda::add(dst_pyr_laplace[num_bands], tmp, dst_pyr_laplace[num_bands]);
-    //cuda::add(dst_band_weights[num_bands], weight_pyr_gauss[num_bands], dst_band_weights[num_bands]);
-
 }
 
 void MultiBandGPUBlender::blend(cuda::GpuMat & dst) {
@@ -534,6 +546,8 @@ void MultiBandGPUBlender::blend(cuda::GpuMat & dst) {
     }
     dst_pyr_laplace[0].convertTo(dst, CV_8UC3);
 }
+
+#endif
 
 
 //////////////////////////////////////////////////////////////////////////////
