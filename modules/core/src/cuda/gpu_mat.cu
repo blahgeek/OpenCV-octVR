@@ -442,22 +442,17 @@ namespace
 
     template <typename T, typename D>
     struct elementNormConverter: unary_function<T, D> {
-        __device__ __forceinline__ D operator()(typename TypeTraits<T>::parameter_type src) const {
-            return sqrt(saturate_cast<D>(src.x * src.x + 
-                                         src.y * src.y + 
-                                         src.z * src.z));
+        __device__ __forceinline__ D operator()(T src) const {
+            return sqrt(cudev::saturate_cast<D>(src.x * src.x + 
+                                                src.y * src.y + 
+                                                src.z * src.z));
         }
     };
 
     template <typename T, typename D>
-    void elementNorm(const GpuMat & src, const GpuMat & dst, Stream & stream) {
-        typedef typename VecTraits<T>::elem_type src_elem_type;
-        typedef typename VecTraits<D>::elem_type dst_elem_type;
-        typedef typename LargerType<src_elem_type, D>::type larger_elem_type;
-        typedef typename LargerType<D, dst_elem_type>::type scalar_type;
-
-        gridTransformUnary_< ConvertToPolicy<scalar_type> >(globPtr<T>(src), globPtr<D>(dst), 
-                                                            elementNormConverter<T, D>(), stream);
+    void doElementNorm(const GpuMat & src, const GpuMat & dst, Stream & stream) {
+        gridTransformUnary_< ConvertToPolicy<D> >(globPtr<T>(src), globPtr<D>(dst), 
+                                                  elementNormConverter<T, D>(), stream);
     }
 
     template <typename T, typename D, typename S> struct Convertor : unary_function<T, D>
@@ -490,7 +485,7 @@ namespace
 void cv::cuda::GpuMat::elementNorm(OutputArray _dst, int rtype, Stream & stream) const {
     CV_Assert(rtype == CV_32F && type() == CV_8UC3); // TODO
     _dst.create(size(), rtype);
-    elementNorm<ushort3, float>(*this, _dst.getGpuMat(), stream);
+    doElementNorm<ushort3, float>(*this, _dst.getGpuMat(), stream);
 }
 
 void cv::cuda::GpuMat::convertTo(OutputArray _dst, int rtype, Stream& stream) const
