@@ -176,11 +176,18 @@ void GainCompensatorGPU::feed(const std::vector<cv::cuda::GpuMat> & images,
     std::vector<cv::cuda::Stream> streams(intersect_count);
 
     std::vector<cv::cuda::GpuMat> count_non_zero_results(intersect_count);
-    std::vector<int32_t> count_non_zero_results_int(intersect_count);
+    std::vector<cv::cuda::HostMem> count_non_zero_results_host;
 
     std::vector<cv::cuda::GpuMat> intersects(intersect_count);
     std::vector<cv::cuda::GpuMat> sum1_results(intersect_count), sum2_results(intersect_count);
-    std::vector<Scalar> Isum1_results(intersect_count), Isum2_results(intersect_count);
+    std::vector<cv::cuda::HostMem> sum1_results_host, 
+                                   sum2_results_host;
+
+    for(int i = 0 ; i < intersect_count ; i += 1) {
+        count_non_zero_results_host.push_back(cv::cuda::HostMem(1, 1, CV_32SC1));
+        sum1_results_host.push_back(cv::cuda::HostMem(1, 1, CV_64FC1));
+        sum2_results_host.push_back(cv::cuda::HostMem(1, 1, CV_64FC1));
+    }
 
     int index = -1;
     for(int i = 0 ; i < images.size() ; i += 1) {
@@ -194,8 +201,7 @@ void GainCompensatorGPU::feed(const std::vector<cv::cuda::GpuMat> & images,
             } else
                 cv::cuda::countNonZero(masks[i], count_non_zero_results[index], streams[index]);
 
-            count_non_zero_results[index].download(cv::Mat(1, 1, CV_32SC1, 
-                        count_non_zero_results_int.data() + index), streams[index]);
+            count_non_zero_results[index].download(count_non_zero_results_host[index], streams[index]);
 
             if(i == j)
                 continue;
@@ -205,10 +211,8 @@ void GainCompensatorGPU::feed(const std::vector<cv::cuda::GpuMat> & images,
             cv::cuda::calcSum(norm_images[i], s1, intersects[index], streams[index]);
             cv::cuda::calcSum(norm_images[j], s2, intersects[index], streams[index]);
 
-            cv::Scalar & Isum1 = Isum1_results[index];
-            cv::Scalar & Isum2 = Isum2_results[index];
-            s1.download(cv::Mat(s1.size(), CV_64FC(s1.channels()), Isum1.val), streams[index]);
-            s2.download(cv::Mat(s2.size(), CV_64FC(s2.channels()), Isum2.val), streams[index]);
+            s1.download(sum1_results_host[index], streams[index]);
+            s2.download(sum2_results_host[index], streams[index]);
         }
     }
 
@@ -218,13 +222,13 @@ void GainCompensatorGPU::feed(const std::vector<cv::cuda::GpuMat> & images,
             index += 1;
             streams[index].waitForCompletion();
 
-            int n = std::max(1, count_non_zero_results_int[index]);
+            int n = std::max(1, *(int32_t*)count_non_zero_results_host[index].data);
             N(i, j) = N(j, i) = n;
             if(i == j)
                 continue;
 
-            I(i, j) = Isum1_results[index][0] / n;
-            I(j, i) = Isum2_results[index][0] / n;
+            I(i, j) = *(double *)sum1_results_host[index].data / n;
+            I(j, i) = *(double *)sum2_results_host[index].data / n;
         }
     }
 
