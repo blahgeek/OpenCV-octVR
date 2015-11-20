@@ -11,6 +11,7 @@
 #include "./camera.hpp"
 #include "./libmap.hpp"
 #include <opencv2/stitching/detail/exposure_compensate.hpp>
+#include <opencv2/stitching/detail/blenders.hpp>
 
 #include <opencv2/core/cuda.hpp>
 
@@ -36,6 +37,7 @@ private:
 private:
     cv::Ptr<cv::detail::GainCompensatorGPU> compensator;
     std::vector<GpuMat> seam_masks;
+    cv::Ptr<cv::detail::MultiBandGPUBlender> blender;
 
 public:
     MultiMapperImpl(const std::string & to, const json & to_opts, 

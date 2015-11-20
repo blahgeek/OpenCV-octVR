@@ -158,6 +158,12 @@ void MultiMapperImpl::prepare() {
     for(int i = 0 ; i < masks.size() ; i += 1)
         seam_masks[i].upload(host_masks[i]);
     timer.tick("Upload seam masks");
+
+    double blend_width = sqrt(out_size.area() * 1.0f) * BLENDER_STRENGTH;
+    int blend_bands = int(ceil(log(blend_width)/log(2.)) - 1.);
+    std::cerr << "Using MultiBandBlender with band number = " << blend_bands << std::endl;
+    blender = cv::makePtr<cv::detail::MultiBandGPUBlender>(seam_masks, blend_bands);
+    timer.tick("Blender initialize");
 }
 
 #ifdef DEBUG_SAVE_MAT
@@ -241,17 +247,8 @@ void MultiMapperImpl::get_output(const std::vector<cv::Mat> & inputs, cv::Mat & 
     SAVE_MAT_VEC("warped_img_compensator", warped_imgs_uchar);
     SAVE_MAT_VEC("warped_mask_compensator", scaled_masks);
 
-    double blend_width = sqrt(out_size.area() * 1.0f) * BLENDER_STRENGTH;
-    int blend_bands = int(ceil(log(blend_width)/log(2.)) - 1.);
-    std::cerr << "Using MultiBandBlender with band number = " << blend_bands << std::endl;
-    auto blender = cv::makePtr<cv::detail::MultiBandGPUBlender>(out_size, blend_bands);
-    for(int i = 0 ; i < inputs.size() ; i += 1)
-        blender->feed(warped_imgs_uchar[i], seam_masks[i]);
-
-    timer.tick("Blender prepare");
-
     GpuMat result;
-    blender->blend(result);
+    blender->blend(warped_imgs_uchar, result);
     timer.tick("Blender blend");
 
     assert(result.type() == CV_8UC3);
