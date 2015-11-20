@@ -143,14 +143,15 @@ private:
 class CV_EXPORTS MultiBandGPUBlender {
 private:
     int num_bands;
+    int num_images;
     Size final_size;
     std::vector<cuda::GpuMat> dst_pyr_laplace, dst_band_weights;
 
-public:
-    MultiBandGPUBlender(Size s, int num_bands_ = 5);
+    std::vector<std::vector<cuda::GpuMat> > weight_pyr_gauss_lists;
 
-    void feed(cuda::GpuMat & img, cuda::GpuMat & mask);
-    void blend(cuda::GpuMat & dst);
+public:
+    MultiBandGPUBlender(const std::vector<cuda::GpuMat> & masks, int num_bands_=5);
+    void blend(std::vector<cuda::GpuMat> & imgs, cuda::GpuMat & dst);
 };
 
 
