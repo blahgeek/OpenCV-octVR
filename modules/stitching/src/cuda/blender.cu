@@ -27,13 +27,9 @@ __global__ void do_vr_add_sub_and_multiply(const GlobPtr<uchar3> a,
             uchar3 t_elem = t.row(y)[x];
             float w_elem = w.row(y)[x];
 
-            sub.x = static_cast<short>(a_elem.x) - static_cast<short>(t_elem.x);
-            sub.y = static_cast<short>(a_elem.y) - static_cast<short>(t_elem.y);
-            sub.z = static_cast<short>(a_elem.z) - static_cast<short>(t_elem.z);
-
-            sub.x = saturate_cast<short>(sub.x * w_elem);
-            sub.y = saturate_cast<short>(sub.y * w_elem);
-            sub.z = saturate_cast<short>(sub.z * w_elem);
+            sub.x = (a_elem.x - t_elem.x) * w_elem;
+            sub.y = (a_elem.y - t_elem.y) * w_elem;
+            sub.z = (a_elem.z - t_elem.z) * w_elem;
 
             short3 * d_p = d.row(y) + x;
             (*d_p).x += sub.x;
