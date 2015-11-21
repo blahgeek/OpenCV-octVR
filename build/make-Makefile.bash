@@ -9,4 +9,5 @@ cmake \
     -DBUILD_SHARED_LIBS=OFF \
     -DCUDA_ARCH_BIN="5.2" \
     -DCUDA_ARCH_PTX="5.2" \
+    -DWITH_OPENCL=OFF \
     ..
