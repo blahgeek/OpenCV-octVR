@@ -51,7 +51,7 @@ public:
      * Generate output image
      * @param  inputs Input images, in BGR (CV_8UC3)
      */
-    virtual void get_output(const std::vector<cv::Mat> & inputs, cv::Mat & output) = 0;
+    virtual void get_output(const std::vector<cv::cuda::HostMem> & inputs, cv::Mat & output) = 0;
 
     /**
      * Generate single output image, call this if and if only there's only one input

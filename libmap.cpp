@@ -189,7 +189,7 @@ void MultiMapperImpl::prepare() {
 
 #endif
 
-void MultiMapperImpl::get_output(const std::vector<cv::Mat> & inputs, cv::Mat & output) {
+void MultiMapperImpl::get_output(const std::vector<cv::cuda::HostMem> & inputs, cv::Mat & output) {
     Timer timer("MultiMapper");
 
     for(int i = 0 ; i < inputs.size() ; i += 1) {
@@ -198,22 +198,28 @@ void MultiMapperImpl::get_output(const std::vector<cv::Mat> & inputs, cv::Mat & 
     }
     assert(output.type() == CV_8UC3 && output.size() == this->out_size);
 
+    std::vector<cv::cuda::Stream> streams(inputs.size());
+
     std::vector<GpuMat> gpu_inputs(inputs.size());
-    for(int i = 0 ; i < inputs.size() ; i += 1)
-        gpu_inputs[i].upload(inputs[i]);
-    timer.tick("Upload inputs to GPU");
+    //for(int i = 0 ; i < inputs.size() ; i += 1)
+        //gpu_inputs[i].upload(inputs[i]);
+    //timer.tick("Upload inputs to GPU");
     
     std::vector<cv::Point2i> corners;
     std::vector<cv::Size> sizes;
     std::vector<GpuMat> warped_imgs_uchar(inputs.size());
     
     for(int i = 0 ; i < inputs.size() ; i += 1) {
+        gpu_inputs[i].upload(inputs[i], streams[i]);
         cv::cuda::remap(gpu_inputs[i], warped_imgs_uchar[i], map1s[i], map2s[i], CV_INTER_LINEAR,
-                        cv::BORDER_CONSTANT, cv::Scalar_<unsigned char>(0, 0, 0) /* stream */);
+                        cv::BORDER_CONSTANT, cv::Scalar_<unsigned char>(0, 0, 0), streams[i]);
         corners.emplace_back(0, 0);
         sizes.push_back(out_size);
     }
-    timer.tick("Remapping images");
+
+    for(auto & s: streams)
+        s.waitForCompletion();
+    timer.tick("Uploading and remapping images");
 
     SAVE_MAT_VEC("warped_img", warped_imgs_uchar);
     SAVE_MAT_VEC("warped_mask", masks);

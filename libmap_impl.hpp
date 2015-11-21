@@ -58,7 +58,7 @@ public:
 
     void prepare() override;
 
-    void get_output(const std::vector<cv::Mat> & inputs, cv::Mat & output) override;
+    void get_output(const std::vector<cv::cuda::HostMem> & inputs, cv::Mat & output) override;
 
     void get_single_output(const cv::Mat & input, cv::Mat & output) override;
 
