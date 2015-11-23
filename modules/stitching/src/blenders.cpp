@@ -537,7 +537,7 @@ void MultiBandGPUBlender::blend(std::vector<cuda::GpuMat> & imgs, cuda::GpuMat &
         for(int i = 0 ; i < num_bands ; i += 1)
             cuda::pyrDown(src_pyr_laplace[i], src_pyr_laplace[i+1]);
 
-        std::vector<cuda::GpuMat> & weight_pyr_gauss = weight_pyr_gauss_lists[img_n];
+        std::vector<cuda::GpuMat> & weight_pyr_gauss = weight_pyr_gauss_lists[n];
         for(int i = 0 ; i <= num_bands ; i += 1) {
             if(i < num_bands)
                 cuda::pyrUp(src_pyr_laplace[i+1], tmp);
