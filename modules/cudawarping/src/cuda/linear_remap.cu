@@ -40,23 +40,27 @@ namespace cv { namespace cuda { namespace device
             { \
                 typedef type elem_type; \
                 typedef float index_type; \
+                int xoff, yoff; \
+                tex_linear_remap_ ## type ## _reader(int xoff_, int yoff_): xoff(xoff_), yoff(yoff_) {} \
                 typedef typename TypeVec<float, VecTraits<type>::cn>::vec_type return_type; \
                 __device__ __forceinline__ elem_type operator ()(index_type y, index_type x) const \
                 { \
-                    return_type ret = tex2D(tex_linear_remap_ ## type , x, y); \
+                    return_type ret = tex2D(tex_linear_remap_ ## type , x + xoff, y + yoff); \
                     ret *= numeric_limits<VecTraits<elem_type>::elem_type>::max(); \
                     return saturate_cast<elem_type>(ret); \
                 } \
             }; \
             template <> struct LinearRemapDispatcher< type > \
             { \
-                static void call(PtrStepSz< type > src, PtrStepSzf mapx, PtrStepSzf mapy, \
+                static void call(PtrStepSz< type > src, PtrStepSz< type > srcWhole, \
+                                 int xoff, int yoff, \
+                    PtrStepSzf mapx, PtrStepSzf mapy, \
                     PtrStepSz< type > dst, cudaStream_t stream) \
                 { \
                     dim3 block(32, 8); \
                     dim3 grid(divUp(dst.cols, block.x), divUp(dst.rows, block.y)); \
-                    bindTexture(&tex_linear_remap_ ## type , src); \
-                    tex_linear_remap_ ## type ##_reader texSrc; \
+                    bindTexture(&tex_linear_remap_ ## type , srcWhole); \
+                    tex_linear_remap_ ## type ##_reader texSrc(xoff, yoff); \
                     linear_remap<<<grid, block, 0, stream>>>(texSrc, mapx, mapy, dst); \
                     cudaSafeCall( cudaGetLastError() ); \
                 } \
@@ -88,11 +92,15 @@ namespace cv { namespace cuda { namespace device
 
         #undef OPENCV_CUDA_IMPLEMENT_REMAP_TEX
 
-        template <typename T> void linear_remap_gpu(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap,
+        template <typename T> void linear_remap_gpu(PtrStepSzb src, 
+            PtrStepSzb srcWhole, int xoff, int yoff,
+            PtrStepSzf xmap, PtrStepSzf ymap,
             PtrStepSzb dst, cudaStream_t stream)
         {
             CV_Assert(stream != 0);
             LinearRemapDispatcher<T>::call(static_cast<PtrStepSz<T> > (src),
+                                           static_cast<PtrStepSz<T> > (srcWhole),
+                                           xoff, yoff,
                                            xmap, ymap, 
                                            static_cast<PtrStepSz<T> > (dst),
                                            stream);

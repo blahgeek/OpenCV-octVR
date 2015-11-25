@@ -136,9 +136,10 @@ void cv::cuda::linear_remap(InputArray _src, OutputArray _dst, InputArray _xmap,
     Size wholeSize;
     Point ofs;
     src.locateROI(wholeSize, ofs);
-    CV_Assert(wholeSize == src.size());
+    // CV_Assert(wholeSize == src.size());
 
-    func(src, xmap, ymap, dst, StreamAccessor::getStream(stream));
+    func(src, PtrStepSzb(wholeSize.height, wholeSize.width, src.datastart, src.step),
+         ofs.x, ofs.y, xmap, ymap, dst, StreamAccessor::getStream(stream));
 }
 
 #endif // HAVE_CUDA
