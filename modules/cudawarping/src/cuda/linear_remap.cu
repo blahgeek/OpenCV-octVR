@@ -106,35 +106,35 @@ namespace cv { namespace cuda { namespace device
                                            stream);
         }
 
-        template void linear_remap_gpu<uchar >(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
-        //template void linear_remap_gpu<uchar2>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
-        /*template void linear_remap_gpu<uchar3>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);*/
-        /*template void linear_remap_gpu<uchar4>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);*/
+        template void linear_remap_gpu<uchar >(PtrStepSzb src, PtrStepSzb srcWhole, int offx, int offy, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
+        //template void linear_remap_gpu<uchar2>(PtrStepSzb src, PtrStepSzb srcWhole, int offx, int offy, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
+        /*template void linear_remap_gpu<uchar3>(PtrStepSzb src, PtrStepSzb srcWhole, int offx, int offy, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);*/
+        /*template void linear_remap_gpu<uchar4>(PtrStepSzb src, PtrStepSzb srcWhole, int offx, int offy, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);*/
 
-        //template void linear_remap_gpu<schar>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
-        //template void linear_remap_gpu<char2>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
-        //template void linear_remap_gpu<char3>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
-        //template void linear_remap_gpu<char4>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
+        //template void linear_remap_gpu<schar>(PtrStepSzb src, PtrStepSzb srcWhole, int offx, int offy, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
+        //template void linear_remap_gpu<char2>(PtrStepSzb src, PtrStepSzb srcWhole, int offx, int offy, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
+        //template void linear_remap_gpu<char3>(PtrStepSzb src, PtrStepSzb srcWhole, int offx, int offy, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
+        //template void linear_remap_gpu<char4>(PtrStepSzb src, PtrStepSzb srcWhole, int offx, int offy, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
 
-        template void linear_remap_gpu<ushort >(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
-        //template void linear_remap_gpu<ushort2>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
-        /*template void linear_remap_gpu<ushort3>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);*/
-        /*template void linear_remap_gpu<ushort4>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);*/
+        template void linear_remap_gpu<ushort >(PtrStepSzb src, PtrStepSzb srcWhole, int offx, int offy, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
+        //template void linear_remap_gpu<ushort2>(PtrStepSzb src, PtrStepSzb srcWhole, int offx, int offy, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
+        /*template void linear_remap_gpu<ushort3>(PtrStepSzb src, PtrStepSzb srcWhole, int offx, int offy, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);*/
+        /*template void linear_remap_gpu<ushort4>(PtrStepSzb src, PtrStepSzb srcWhole, int offx, int offy, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);*/
 
-        template void linear_remap_gpu<short >(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
-        //template void linear_remap_gpu<short2>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
-        /*template void linear_remap_gpu<short3>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);*/
-        /*template void linear_remap_gpu<short4>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);*/
+        template void linear_remap_gpu<short >(PtrStepSzb src, PtrStepSzb srcWhole, int offx, int offy, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
+        //template void linear_remap_gpu<short2>(PtrStepSzb src, PtrStepSzb srcWhole, int offx, int offy, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
+        /*template void linear_remap_gpu<short3>(PtrStepSzb src, PtrStepSzb srcWhole, int offx, int offy, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);*/
+        /*template void linear_remap_gpu<short4>(PtrStepSzb src, PtrStepSzb srcWhole, int offx, int offy, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);*/
 
-        //template void linear_remap_gpu<int >(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
-        //template void linear_remap_gpu<int2>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
-        //template void linear_remap_gpu<int3>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
-        //template void linear_remap_gpu<int4>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
+        //template void linear_remap_gpu<int >(PtrStepSzb src, PtrStepSzb srcWhole, int offx, int offy, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
+        //template void linear_remap_gpu<int2>(PtrStepSzb src, PtrStepSzb srcWhole, int offx, int offy, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
+        //template void linear_remap_gpu<int3>(PtrStepSzb src, PtrStepSzb srcWhole, int offx, int offy, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
+        //template void linear_remap_gpu<int4>(PtrStepSzb src, PtrStepSzb srcWhole, int offx, int offy, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
 
-        /*template void linear_remap_gpu<float >(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);*/
-        //template void linear_remap_gpu<float2>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
-        /*template void linear_remap_gpu<float3>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);*/
-        /*template void linear_remap_gpu<float4>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);*/
+        /*template void linear_remap_gpu<float >(PtrStepSzb src, PtrStepSzb srcWhole, int offx, int offy, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);*/
+        //template void linear_remap_gpu<float2>(PtrStepSzb src, PtrStepSzb srcWhole, int offx, int offy, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
+        /*template void linear_remap_gpu<float3>(PtrStepSzb src, PtrStepSzb srcWhole, int offx, int offy, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);*/
+        /*template void linear_remap_gpu<float4>(PtrStepSzb src, PtrStepSzb srcWhole, int offx, int offy, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);*/
     } // namespace imgproc
 }}} // namespace cv { namespace cuda { namespace cudev
 
