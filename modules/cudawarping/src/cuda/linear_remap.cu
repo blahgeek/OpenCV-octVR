@@ -5,6 +5,7 @@
 #include "opencv2/core/cuda/common.hpp"
 #include "opencv2/core/cuda/border_interpolate.hpp"
 #include "opencv2/core/cuda/vec_traits.hpp"
+#include "opencv2/core/cuda/limits.hpp"
 #include "opencv2/core/cuda/vec_math.hpp"
 #include "opencv2/core/cuda/saturate_cast.hpp"
 #include "opencv2/core/cuda/filters.hpp"
@@ -32,11 +33,11 @@ namespace cv { namespace cuda { namespace device
 
         template <typename T> struct LinearRemapDispatcher {
             static void call(PtrStepSz<T> src, PtrStepSzf mapx, PtrStepSzf mapy,
-                             PtrStepSz<T> dst, cudaStream_t stream);
+                             PtrStepSz<T> dst, cudaStream_t stream) {}
         };
 
         #define OPENCV_CUDA_IMPLEMENT_REMAP_TEX(type) \
-            texture< type , cudaTextureType2D, cudaReadModeNormalizedFloat> 
+            texture< type , cudaTextureType2D, cudaReadModeNormalizedFloat> \
                 tex_linear_remap_ ## type ## (0, cudaFilterModeLinear, cudaAddressModeClamp); \
             struct tex_linear_remap_ ## type ## _reader \
             { \
@@ -50,7 +51,7 @@ namespace cv { namespace cuda { namespace device
                     return saturate_cast<elem_type>(ret); \
                 } \
             }; \
-            template <> struct LinearRemapDispatcher<type> \
+            template <> struct LinearRemapDispatcher< type > \
             { \
                 static void call(PtrStepSz< type > src, PtrStepSzf mapx, PtrStepSzf mapy, \
                     PtrStepSz< type > dst, cudaStream_t stream) \
@@ -58,7 +59,7 @@ namespace cv { namespace cuda { namespace device
                     dim3 block(32, 8); \
                     dim3 grid(divUp(dst.cols, block.x), divUp(dst.rows, block.y)); \
                     bindTexture(&tex_linear_remap_ ## type , src); \
-                    tex_remap_ ## type ##_reader texSrc(); \
+                    tex_linear_remap_ ## type ##_reader texSrc(); \
                     linear_remap<<<grid, block, 0, stream>>>(texSrc, mapx, mapy, dst); \
                     cudaSafeCall( cudaGetLastError() ); \
                 } \
@@ -94,10 +95,10 @@ namespace cv { namespace cuda { namespace device
             PtrStepSzb dst, cudaStream_t stream)
         {
             CV_Assert(stream != 0);
-            LinearRemapDispatcher(static_cast<PtrStepSz<T> > (src),
-                                  xmap, ymap, 
-                                  static_cast<PtrStepSz<T> > (dst),
-                                  stream);
+            LinearRemapDispatcher<T>::call(static_cast<PtrStepSz<T> > (src),
+                                           xmap, ymap, 
+                                           static_cast<PtrStepSz<T> > (dst),
+                                           stream);
         }
 
         template void linear_remap_gpu<uchar >(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
