@@ -56,7 +56,9 @@ namespace cv { namespace cuda { namespace device
         void remap_gpu(PtrStepSzb src, PtrStepSzb srcWhole, int xoff, int yoff, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst,
                        int interpolation, int borderMode, const float* borderValue, cudaStream_t stream, bool cc20);
         template <typename T>
-        void linear_remap_gpu(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, 
+        void linear_remap_gpu(PtrStepSzb src, PtrStepSzb srcWhole,
+                              int xoff, int yoff,
+                              PtrStepSzf xmap, PtrStepSzf ymap, 
                               PtrStepSzb dst, cudaStream_t stream);
     }
 }}}
