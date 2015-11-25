@@ -108,7 +108,9 @@ void cv::cuda::linear_remap(InputArray _src, OutputArray _dst, InputArray _xmap,
 {
     using namespace cv::cuda::device::imgproc;
 
-    typedef void (*func_t)(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
+    typedef void (*func_t)(PtrStepSzb src, PtrStepSzb srcWhole,
+                           int offx, int offy, 
+                           PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
     static const func_t funcs[6][4] =
     {
         {linear_remap_gpu<uchar>, 0 /*linear_remap_gpu<uchar2>*/ , 0/* linear_remap_gpu<uchar3> */, 0 /*linear_remap_gpu<uchar4>   */  },
