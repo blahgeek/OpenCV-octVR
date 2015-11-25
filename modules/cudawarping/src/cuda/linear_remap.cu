@@ -44,10 +44,7 @@ namespace cv { namespace cuda { namespace device
                 __device__ __forceinline__ elem_type operator ()(index_type y, index_type x) const \
                 { \
                     return_type ret = tex2D(tex_linear_remap_ ## type , x, y); \
-                    ret.x *= numeric_limits<VecTraits<elem_type>::elem_type>::max(); \
-                    ret.y *= numeric_limits<VecTraits<elem_type>::elem_type>::max(); \
-                    ret.z *= numeric_limits<VecTraits<elem_type>::elem_type>::max(); \
-                    ret.w *= numeric_limits<VecTraits<elem_type>::elem_type>::max(); \
+                    ret *= numeric_limits<VecTraits<elem_type>::elem_type>::max(); \
                     return saturate_cast<elem_type>(ret); \
                 } \
             }; \
@@ -65,21 +62,21 @@ namespace cv { namespace cuda { namespace device
                 } \
             };
 
-        /*OPENCV_CUDA_IMPLEMENT_REMAP_TEX(uchar)*/
+        OPENCV_CUDA_IMPLEMENT_REMAP_TEX(uchar)
         //OPENCV_CUDA_IMPLEMENT_REMAP_TEX(uchar2)
-        OPENCV_CUDA_IMPLEMENT_REMAP_TEX(uchar4)
+        /*OPENCV_CUDA_IMPLEMENT_REMAP_TEX(uchar4)*/
 
         //OPENCV_CUDA_IMPLEMENT_REMAP_TEX(schar)
         //OPENCV_CUDA_IMPLEMENT_REMAP_TEX(char2)
         //OPENCV_CUDA_IMPLEMENT_REMAP_TEX(char4)
 
-        /*OPENCV_CUDA_IMPLEMENT_REMAP_TEX(ushort)*/
+        OPENCV_CUDA_IMPLEMENT_REMAP_TEX(ushort)
         //OPENCV_CUDA_IMPLEMENT_REMAP_TEX(ushort2)
-        OPENCV_CUDA_IMPLEMENT_REMAP_TEX(ushort4)
+        /*OPENCV_CUDA_IMPLEMENT_REMAP_TEX(ushort4)*/
 
-        /*OPENCV_CUDA_IMPLEMENT_REMAP_TEX(short)*/
+        OPENCV_CUDA_IMPLEMENT_REMAP_TEX(short)
         //OPENCV_CUDA_IMPLEMENT_REMAP_TEX(short2)
-        OPENCV_CUDA_IMPLEMENT_REMAP_TEX(short4)
+        /*OPENCV_CUDA_IMPLEMENT_REMAP_TEX(short4)*/
 
         //OPENCV_CUDA_IMPLEMENT_REMAP_TEX(int)
         //OPENCV_CUDA_IMPLEMENT_REMAP_TEX(int2)
@@ -101,25 +98,25 @@ namespace cv { namespace cuda { namespace device
                                            stream);
         }
 
-        /*template void linear_remap_gpu<uchar >(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);*/
+        template void linear_remap_gpu<uchar >(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
         //template void linear_remap_gpu<uchar2>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
         /*template void linear_remap_gpu<uchar3>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);*/
-        template void linear_remap_gpu<uchar4>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
+        /*template void linear_remap_gpu<uchar4>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);*/
 
         //template void linear_remap_gpu<schar>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
         //template void linear_remap_gpu<char2>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
         //template void linear_remap_gpu<char3>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
         //template void linear_remap_gpu<char4>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
 
-        /*template void linear_remap_gpu<ushort >(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);*/
+        template void linear_remap_gpu<ushort >(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
         //template void linear_remap_gpu<ushort2>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
         /*template void linear_remap_gpu<ushort3>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);*/
-        template void linear_remap_gpu<ushort4>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
+        /*template void linear_remap_gpu<ushort4>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);*/
 
-        /*template void linear_remap_gpu<short >(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);*/
+        template void linear_remap_gpu<short >(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
         //template void linear_remap_gpu<short2>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
         /*template void linear_remap_gpu<short3>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);*/
-        template void linear_remap_gpu<short4>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
+        /*template void linear_remap_gpu<short4>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);*/
 
         //template void linear_remap_gpu<int >(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
         //template void linear_remap_gpu<int2>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);

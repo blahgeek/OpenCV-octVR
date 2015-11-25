@@ -111,10 +111,10 @@ void cv::cuda::linear_remap(InputArray _src, OutputArray _dst, InputArray _xmap,
     typedef void (*func_t)(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
     static const func_t funcs[6][4] =
     {
-        {0 /* linear_remap_gpu<uchar> */, 0 /*linear_remap_gpu<uchar2>*/ , 0/* linear_remap_gpu<uchar3> */, linear_remap_gpu<uchar4>     },
+        {linear_remap_gpu<uchar>, 0 /*linear_remap_gpu<uchar2>*/ , 0/* linear_remap_gpu<uchar3> */, 0 /*linear_remap_gpu<uchar4>   */  },
         {0 /*linear_remap_gpu<schar>*/, 0 /*linear_remap_gpu<char2>*/  , 0 /*linear_remap_gpu<char3>*/, 0 /*linear_remap_gpu<char4>*/},
-        {0 /* linear_remap_gpu<ushort>*/, 0 /*linear_remap_gpu<ushort2>*/, 0/* linear_remap_gpu<ushort3>*/, linear_remap_gpu<ushort4>    },
-        {0 /* linear_remap_gpu<short> */, 0 /*linear_remap_gpu<short2>*/ , 0/* linear_remap_gpu<short3> */, linear_remap_gpu<short4>     },
+        {linear_remap_gpu<ushort>, 0 /*linear_remap_gpu<ushort2>*/, 0/* linear_remap_gpu<ushort3>*/, 0 /*linear_remap_gpu<ushort4> */   },
+        {linear_remap_gpu<short>, 0 /*linear_remap_gpu<short2>*/ , 0/* linear_remap_gpu<short3> */, 0 /*linear_remap_gpu<short4> */    },
         {0 /*linear_remap_gpu<int>*/  , 0 /*linear_remap_gpu<int2>*/   , 0 /*linear_remap_gpu<int3>*/ , 0 /*linear_remap_gpu<int4>*/ },
         {0 /* linear_remap_gpu<float> */, 0 /*linear_remap_gpu<float2>*/ , 0/* linear_remap_gpu<float3> */, 0 /*linear_remap_gpu<float4> */   }
     };
