@@ -55,11 +55,6 @@ namespace cv { namespace cuda { namespace device
         template <typename T>
         void remap_gpu(PtrStepSzb src, PtrStepSzb srcWhole, int xoff, int yoff, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst,
                        int interpolation, int borderMode, const float* borderValue, cudaStream_t stream, bool cc20);
-        template <typename T>
-        void linear_remap_gpu(PtrStepSzb src, PtrStepSzb srcWhole,
-                              int xoff, int yoff,
-                              PtrStepSzf xmap, PtrStepSzf ymap, 
-                              PtrStepSzb dst, cudaStream_t stream);
     }
 }}}
 
@@ -104,46 +99,6 @@ void cv::cuda::remap(InputArray _src, OutputArray _dst, InputArray _xmap, InputA
 
     func(src, PtrStepSzb(wholeSize.height, wholeSize.width, src.datastart, src.step), ofs.x, ofs.y, xmap, ymap,
         dst, interpolation, borderMode, borderValueFloat.val, StreamAccessor::getStream(stream), deviceSupports(FEATURE_SET_COMPUTE_20));
-}
-
-void cv::cuda::linear_remap(InputArray _src, OutputArray _dst, InputArray _xmap, InputArray _ymap, Stream& stream)
-{
-    using namespace cv::cuda::device::imgproc;
-
-    typedef void (*func_t)(PtrStepSzb src, PtrStepSzb srcWhole,
-                           int offx, int offy, 
-                           PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
-    static const func_t funcs[6][4] =
-    {
-        {linear_remap_gpu<uchar>, 0 /*linear_remap_gpu<uchar2>*/ , 0/* linear_remap_gpu<uchar3> */, 0 /*linear_remap_gpu<uchar4>   */  },
-        {0 /*linear_remap_gpu<schar>*/, 0 /*linear_remap_gpu<char2>*/  , 0 /*linear_remap_gpu<char3>*/, 0 /*linear_remap_gpu<char4>*/},
-        {linear_remap_gpu<ushort>, 0 /*linear_remap_gpu<ushort2>*/, 0/* linear_remap_gpu<ushort3>*/, 0 /*linear_remap_gpu<ushort4> */   },
-        {linear_remap_gpu<short>, 0 /*linear_remap_gpu<short2>*/ , 0/* linear_remap_gpu<short3> */, 0 /*linear_remap_gpu<short4> */    },
-        {0 /*linear_remap_gpu<int>*/  , 0 /*linear_remap_gpu<int2>*/   , 0 /*linear_remap_gpu<int3>*/ , 0 /*linear_remap_gpu<int4>*/ },
-        {0 /* linear_remap_gpu<float> */, 0 /*linear_remap_gpu<float2>*/ , 0/* linear_remap_gpu<float3> */, 0 /*linear_remap_gpu<float4> */   }
-    };
-
-    GpuMat src = _src.getGpuMat();
-    GpuMat xmap = _xmap.getGpuMat();
-    GpuMat ymap = _ymap.getGpuMat();
-
-    CV_Assert( src.depth() <= CV_32F && src.channels() <= 4 );
-    CV_Assert( xmap.type() == CV_32F && ymap.type() == CV_32F && xmap.size() == ymap.size() );
-
-    const func_t func = funcs[src.depth()][src.channels() - 1];
-    if (!func)
-        CV_Error(Error::StsUnsupportedFormat, "Unsupported input type");
-
-    _dst.create(xmap.size(), src.type());
-    GpuMat dst = _dst.getGpuMat();
-
-    Size wholeSize;
-    Point ofs;
-    src.locateROI(wholeSize, ofs);
-    // CV_Assert(wholeSize == src.size());
-
-    func(src, PtrStepSzb(wholeSize.height, wholeSize.width, src.datastart, src.step),
-         ofs.x, ofs.y, xmap, ymap, dst, StreamAccessor::getStream(stream));
 }
 
 #endif // HAVE_CUDA
