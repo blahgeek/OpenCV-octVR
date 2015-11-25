@@ -31,23 +31,23 @@ namespace cv { namespace cuda { namespace device
             }
         }
 
-        template <typename T> struct LinearRemapDispatcher {
-            static void call(PtrStepSz<T> src, PtrStepSzf mapx, PtrStepSzf mapy,
-                             PtrStepSz<T> dst, cudaStream_t stream) {}
-        };
+        template <typename T> struct LinearRemapDispatcher ;
 
         #define OPENCV_CUDA_IMPLEMENT_REMAP_TEX(type) \
             texture< type , cudaTextureType2D, cudaReadModeNormalizedFloat> \
-                tex_linear_remap_ ## type ## (0, cudaFilterModeLinear, cudaAddressModeClamp); \
+                tex_linear_remap_ ## type (0, cudaFilterModeLinear, cudaAddressModeClamp); \
             struct tex_linear_remap_ ## type ## _reader \
             { \
                 typedef type elem_type; \
                 typedef float index_type; \
-                typedef TypeVec<float, VecTraits<type>::cn>::vec_type return_type; \
+                typedef typename TypeVec<float, VecTraits<type>::cn>::vec_type return_type; \
                 __device__ __forceinline__ elem_type operator ()(index_type y, index_type x) const \
                 { \
                     return_type ret = tex2D(tex_linear_remap_ ## type , x, y); \
-                    ret *= numeric_limits<elem_type>::max(); \
+                    ret.x *= numeric_limits<VecTraits<elem_type>::elem_type>::max(); \
+                    ret.y *= numeric_limits<VecTraits<elem_type>::elem_type>::max(); \
+                    ret.z *= numeric_limits<VecTraits<elem_type>::elem_type>::max(); \
+                    ret.w *= numeric_limits<VecTraits<elem_type>::elem_type>::max(); \
                     return saturate_cast<elem_type>(ret); \
                 } \
             }; \
@@ -59,13 +59,13 @@ namespace cv { namespace cuda { namespace device
                     dim3 block(32, 8); \
                     dim3 grid(divUp(dst.cols, block.x), divUp(dst.rows, block.y)); \
                     bindTexture(&tex_linear_remap_ ## type , src); \
-                    tex_linear_remap_ ## type ##_reader texSrc(); \
+                    tex_linear_remap_ ## type ##_reader texSrc; \
                     linear_remap<<<grid, block, 0, stream>>>(texSrc, mapx, mapy, dst); \
                     cudaSafeCall( cudaGetLastError() ); \
                 } \
             };
 
-        OPENCV_CUDA_IMPLEMENT_REMAP_TEX(uchar)
+        /*OPENCV_CUDA_IMPLEMENT_REMAP_TEX(uchar)*/
         //OPENCV_CUDA_IMPLEMENT_REMAP_TEX(uchar2)
         OPENCV_CUDA_IMPLEMENT_REMAP_TEX(uchar4)
 
@@ -73,11 +73,11 @@ namespace cv { namespace cuda { namespace device
         //OPENCV_CUDA_IMPLEMENT_REMAP_TEX(char2)
         //OPENCV_CUDA_IMPLEMENT_REMAP_TEX(char4)
 
-        OPENCV_CUDA_IMPLEMENT_REMAP_TEX(ushort)
+        /*OPENCV_CUDA_IMPLEMENT_REMAP_TEX(ushort)*/
         //OPENCV_CUDA_IMPLEMENT_REMAP_TEX(ushort2)
         OPENCV_CUDA_IMPLEMENT_REMAP_TEX(ushort4)
 
-        OPENCV_CUDA_IMPLEMENT_REMAP_TEX(short)
+        /*OPENCV_CUDA_IMPLEMENT_REMAP_TEX(short)*/
         //OPENCV_CUDA_IMPLEMENT_REMAP_TEX(short2)
         OPENCV_CUDA_IMPLEMENT_REMAP_TEX(short4)
 
@@ -85,9 +85,9 @@ namespace cv { namespace cuda { namespace device
         //OPENCV_CUDA_IMPLEMENT_REMAP_TEX(int2)
         //OPENCV_CUDA_IMPLEMENT_REMAP_TEX(int4)
 
-        OPENCV_CUDA_IMPLEMENT_REMAP_TEX(float)
+        /*OPENCV_CUDA_IMPLEMENT_REMAP_TEX(float)*/
         //OPENCV_CUDA_IMPLEMENT_REMAP_TEX(float2)
-        OPENCV_CUDA_IMPLEMENT_REMAP_TEX(float4)
+        /*OPENCV_CUDA_IMPLEMENT_REMAP_TEX(float4)*/
 
         #undef OPENCV_CUDA_IMPLEMENT_REMAP_TEX
 
@@ -101,9 +101,9 @@ namespace cv { namespace cuda { namespace device
                                            stream);
         }
 
-        template void linear_remap_gpu<uchar >(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
+        /*template void linear_remap_gpu<uchar >(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);*/
         //template void linear_remap_gpu<uchar2>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
-        template void linear_remap_gpu<uchar3>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
+        /*template void linear_remap_gpu<uchar3>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);*/
         template void linear_remap_gpu<uchar4>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
 
         //template void linear_remap_gpu<schar>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
@@ -111,14 +111,14 @@ namespace cv { namespace cuda { namespace device
         //template void linear_remap_gpu<char3>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
         //template void linear_remap_gpu<char4>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
 
-        template void linear_remap_gpu<ushort >(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
+        /*template void linear_remap_gpu<ushort >(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);*/
         //template void linear_remap_gpu<ushort2>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
-        template void linear_remap_gpu<ushort3>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
+        /*template void linear_remap_gpu<ushort3>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);*/
         template void linear_remap_gpu<ushort4>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
 
-        template void linear_remap_gpu<short >(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
+        /*template void linear_remap_gpu<short >(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);*/
         //template void linear_remap_gpu<short2>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
-        template void linear_remap_gpu<short3>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
+        /*template void linear_remap_gpu<short3>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);*/
         template void linear_remap_gpu<short4>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
 
         //template void linear_remap_gpu<int >(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
@@ -126,10 +126,10 @@ namespace cv { namespace cuda { namespace device
         //template void linear_remap_gpu<int3>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
         //template void linear_remap_gpu<int4>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
 
-        template void linear_remap_gpu<float >(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
+        /*template void linear_remap_gpu<float >(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);*/
         //template void linear_remap_gpu<float2>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
-        template void linear_remap_gpu<float3>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
-        template void linear_remap_gpu<float4>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);
+        /*template void linear_remap_gpu<float3>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);*/
+        /*template void linear_remap_gpu<float4>(PtrStepSzb src, PtrStepSzf xmap, PtrStepSzf ymap, PtrStepSzb dst, cudaStream_t stream);*/
     } // namespace imgproc
 }}} // namespace cv { namespace cuda { namespace cudev
 
