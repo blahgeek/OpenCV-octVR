@@ -87,6 +87,10 @@ CV_EXPORTS void remap(InputArray src, OutputArray dst, InputArray xmap, InputArr
                       int interpolation, int borderMode = BORDER_CONSTANT, Scalar borderValue = Scalar(),
                       Stream& stream = Stream::Null());
 
+// fast linear remapping using CUDA texture
+CV_EXPORTS void linear_remap(InputArray src, OutputArray dst, InputArray xmap, InputArray ymap,
+                             Stream& stream = Stream::Null());
+
 /** @brief Resizes an image.
 
 @param src Source image.
