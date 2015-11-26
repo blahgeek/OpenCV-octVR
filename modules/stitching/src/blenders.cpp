@@ -43,13 +43,17 @@
 #include "precomp.hpp"
 #include "opencl_kernels_stitching.hpp"
 #include <iostream>
+#include "opencv2/core/cuda_stream_accessor.hpp"
 
 
 namespace cv { namespace cuda { namespace device {
 void vr_add_sub_and_multiply(const GpuMat & A, 
                              const GpuMat & T, 
                              const GpuMat & W, 
-                             GpuMat & D);
+                             GpuMat & D, cudaStream_t stream);
+void vr_add_multiply(const GpuMat & A, 
+                     const GpuMat & W, 
+                     GpuMat & D, cudaStream_t stream);
 }}}
 
 
@@ -527,32 +531,45 @@ void MultiBandGPUBlender::blend(std::vector<cuda::GpuMat> & imgs, cuda::GpuMat &
         dst_pyr_laplace[i].setTo(Scalar::all(0));
     CV_Assert(imgs.size() == num_images);
 
-    cuda::GpuMat tmp;
+    std::vector<cuda::Stream> streams(num_images);
+    std::vector<cuda::GpuMat> tmps(num_images);
+    std::vector<std::vector<cuda::GpuMat> > src_pyr_laplaces(num_images);
     for(int n = 0 ; n < num_images ; n += 1) {
+        cuda::Stream & s = streams[n];
         cuda::GpuMat & img = imgs[n];
+        cuda::GpuMat & tmp = tmps[n];
 
-        std::vector<cuda::GpuMat> src_pyr_laplace(num_bands + 1);
+        std::vector<cuda::GpuMat> & src_pyr_laplace = src_pyr_laplaces[n];
+        src_pyr_laplace.resize(num_bands + 1);
         src_pyr_laplace[0] = img;
-        // img.copyTo(src_pyr_laplace[0]);
         for(int i = 0 ; i < num_bands ; i += 1)
-            cuda::pyrDown(src_pyr_laplace[i], src_pyr_laplace[i+1]);
+            cuda::pyrDown(src_pyr_laplace[i], src_pyr_laplace[i+1], s);
+
+        //std::vector<cuda::GpuMat> src_pyr_laplace(num_bands + 1);
+        //src_pyr_laplace[0] = img;
+        //// img.copyTo(src_pyr_laplace[0]);
+        //for(int i = 0 ; i < num_bands ; i += 1)
+            //cuda::pyrDown(src_pyr_laplace[i], src_pyr_laplace[i+1]);
 
         std::vector<cuda::GpuMat> & weight_pyr_gauss = weight_pyr_gauss_lists[n];
-        for(int i = 0 ; i <= num_bands ; i += 1) {
-            if(i < num_bands)
-                cuda::pyrUp(src_pyr_laplace[i+1], tmp);
-            else {
-                tmp.create(src_pyr_laplace[i].size(), CV_8UC3);
-                tmp.setTo(Scalar::all(0));
-            }
-            cuda::device::vr_add_sub_and_multiply(src_pyr_laplace[i], tmp, 
-                                                  weight_pyr_gauss[i], dst_pyr_laplace[i]);
+        for(int i = 0 ; i < num_bands ; i += 1) {
+            cuda::pyrUp(src_pyr_laplace[i+1], tmp, s);
+            cuda::device::vr_add_sub_and_multiply(src_pyr_laplace[i], tmp,
+                                                  weight_pyr_gauss[i], dst_pyr_laplace[i],
+                                                  cuda::StreamAccessor::getStream(s));
         }
+        cuda::device::vr_add_multiply(src_pyr_laplace[num_bands], weight_pyr_gauss[num_bands],
+                                      dst_pyr_laplace[num_bands],
+                                      cuda::StreamAccessor::getStream(s));
     }
+
+    for(int n = 0 ; n < num_images ; n += 1)
+        streams[n].waitForCompletion();
 
     for(int i = 0 ; i <= num_bands ; i += 1)
         cuda::divide(dst_pyr_laplace[i], dst_band_weights[i], dst_pyr_laplace[i]);
 
+    cuda::GpuMat tmp;
     for(int i = num_bands ; i > 0 ; i --) {
         cuda::pyrUp(dst_pyr_laplace[i], tmp);
         cuda::add(tmp, dst_pyr_laplace[i-1], dst_pyr_laplace[i-1]);
