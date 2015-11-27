@@ -63,7 +63,8 @@ __host__ void vr_add_sub_and_multiply(const GpuMat & A,
                                                            globPtr<short3>(D),
                                                            A.rows, A.cols);
     CV_CUDEV_SAFE_CALL( cudaGetLastError() );
-    CV_CUDEV_SAFE_CALL( cudaDeviceSynchronize() );
+    if(stream == 0)
+        CV_CUDEV_SAFE_CALL( cudaDeviceSynchronize() );
 }
 
 template void vr_add_sub_and_multiply<uchar3>(const GpuMat &, const GpuMat &, const GpuMat &, GpuMat &, cudaStream_t);
@@ -113,7 +114,8 @@ __host__ void vr_add_multiply(const GpuMat & A,
                                                    globPtr<short3>(D),
                                                    A.rows, A.cols);
     CV_CUDEV_SAFE_CALL( cudaGetLastError() );
-    CV_CUDEV_SAFE_CALL( cudaDeviceSynchronize() );
+    if(stream == 0)
+        CV_CUDEV_SAFE_CALL( cudaDeviceSynchronize() );
 }
 
 template void vr_add_multiply<uchar3>(const GpuMat &, const GpuMat &, GpuMat &, cudaStream_t);

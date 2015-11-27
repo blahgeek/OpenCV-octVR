@@ -88,7 +88,8 @@ namespace cv { namespace cuda { namespace device
 
             fastPyrDown<<<grid, block, 0, stream>>>(src_tex, dst, dst.cols);
             cudaSafeCall( cudaGetLastError() );
-            cudaSafeCall( cudaDeviceSynchronize() );
+            if(stream == 0)
+                cudaSafeCall( cudaDeviceSynchronize() );
         }
 
         template void fastPyrDown_caller<uchar>(GpuMat src, PtrStepSz<uchar> dst, cudaStream_t);
