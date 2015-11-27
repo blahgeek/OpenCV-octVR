@@ -200,7 +200,7 @@ type as src .
  */
 CV_EXPORTS void pyrDown(InputArray src, OutputArray dst, Stream& stream = Stream::Null());
 
-CV_EXPORTS void fastPyrDown(InputArray src, OutputArray dst);
+CV_EXPORTS void fastPyrDown(InputArray src, OutputArray dst, Stream & stream = Stream::Null());
 
 /** @brief Upsamples an image and then smoothes it.
 

@@ -55,11 +55,11 @@ __host__ void vr_add_sub_and_multiply(const GpuMat & A,
     const dim3 block(DefaultTransformPolicy::block_size_x, DefaultTransformPolicy::block_size_y);
     const dim3 grid(divUp(A.cols, block.x), divUp(A.rows, block.y));
 
-    do_vr_add_sub_and_multiply<<<grid, block, 0 stream>>>(globPtr<TYPE>(A),
-                                                          globPtr<TYPE>(T),
-                                                          globPtr<float>(W),
-                                                          globPtr<short3>(D),
-                                                          A.rows, A.cols);
+    do_vr_add_sub_and_multiply<<<grid, block, 0, stream>>>(globPtr<TYPE>(A),
+                                                           globPtr<TYPE>(T),
+                                                           globPtr<float>(W),
+                                                           globPtr<short3>(D),
+                                                           A.rows, A.cols);
     CV_CUDEV_SAFE_CALL( cudaGetLastError() );
     CV_CUDEV_SAFE_CALL( cudaDeviceSynchronize() );
 }
@@ -104,10 +104,10 @@ __host__ void vr_add_multiply(const GpuMat & A,
     const dim3 block(DefaultTransformPolicy::block_size_x, DefaultTransformPolicy::block_size_y);
     const dim3 grid(divUp(A.cols, block.x), divUp(A.rows, block.y));
 
-    do_vr_add_multiply<<<grid, block, 0 stream>>>(globPtr<TYPE>(A),
-                                                  globPtr<float>(W),
-                                                  globPtr<short3>(D),
-                                                  A.rows, A.cols);
+    do_vr_add_multiply<<<grid, block, 0, stream>>>(globPtr<TYPE>(A),
+                                                   globPtr<float>(W),
+                                                   globPtr<short3>(D),
+                                                   A.rows, A.cols);
     CV_CUDEV_SAFE_CALL( cudaGetLastError() );
     CV_CUDEV_SAFE_CALL( cudaDeviceSynchronize() );
 }

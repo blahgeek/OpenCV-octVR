@@ -78,20 +78,21 @@ namespace cv { namespace cuda { namespace device
 
         template <typename T>
         void fastPyrDown_caller(GpuMat src, 
-                                PtrStepSz<T> dst) {
+                                PtrStepSz<T> dst,
+                                cudaStream_t stream) {
 
             const dim3 block(256);
             const dim3 grid(divUp(src.cols, block.x), dst.rows);
 
             cv::cudev::Texture<T> src_tex(cv::cudev::globPtr<T>(src));
 
-            fastPyrDown<<<grid, block>>>(src_tex, dst, dst.cols);
+            fastPyrDown<<<grid, block, 0, stream>>>(src_tex, dst, dst.cols);
             cudaSafeCall( cudaGetLastError() );
             cudaSafeCall( cudaDeviceSynchronize() );
         }
 
-        template void fastPyrDown_caller<uchar>(GpuMat src, PtrStepSz<uchar> dst);
-        template void fastPyrDown_caller<uchar4>(GpuMat src, PtrStepSz<uchar4> dst);
+        template void fastPyrDown_caller<uchar>(GpuMat src, PtrStepSz<uchar> dst, cudaStream_t);
+        template void fastPyrDown_caller<uchar4>(GpuMat src, PtrStepSz<uchar4> dst, cudaStream_t);
 
     } // namespace imgproc
 }}} // namespace cv { namespace cuda { namespace cudev

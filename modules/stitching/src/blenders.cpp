@@ -534,8 +534,8 @@ void MultiBandGPUBlender::blend(std::vector<cuda::GpuMat> & imgs, cuda::GpuMat &
         dst_pyr_laplace[i].setTo(Scalar::all(0));
     CV_Assert(imgs.size() == num_images);
 
-    for(auto & img: imgs)
-        CV_Assert(img.type() == CV_8UC4);
+    for(int n = 0 ; n < num_images ; n += 1)
+        CV_Assert(imgs[n].type() == CV_8UC4);
 
     std::vector<cuda::Stream> streams(num_images);
     std::vector<cuda::GpuMat> tmps(num_images);
