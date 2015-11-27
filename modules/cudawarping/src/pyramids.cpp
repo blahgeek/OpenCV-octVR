@@ -62,7 +62,7 @@ namespace cv { namespace cuda { namespace device
     {
         template <typename T> void pyrDown_gpu(PtrStepSzb src, PtrStepSzb dst, cudaStream_t stream);
 
-        void fastPyrDown_caller(PtrStepSz<uchar> src, PtrStepSz<uchar> srcWhole, int xoff, int yoff, PtrStepSz<uchar> dst);
+        void fastPyrDown_caller(GpuMat src, GpuMat dst);
     }
 }}}
 
@@ -75,13 +75,7 @@ void cv::cuda::fastPyrDown(InputArray _src, OutputArray _dst) {
     _dst.create((src.rows + 1) / 2, (src.cols + 1) / 2, src.type());
     GpuMat dst = _dst.getGpuMat();
 
-    Size wholeSize;
-    Point ofs;
-    src.locateROI(wholeSize, ofs);
-
-    fastPyrDown_caller(src, 
-                       PtrStepSz<uchar>(wholeSize.height, wholeSize.width, src.datastart, src.step),
-                       ofs.x, ofs.y, dst);
+    fastPyrDown_caller(src, dst);
 }
 
 void cv::cuda::pyrDown(InputArray _src, OutputArray _dst, Stream& stream)
