@@ -23,10 +23,12 @@ __global__ void do_vr_add_sub_and_multiply(const GlobPtr<T> a,
         const int y = blockIdx.y * blockDim.y + threadIdx.y;
 
         if(x < cols && y < rows) {
+            float w_elem = w.row(y)[x];
+            if(w_elem == 0)
+                return;
             short3 sub;
             T a_elem = a.row(y)[x];
             T t_elem = t.row(y)[x];
-            float w_elem = w.row(y)[x];
 
             sub.x = (a_elem.x - t_elem.x) * w_elem;
             sub.y = (a_elem.y - t_elem.y) * w_elem;
@@ -77,9 +79,11 @@ __global__ void do_vr_add_multiply(const GlobPtr<T> a,
         const int y = blockIdx.y * blockDim.y + threadIdx.y;
 
         if(x < cols && y < rows) {
+            float w_elem = w.row(y)[x];
+            if(w_elem == 0)
+                return;
             short3 sub;
             T a_elem = a.row(y)[x];
-            float w_elem = w.row(y)[x];
 
             sub.x = (a_elem.x) * w_elem;
             sub.y = (a_elem.y) * w_elem;
