@@ -46,14 +46,11 @@
 
 
 namespace cv { namespace cuda { namespace device {
+template <typename TYPE>
 void vr_add_sub_and_multiply(const GpuMat & A, 
                              const GpuMat & T, 
                              const GpuMat & W, 
                              GpuMat & D);
-void vr_add_sub_and_multiply_channel(const GpuMat & A,
-                                     const GpuMat & T,
-                                     const GpuMat & W,
-                                     GpuMat & D, int channel);
 }}}
 
 
@@ -535,14 +532,15 @@ void MultiBandGPUBlender::blend(std::vector<cuda::GpuMat> & imgs, cuda::GpuMat &
     for(int n = 0 ; n < num_images ; n += 1) {
         cuda::GpuMat & img = imgs[n];
 
-        std::vector<std::vector<cuda::GpuMat> > src_pyr_laplace(num_bands + 1);
-        for(int i = 0 ; i < num_bands + 1 ; i += 1)
-            src_pyr_laplace[i].resize(3);
+        std::vector<cuda::GpuMat> img_channels;
+        cuda::split(img, img_channels);
+        img_channels.push_back(img_channels.back());
 
-        cuda::split(img, src_pyr_laplace[0]);
+        std::vector<cuda::GpuMat> src_pyr_laplace(num_bands + 1);
+
+        cuda::merge(img_channels, src_pyr_laplace[0]);
         for(int i = 0 ; i < num_bands ; i += 1)
-            for(int c = 0 ; c < 3 ; c += 1)
-                cuda::fastPyrDown(src_pyr_laplace[i][c], src_pyr_laplace[i+1][c]);
+            cuda::fastPyrDown(src_pyr_laplace[i], src_pyr_laplace[i+1]);
 
         // std::vector<cuda::GpuMat> src_pyr_laplace(num_bands + 1);
         // src_pyr_laplace[0] = img;
@@ -552,17 +550,14 @@ void MultiBandGPUBlender::blend(std::vector<cuda::GpuMat> & imgs, cuda::GpuMat &
 
         std::vector<cuda::GpuMat> & weight_pyr_gauss = weight_pyr_gauss_lists[n];
         for(int i = 0 ; i <= num_bands ; i += 1) {
-            cuda::GpuMat tmp_channels[3];
-            for(int c = 0 ; c < 3 ; c += 1) {
-                if(i < num_bands)
-                    cuda::pyrUp(src_pyr_laplace[i+1][c], tmp_channels[c]);
-                else {
-                    tmp_channels[c].create(src_pyr_laplace[i][c].size(), CV_8U);
-                    tmp_channels[c].setTo(Scalar::all(0));
-                }
-                cuda::device::vr_add_sub_and_multiply_channel(src_pyr_laplace[i][c], tmp_channels[c], 
-                                                              weight_pyr_gauss[i], dst_pyr_laplace[i], c);
+            if(i < num_bands)
+                cuda::pyrUp(src_pyr_laplace[i+1], tmp);
+            else {
+                tmp.create(src_pyr_laplace[i].size(), CV_8UC4);
+                tmp.setTo(Scalar::all(0));
             }
+            cuda::device::vr_add_sub_and_multiply<uchar4>(src_pyr_laplace[i], tmp,
+                                                          weight_pyr_gauss[i], dst_pyr_laplace[i]);
         }
     }
 

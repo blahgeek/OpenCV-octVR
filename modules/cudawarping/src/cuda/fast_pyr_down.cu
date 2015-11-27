@@ -14,9 +14,10 @@ namespace cv { namespace cuda { namespace device
     namespace imgproc
     {
 
-        __global__ void fastPyrDown(cv::cudev::Texture<uchar> src, PtrStepSz<uchar> dst, int dst_cols)
+        template <typename T>
+        __global__ void fastPyrDown(cv::cudev::Texture<T> src, PtrStepSz<T> dst, int dst_cols)
         {
-            typedef float work_t;
+            typedef typename TypeVec<float, VecTraits<T>::cn>::vec_type work_t;
 
             __shared__ work_t smem[256 + 4];
 
@@ -70,23 +71,27 @@ namespace cv { namespace cuda { namespace device
                 const int dst_x = (blockIdx.x * blockDim.x + tid2) / 2;
 
                 if (dst_x < dst_cols)
-                    dst.ptr(y)[dst_x] = saturate_cast<uchar>(sum);
+                    dst.ptr(y)[dst_x] = saturate_cast<T>(sum);
             }
         }
 
 
+        template <typename T>
         void fastPyrDown_caller(GpuMat src, 
-                                GpuMat dst) {
+                                PtrStepSz<T> dst) {
 
             const dim3 block(256);
             const dim3 grid(divUp(src.cols, block.x), dst.rows);
 
-            cv::cudev::Texture<uchar> src_tex(cv::cudev::globPtr<uchar>(src));
+            cv::cudev::Texture<T> src_tex(cv::cudev::globPtr<T>(src));
 
             fastPyrDown<<<grid, block>>>(src_tex, dst, dst.cols);
             cudaSafeCall( cudaGetLastError() );
             cudaSafeCall( cudaDeviceSynchronize() );
         }
+
+        template void fastPyrDown_caller<uchar>(GpuMat src, PtrStepSz<uchar> dst);
+        template void fastPyrDown_caller<uchar4>(GpuMat src, PtrStepSz<uchar4> dst);
 
     } // namespace imgproc
 }}} // namespace cv { namespace cuda { namespace cudev

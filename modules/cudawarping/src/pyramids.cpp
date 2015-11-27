@@ -62,7 +62,7 @@ namespace cv { namespace cuda { namespace device
     {
         template <typename T> void pyrDown_gpu(PtrStepSzb src, PtrStepSzb dst, cudaStream_t stream);
 
-        void fastPyrDown_caller(GpuMat src, GpuMat dst);
+        template <typename T> void fastPyrDown_caller(GpuMat src, PtrStepSz<T> dst);
     }
 }}}
 
@@ -70,12 +70,15 @@ void cv::cuda::fastPyrDown(InputArray _src, OutputArray _dst) {
     using namespace cv::cuda::device::imgproc;
 
     GpuMat src = _src.getGpuMat();
-    CV_Assert(src.type() == CV_8U);
+    CV_Assert(src.type() == CV_8U || src.type() == CV_8UC4);
 
     _dst.create((src.rows + 1) / 2, (src.cols + 1) / 2, src.type());
     GpuMat dst = _dst.getGpuMat();
 
-    fastPyrDown_caller(src, dst);
+    if(src.type() == CV_8U)
+        fastPyrDown_caller<uchar>(src, dst);
+    else
+        fastPyrDown_caller<uchar4>(src, dst);
 }
 
 void cv::cuda::pyrDown(InputArray _src, OutputArray _dst, Stream& stream)
