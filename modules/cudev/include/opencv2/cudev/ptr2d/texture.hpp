@@ -150,7 +150,10 @@ template <typename T> struct Texture : TexturePtr<T>
             texDescr.addressMode[0] = addressMode;
             texDescr.addressMode[1] = addressMode;
             texDescr.addressMode[2] = addressMode;
-            texDescr.readMode = cudaReadModeElementType;
+            if(filterMode == cudaFilterModePoint)
+                texDescr.readMode = cudaReadModeElementType;
+            else
+                texDescr.readMode = cudaReadModeNormalizedFloat;
 
             CV_CUDEV_SAFE_CALL( cudaCreateTextureObject(&this->texObj, &texRes, &texDescr, 0) );
         }
@@ -233,7 +236,10 @@ template <typename T> struct Texture : TexturePtr<T>
         texDescr.addressMode[0] = addressMode;
         texDescr.addressMode[1] = addressMode;
         texDescr.addressMode[2] = addressMode;
-        texDescr.readMode = cudaReadModeElementType;
+        if(filterMode == cudaFilterModePoint)
+            texDescr.readMode = cudaReadModeElementType;
+        else
+            texDescr.readMode = cudaReadModeNormalizedFloat;
 
         CV_CUDEV_SAFE_CALL( cudaCreateTextureObject(&this->texObj, &texRes, &texDescr, 0) );
     }
