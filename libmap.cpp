@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-11-16
+* @Last Modified time: 2015-11-27
 */
 
 #include <iostream>
@@ -193,7 +193,7 @@ void MultiMapperImpl::get_output(const std::vector<cv::cuda::HostMem> & inputs, 
     Timer timer("MultiMapper");
 
     for(int i = 0 ; i < inputs.size() ; i += 1) {
-        assert(inputs[i].type() == CV_8UC3);
+        assert(inputs[i].type() == CV_8UC4);
         assert(inputs[i].size() == in_sizes[i]);
     }
     assert(output.type() == CV_8UC3 && output.size() == this->out_size);
@@ -211,8 +211,7 @@ void MultiMapperImpl::get_output(const std::vector<cv::cuda::HostMem> & inputs, 
     
     for(int i = 0 ; i < inputs.size() ; i += 1) {
         gpu_inputs[i].upload(inputs[i], streams[i]);
-        cv::cuda::remap(gpu_inputs[i], warped_imgs_uchar[i], map1s[i], map2s[i], CV_INTER_LINEAR,
-                        cv::BORDER_CONSTANT, cv::Scalar_<unsigned char>(0, 0, 0), streams[i]);
+        cv::cuda::fastRemap(gpu_inputs[i], warped_imgs_uchar[i], map1s[i], map2s[i], streams[i]);
         corners.emplace_back(0, 0);
         sizes.push_back(out_size);
     }
@@ -247,13 +246,14 @@ void MultiMapperImpl::get_output(const std::vector<cv::cuda::HostMem> & inputs, 
     // GainCompensator::apply does img *= gain for every image
     // while size of image is large (output size), and only part of it is valid (mask)
     for(int i = 0 ; i < inputs.size() ; i += 1)
-        compensator->apply(i, warped_imgs_uchar[i]);
+        compensator->apply(i, warped_imgs_uchar[i], masks[i]);
     timer.tick("Compensator apply");
 
     SAVE_MAT_VEC("warped_img_compensator", warped_imgs_uchar);
     SAVE_MAT_VEC("warped_mask_compensator", scaled_masks);
 
     GpuMat result;
+    timer.tick("Prepare blender");
     blender->blend(warped_imgs_uchar, result);
     timer.tick("Blender blend");
 
