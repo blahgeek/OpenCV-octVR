@@ -47,14 +47,14 @@ public:
     virtual cv::Size get_output_size() = 0;
     /**
      * Generate output image
-     * @param  inputs Input images, in BGR (CV_8UC3)
+     * @param  inputs Input images, in BGR_ (CV_8UC4, last channel is ignored)
      */
     virtual void get_output(const std::vector<cv::cuda::HostMem> & inputs, cv::Mat & output) = 0;
 
     /**
      * Generate single output image, call this if and if only there's only one input
-     * @param input  Input image, in BGR
-     * @param output Output image, in BGR
+     * @param input  Input image, in BGR_
+     * @param output Output image, in BGR_
      */
     virtual void get_single_output(const cv::Mat & input, cv::Mat & output) = 0;
 
