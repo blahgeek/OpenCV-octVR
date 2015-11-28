@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-20
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-11-16
+* @Last Modified time: 2015-11-28
 */
 
 #ifndef VR_LIBMAP_IMPL_H
@@ -22,7 +22,6 @@ using cv::cuda::GpuMat;
 class MultiMapperImpl: public MultiMapper {
 private:
     cv::Size out_size;
-    std::vector<cv::Size> in_sizes;
 
     std::vector<GpuMat> map1s; // CV_32FC1
     std::vector<GpuMat> map2s;
@@ -44,16 +43,10 @@ public:
                     int out_width, int out_height);
     explicit MultiMapperImpl(std::ifstream & f);
 
-    void add_input(const std::string & from, const json & from_opts,
-                   int in_width, int in_height) override;
+    void add_input(const std::string & from, const json & from_opts) override;
 
     cv::Size get_output_size() override {
         return this->out_size;
-    }
-    cv::Size get_input_size(int index) override {
-        if(index >= in_sizes.size())
-            return cv::Size(0, 0);
-        return in_sizes[index];
     }
 
     void prepare() override;

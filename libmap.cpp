@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-11-16
+* @Last Modified time: 2015-11-28
 */
 
 #include <iostream>
@@ -83,13 +83,10 @@ MultiMapperImpl::MultiMapperImpl(const std::string & to, const json & to_opts,
     this->output_map_points = out_camera->image_to_obj(tmp);
 }
 
-void MultiMapperImpl::add_input(const std::string & from, const json & from_opts,
-                                int in_width, int in_height) {
+void MultiMapperImpl::add_input(const std::string & from, const json & from_opts) {
     // If this is constructed using dumped data file, add_input is not available
     assert(!this->output_map_points.empty());
 
-    cv::Size in_size(in_width, in_height);
-    this->in_sizes.push_back(in_size);
     std::unique_ptr<Camera> cam = Camera::New(from, from_opts);
     if(!cam)
         throw std::string("Invalid input camera type");
@@ -104,10 +101,10 @@ void MultiMapperImpl::add_input(const std::string & from, const json & from_opts
 
         for(int w = 0 ; w < out_size.width ; w += 1) {
             auto index = w + out_size.width * h;
-            float x = tmp[index].x * in_width;
-            float y = tmp[index].y * in_height;
+            float x = tmp[index].x;
+            float y = tmp[index].y;
             if(isnan(x) || isnan(y) ||
-               x < 0 || x >= in_width || y < 0 || y >= in_height) {
+               x < 0 || x >= 1.0f || y < 0 || y >= 1.0f) {
                 mask_row[w] = 0;
                 map1_row[w] = map2_row[w] = -1.0; // out of border, should be black when doing remap()
             }
@@ -127,7 +124,7 @@ void MultiMapperImpl::add_input(const std::string & from, const json & from_opts
     mask_u.upload(mask);
     this->masks.push_back(mask_u);
 
-    double working_scale = std::min(1.0, sqrt(WORKING_MEGAPIX * 1e6 / in_size.area()));
+    double working_scale = std::min(1.0, sqrt(WORKING_MEGAPIX * 1e6 / out_size.area()));
     this->working_scales.push_back(working_scale);
 
     GpuMat scaled_mask;
@@ -192,10 +189,8 @@ void MultiMapperImpl::prepare() {
 void MultiMapperImpl::get_output(const std::vector<cv::cuda::HostMem> & inputs, cv::Mat & output) {
     Timer timer("MultiMapper");
 
-    for(int i = 0 ; i < inputs.size() ; i += 1) {
+    for(int i = 0 ; i < inputs.size() ; i += 1)
         assert(inputs[i].type() == CV_8UC3);
-        assert(inputs[i].size() == in_sizes[i]);
-    }
     assert(output.type() == CV_8UC3 && output.size() == this->out_size);
 
     std::vector<cv::cuda::Stream> streams(inputs.size());
@@ -265,7 +260,6 @@ void MultiMapperImpl::get_output(const std::vector<cv::cuda::HostMem> & inputs, 
 void MultiMapperImpl::get_single_output(const cv::Mat & input, cv::Mat & output) {
     assert(input.type() == CV_8UC3);
     assert(output.type() == CV_8UC3 && output.size() == this->out_size);
-    assert(this->in_sizes.size() > 0);
 
     Timer timer("MultiMapper");
 

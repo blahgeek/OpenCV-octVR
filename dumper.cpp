@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-11-09
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-11-09
+* @Last Modified time: 2015-11-29
 */
 
 #include <iostream>
@@ -56,10 +56,8 @@ int main(int argc, char * const argv[]){
             options["output"]["type"].get<std::string>().c_str());
 
     for(auto i: options["inputs"]) {
-        int width = i["width"].get<int>();
-        int height = i["height"].get<int>();
-        fprintf(stderr, "Input: %dx%d %s\n", width, height, i["type"].get<std::string>().c_str());
-        remapper->add_input(i["type"], i["options"], width, height);
+        fprintf(stderr, "Input: %s\n", i["type"].get<std::string>().c_str());
+        remapper->add_input(i["type"], i["options"]);
     }
 
     std::ofstream of(opt_outfile);

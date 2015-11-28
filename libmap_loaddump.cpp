@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-11-09
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-11-16
+* @Last Modified time: 2015-11-29
 */
 
 #include <iostream>
@@ -26,10 +26,10 @@ void MultiMapperImpl::dump(std::ofstream & f) {
     W64i(out_size.width);
     W64i(out_size.height);
 
-    W64i(in_sizes.size());
-    for(int i = 0 ; i < in_sizes.size() ; i += 1) {
-        W64i(in_sizes[i].width);
-        W64i(in_sizes[i].height);
+    W64i(map1s.size());
+    for(int i = 0 ; i < map1s.size() ; i += 1) {
+        W64i(0);
+        W64i(0); // OMG backwards compatible
         assert(map1s[i].type() == CV_32FC1 && map1s[i].size() == out_size);
         assert(map2s[i].type() == CV_32FC1 && map2s[i].size() == out_size);
         assert(masks[i].type() == CV_8UC1 && masks[i].size() == out_size);
@@ -80,9 +80,7 @@ MultiMapperImpl::MultiMapperImpl(std::ifstream & f) {
 
     int in_count = R64i();
     for(int i = 0 ; i < in_count ; i += 1) {
-        int width = R64i();
-        int height = R64i();
-        this->in_sizes.push_back(cv::Size(width, height));
+        R64i(); R64i(); // OMG, backward compatible
 
         cv::Mat map1(out_size, CV_32FC1);
         cv::Mat map2(out_size, CV_32FC1);

@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-11-16
+* @Last Modified time: 2015-11-28
 */
 
 #ifndef VR_LIBMAP_BASE_H
@@ -38,15 +38,13 @@ public:
     // Construct MultiMapper using dumped data file (using dump())
     static MultiMapper * New(std::ifstream & f);
 
-    virtual void add_input(const std::string & from, const json & from_opts,
-                           int in_width, int in_height) = 0;
+    virtual void add_input(const std::string & from, const json & from_opts) = 0;
 
     // call be after all add_input()
     // or constructing with data file
     virtual void prepare() = 0;
 
     virtual cv::Size get_output_size() = 0;
-    virtual cv::Size get_input_size(int index) = 0;
     /**
      * Generate output image
      * @param  inputs Input images, in BGR (CV_8UC3)
