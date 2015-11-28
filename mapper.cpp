@@ -47,7 +47,6 @@ int main(int argc, char const *argv[]) {
         std::cerr << "Reading input #" << i-3 << ": " << img_filename << std::endl;
         cv::Mat img = cv::imread(img_filename);
         std::cerr << "Image size = " << img.size() << std::endl;
-        assert(img.size() == remapper->get_input_size(i-3));
 
         cv::Mat img_c4;
         std::vector<cv::Mat> channels;
