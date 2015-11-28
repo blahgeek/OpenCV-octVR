@@ -483,9 +483,12 @@ namespace
 }
 
 void cv::cuda::GpuMat::elementNorm(OutputArray _dst, int rtype, Stream & stream) const {
-    CV_Assert(rtype == CV_32F && type() == CV_8UC3); // TODO
+    CV_Assert(rtype == CV_32F && (type() == CV_8UC3 || type() == CV_8UC4)); // TODO
     _dst.create(size(), rtype);
-    doElementNorm<uchar3, float>(*this, _dst.getGpuMat(), stream);
+    if(type() == CV_8UC3)
+        doElementNorm<uchar3, float>(*this, _dst.getGpuMat(), stream);
+    else
+        doElementNorm<uchar4, float>(*this, _dst.getGpuMat(), stream);
 }
 
 void cv::cuda::GpuMat::convertTo(OutputArray _dst, int rtype, Stream& stream) const

@@ -43,6 +43,11 @@
 #include "precomp.hpp"
 #include <iostream>
 
+namespace cv { namespace cuda { namespace device {
+    void mul_scalar_with_mask(const GpuMat &, float scale, const GpuMat &, GpuMat &);
+}}}
+
+
 namespace cv {
 namespace detail {
 
@@ -163,7 +168,7 @@ void GainCompensatorGPU::feed(const std::vector<cv::cuda::GpuMat> & images,
 
     std::vector<cv::cuda::GpuMat> norm_images(images.size());
     for(int i = 0 ; i < images.size() ; i += 1) {
-        CV_Assert(images[i].type() == CV_8UC3);
+        CV_Assert(images[i].type() == CV_8UC4);
         images[i].elementNorm(norm_images[i], CV_32F);
     }
 
@@ -252,10 +257,9 @@ void GainCompensatorGPU::feed(const std::vector<cv::cuda::GpuMat> & images,
     solve(A, b, gains_);
 }
 
-void GainCompensatorGPU::apply(int index, cv::cuda::GpuMat & image) {
+void GainCompensatorGPU::apply(int index, cv::cuda::GpuMat & image, cv::cuda::GpuMat & mask) {
     float g = gains_(index, 0);
-    Scalar_<float> scalar(g, g, g);
-    cv::cuda::multiply(image, scalar, image);
+    cv::cuda::device::mul_scalar_with_mask(image, g, mask, image);
 }
 
 #endif

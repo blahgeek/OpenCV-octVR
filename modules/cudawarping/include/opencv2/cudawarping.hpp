@@ -87,6 +87,8 @@ CV_EXPORTS void remap(InputArray src, OutputArray dst, InputArray xmap, InputArr
                       int interpolation, int borderMode = BORDER_CONSTANT, Scalar borderValue = Scalar(),
                       Stream& stream = Stream::Null());
 
+CV_EXPORTS void fastRemap(InputArray src, OutputArray dst, InputArray xmap, InputArray ymap, Stream & stream = Stream::Null());
+
 /** @brief Resizes an image.
 
 @param src Source image.
@@ -199,6 +201,8 @@ type as src .
 @sa pyrDown
  */
 CV_EXPORTS void pyrDown(InputArray src, OutputArray dst, Stream& stream = Stream::Null());
+
+CV_EXPORTS void fastPyrDown(InputArray src, OutputArray dst, Stream & stream = Stream::Null());
 
 /** @brief Upsamples an image and then smoothes it.
 

@@ -48,6 +48,7 @@ using namespace cv::cuda;
 #if !defined HAVE_CUDA || defined(CUDA_DISABLER)
 
 void cv::cuda::pyrDown(InputArray, OutputArray, Stream&) { throw_no_cuda(); }
+void cv::cuda::fastPyrDown(InputArray, OutputArray) {throw_no_cuda(); }
 void cv::cuda::pyrUp(InputArray, OutputArray, Stream&) { throw_no_cuda(); }
 
 #else // HAVE_CUDA
@@ -60,8 +61,25 @@ namespace cv { namespace cuda { namespace device
     namespace imgproc
     {
         template <typename T> void pyrDown_gpu(PtrStepSzb src, PtrStepSzb dst, cudaStream_t stream);
+
+        template <typename T> void fastPyrDown_caller(GpuMat src, PtrStepSz<T> dst, cudaStream_t stream);
     }
 }}}
+
+void cv::cuda::fastPyrDown(InputArray _src, OutputArray _dst, Stream & stream) {
+    using namespace cv::cuda::device::imgproc;
+
+    GpuMat src = _src.getGpuMat();
+    CV_Assert(src.type() == CV_8U || src.type() == CV_8UC4);
+
+    _dst.create((src.rows + 1) / 2, (src.cols + 1) / 2, src.type());
+    GpuMat dst = _dst.getGpuMat();
+
+    if(src.type() == CV_8U)
+        fastPyrDown_caller<uchar>(src, dst, StreamAccessor::getStream(stream));
+    else
+        fastPyrDown_caller<uchar4>(src, dst, StreamAccessor::getStream(stream));
+}
 
 void cv::cuda::pyrDown(InputArray _src, OutputArray _dst, Stream& stream)
 {

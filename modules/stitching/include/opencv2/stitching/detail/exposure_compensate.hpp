@@ -112,7 +112,7 @@ class CV_EXPORTS GainCompensatorGPU {
 public:
     void feed(const std::vector<cv::cuda::GpuMat> &images,
               const std::vector<cv::cuda::GpuMat> &masks);
-    void apply(int index, cv::cuda::GpuMat & image);
+    void apply(int index, cv::cuda::GpuMat & image, cv::cuda::GpuMat & mask);
     std::vector<double> gains() const;
 
 private:
