@@ -28,8 +28,10 @@ namespace cv { namespace cuda { namespace device
             {
                 const float xcoo = mapx.ptr(y)[x];
                 const float ycoo = mapy.ptr(y)[x];
-                if(xcoo < 0)
+                if(xcoo < 0) {
+                    dst.ptr(y)[x] = VecTraits<T>::all(0);
                     return;
+                }
 
                 typedef typename TypeVec<float, VecTraits<T>::cn>::vec_type work_type;
                 work_type val = tex2D<work_type>(src.texObj, xcoo, ycoo);
@@ -41,7 +43,7 @@ namespace cv { namespace cuda { namespace device
 
         template <typename T>
         void fast_remap_caller(GpuMat src, PtrStepf mapx, PtrStepf mapy, PtrStepSz<T> dst, cudaStream_t stream) {
-            cv::cudev::Texture<T> src_tex(cv::cudev::globPtr<T>(src), false, cudaFilterModeLinear);
+            cv::cudev::Texture<T> src_tex(cv::cudev::globPtr<T>(src), true, cudaFilterModeLinear);
 
             dim3 block(16, 16);
             dim3 grid(divUp(dst.cols, block.x), divUp(dst.rows, block.y));
