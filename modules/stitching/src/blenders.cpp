@@ -530,15 +530,13 @@ MultiBandGPUBlender::MultiBandGPUBlender(const std::vector<cuda::GpuMat> & masks
 }
 
 void MultiBandGPUBlender::blend(std::vector<cuda::GpuMat> & imgs, cuda::GpuMat & dst) {
-    for(int i = 0 ; i <= num_bands ; i += 1)
-        dst_pyr_laplace[i].setTo(Scalar::all(0));
     CV_Assert(imgs.size() == num_images);
 
     for(int n = 0 ; n < num_images ; n += 1)
         CV_Assert(imgs[n].type() == CV_8UC4);
 
-    std::vector<cuda::Stream> streams(num_images);
-    std::vector<cuda::GpuMat> tmps(num_images);
+    std::vector<cuda::Stream> streams(max(num_images + 1, num_bands + 1));
+    std::vector<cuda::GpuMat> tmps(num_images * num_bands);
     std::vector<std::vector<cuda::GpuMat> > src_pyr_laplaces(num_images);
 
     for(int n = 0 ; n < num_images ; n += 1) {
@@ -546,14 +544,19 @@ void MultiBandGPUBlender::blend(std::vector<cuda::GpuMat> & imgs, cuda::GpuMat &
         src_pyr_laplaces[n][0] = imgs[n];
     }
 
+    for(int i = 0 ; i <= num_bands ; i += 1)
+        dst_pyr_laplace[i].setTo(Scalar::all(0), streams[num_images]);
+
     for(int i = 0 ; i < num_bands ; i += 1)
         for(int n = 0 ; n < num_images ; n += 1)
             cuda::fastPyrDown(src_pyr_laplaces[n][i], src_pyr_laplaces[n][i+1], streams[n]);
 
+    streams[num_images].waitForCompletion();
+
     for(int i = 0 ; i < num_bands ; i += 1) {
         for(int n = 0 ; n < num_images ; n += 1) {
-            cuda::pyrUp(src_pyr_laplaces[n][i+1], tmps[n], streams[n]);
-            cuda::device::vr_add_sub_and_multiply<uchar4>(src_pyr_laplaces[n][i], tmps[n],
+            cuda::pyrUp(src_pyr_laplaces[n][i+1], tmps[n + i * num_images], streams[n]);
+            cuda::device::vr_add_sub_and_multiply<uchar4>(src_pyr_laplaces[n][i], tmps[n + i * num_images],
                                                           weight_pyr_gauss_lists[n][i], dst_pyr_laplace[i],
                                                           cuda::StreamAccessor::getStream(streams[n]));
         }
@@ -567,14 +570,20 @@ void MultiBandGPUBlender::blend(std::vector<cuda::GpuMat> & imgs, cuda::GpuMat &
     for(int n = 0 ; n < num_images ; n += 1)
         streams[n].waitForCompletion();
 
+    std::vector<cv::cuda::GpuMat> dst_tmps(num_bands);
     for(int i = 0 ; i <= num_bands ; i += 1)
-        cuda::divide(dst_pyr_laplace[i], dst_band_weights[i], dst_pyr_laplace[i]);
+        cuda::divide(dst_pyr_laplace[i], dst_band_weights[i], dst_pyr_laplace[i], 
+                     1, -1, streams[i]);
 
-    cuda::GpuMat tmp;
     for(int i = num_bands ; i > 0 ; i --) {
-        cuda::pyrUp(dst_pyr_laplace[i], tmp);
-        cuda::add(tmp, dst_pyr_laplace[i-1], dst_pyr_laplace[i-1]);
+        cuda::pyrUp(dst_pyr_laplace[i], dst_tmps[i-1], streams[i]); // choose i-1 to avoid malloc
     }
+
+    for(int i = 0 ; i <= num_bands ; i += 1)
+        streams[i].waitForCompletion();
+
+    for(int i = num_bands ; i > 0 ; i --)
+        cuda::add(dst_tmps[i-1], dst_pyr_laplace[i-1], dst_pyr_laplace[i-1]);
     dst_pyr_laplace[0].convertTo(dst, CV_8UC3);
 }
 
