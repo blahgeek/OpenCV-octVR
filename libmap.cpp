@@ -211,6 +211,15 @@ void MultiMapperImpl::get_output(const std::vector<cv::cuda::HostMem> & inputs, 
         sizes.push_back(out_size);
     }
 
+    std::vector<GpuMat> warped_imgs_uchar_scale(inputs.size());
+    if(this->compensator.empty()) {
+        std::cerr << "Compensator is null, preparing..." << std::endl;
+        for(int i = 0 ; i < inputs.size() ; i += 1)
+            cv::cuda::resize(warped_imgs_uchar[i], warped_imgs_uchar_scale[i],
+                             cv::Size(), working_scales[i], working_scales[i],
+                             cv::INTER_NEAREST, streams[i]);
+    }
+
     for(auto & s: streams)
         s.waitForCompletion();
     timer.tick("Uploading and remapping images");
@@ -218,21 +227,12 @@ void MultiMapperImpl::get_output(const std::vector<cv::cuda::HostMem> & inputs, 
     SAVE_MAT_VEC("warped_img", warped_imgs_uchar);
     SAVE_MAT_VEC("warped_mask", masks);
 
+
     if(this->compensator.empty()) {
         std::cerr << "Re-computing compensator gain" << std::endl;
 
-        std::vector<GpuMat> warped_imgs_uchar_scale(inputs.size());
-        std::vector<GpuMat> scaled_masks_clone(inputs.size());
-        for(int i = 0 ; i < inputs.size() ; i += 1) {
-            cv::cuda::resize(warped_imgs_uchar[i], warped_imgs_uchar_scale[i], cv::Size(), 
-                             working_scales[i], working_scales[i]);
-            // cv::erode(scaled_masks[i], scaled_masks_clone[i], cv::Mat(), cv::Point(-1, -1), 3);
-            scaled_masks[i].copyTo(scaled_masks_clone[i]);
-        }
-        timer.tick("Scale");
-
         this->compensator = cv::makePtr<cv::detail::GainCompensatorGPU>();
-        compensator->feed(warped_imgs_uchar_scale, scaled_masks_clone);
+        compensator->feed(warped_imgs_uchar_scale, scaled_masks);
         //compensator->feed(warped_imgs_uchar, masks);
         timer.tick("Compensator");
     }
