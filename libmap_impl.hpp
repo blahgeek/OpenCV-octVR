@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-20
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-11-28
+* @Last Modified time: 2015-11-30
 */
 
 #ifndef VR_LIBMAP_IMPL_H
@@ -38,6 +38,15 @@ private:
     std::vector<GpuMat> seam_masks;
     cv::Ptr<cv::detail::MultiBandGPUBlender> blender;
 
+private:
+    std::vector<cv::cuda::Stream> streams;
+    std::vector<GpuMat> warped_imgs;
+
+    std::vector<GpuMat> warped_imgs_scale;
+    GpuMat result;
+
+    void prepare();
+
 public:
     MultiMapperImpl(const std::string & to, const json & to_opts, 
                     int out_width, int out_height);
@@ -48,8 +57,6 @@ public:
     cv::Size get_output_size() override {
         return this->out_size;
     }
-
-    void prepare() override;
 
     void get_output(const std::vector<cv::cuda::HostMem> & inputs, cv::Mat & output) override;
 

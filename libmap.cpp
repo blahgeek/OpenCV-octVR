@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-11-29
+* @Last Modified time: 2015-11-30
 */
 
 #include <iostream>
@@ -81,6 +81,8 @@ MultiMapperImpl::MultiMapperImpl(const std::string & to, const json & to_opts,
             tmp.push_back(cv::Point2d(double(i) / out_width,
                                       double(j) / out_height));
     this->output_map_points = out_camera->image_to_obj(tmp);
+
+    this->prepare();
 }
 
 void MultiMapperImpl::add_input(const std::string & from, const json & from_opts) {
@@ -164,6 +166,17 @@ void MultiMapperImpl::prepare() {
 
     compensator = cv::makePtr<cv::detail::GainCompensatorGPU>(scaled_masks);
     timer.tick("Gain Compensator initialize");
+
+    this->streams.resize(masks.size());
+    this->warped_imgs.resize(masks.size());
+    this->warped_imgs_scale.resize(masks.size());
+    for(int i = 0 ; i < masks.size() ; i += 1) {
+        warped_imgs[i].create(out_size, CV_8UC4);
+        cv::cuda::resize(warped_imgs[i], warped_imgs_scale[i],
+                         cv::Size(), working_scales[i], working_scales[i],
+                         cv::INTER_NEAREST);
+    }
+    this->result.create(out_size, CV_8UC3);
 }
 
 #ifdef DEBUG_SAVE_MAT
@@ -192,59 +205,36 @@ void MultiMapperImpl::prepare() {
 void MultiMapperImpl::get_output(const std::vector<cv::cuda::HostMem> & inputs, cv::Mat & output) {
     Timer timer("MultiMapper");
 
+    assert(inputs.size() == masks.size());
     for(int i = 0 ; i < inputs.size() ; i += 1)
         assert(inputs[i].type() == CV_8UC4);
     assert(output.type() == CV_8UC3 && output.size() == this->out_size);
 
-    std::vector<cv::cuda::Stream> streams(inputs.size());
-
     std::vector<GpuMat> gpu_inputs(inputs.size());
-    //for(int i = 0 ; i < inputs.size() ; i += 1)
-        //gpu_inputs[i].upload(inputs[i]);
-    //timer.tick("Upload inputs to GPU");
     
     std::vector<cv::Point2i> corners;
-    std::vector<cv::Size> sizes;
-    std::vector<GpuMat> warped_imgs_uchar(inputs.size());
     
     for(int i = 0 ; i < inputs.size() ; i += 1) {
         gpu_inputs[i].upload(inputs[i], streams[i]);
-        cv::cuda::fastRemap(gpu_inputs[i], warped_imgs_uchar[i], map1s[i], map2s[i], streams[i]);
-        corners.emplace_back(0, 0);
-        sizes.push_back(out_size);
-    }
-
-    std::vector<GpuMat> warped_imgs_uchar_scale(inputs.size());
-    for(int i = 0 ; i < inputs.size() ; i += 1)
-        cv::cuda::resize(warped_imgs_uchar[i], warped_imgs_uchar_scale[i],
+        cv::cuda::fastRemap(gpu_inputs[i], warped_imgs[i], map1s[i], map2s[i], streams[i]);
+        cv::cuda::resize(warped_imgs[i], warped_imgs_scale[i],
                          cv::Size(), working_scales[i], working_scales[i],
                          cv::INTER_NEAREST, streams[i]);
+        corners.emplace_back(0, 0);
+    }
 
     for(auto & s: streams)
         s.waitForCompletion();
-    timer.tick("Uploading and remapping images");
+    timer.tick("Uploading and remapping and resizing images");
 
-    SAVE_MAT_VEC("warped_img", warped_imgs_uchar);
-    SAVE_MAT_VEC("warped_mask", masks);
-
-
-    std::cerr << "Computing compensator gain" << std::endl;
-    compensator->feed(warped_imgs_uchar_scale);
-    //compensator->feed(warped_imgs_uchar, masks);
+    compensator->feed(warped_imgs_scale);
     timer.tick("Compensator");
 
-    // TODO Optimize this
-    // GainCompensator::apply does img *= gain for every image
-    // while size of image is large (output size), and only part of it is valid (mask)
     for(int i = 0 ; i < inputs.size() ; i += 1)
-        compensator->apply(i, warped_imgs_uchar[i], masks[i]);
+        compensator->apply(i, warped_imgs[i], masks[i]);
     timer.tick("Compensator apply");
 
-    SAVE_MAT_VEC("warped_img_compensator", warped_imgs_uchar);
-    SAVE_MAT_VEC("warped_mask_compensator", scaled_masks);
-
-    GpuMat result;
-    blender->blend(warped_imgs_uchar, result);
+    blender->blend(warped_imgs, result);
     timer.tick("Blender blend");
 
     assert(result.type() == CV_8UC3);

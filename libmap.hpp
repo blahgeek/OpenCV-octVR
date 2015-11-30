@@ -40,10 +40,6 @@ public:
 
     virtual void add_input(const std::string & from, const json & from_opts) = 0;
 
-    // call be after all add_input()
-    // or constructing with data file
-    virtual void prepare() = 0;
-
     virtual cv::Size get_output_size() = 0;
     /**
      * Generate output image
