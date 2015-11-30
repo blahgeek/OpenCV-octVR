@@ -217,7 +217,7 @@ void MultiMapperImpl::get_output(const std::vector<cv::cuda::HostMem> & inputs, 
         for(int i = 0 ; i < inputs.size() ; i += 1)
             cv::cuda::resize(warped_imgs_uchar[i], warped_imgs_uchar_scale[i],
                              cv::Size(), working_scales[i], working_scales[i],
-                             cv::INTER_LINEAR, streams[i]);
+                             cv::INTER_NEAREST, streams[i]);
     }
 
     for(auto & s: streams)
@@ -226,6 +226,7 @@ void MultiMapperImpl::get_output(const std::vector<cv::cuda::HostMem> & inputs, 
 
     SAVE_MAT_VEC("warped_img", warped_imgs_uchar);
     SAVE_MAT_VEC("warped_mask", masks);
+
 
     if(this->compensator.empty()) {
         std::cerr << "Re-computing compensator gain" << std::endl;
