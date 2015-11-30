@@ -151,6 +151,10 @@ void GainCompensator::feed(const std::vector<Point> &corners, const std::vector<
 }
 
 #if !defined HAVE_CUDA || defined(CUDA_DISABLER)
+GainCompensatorGPU::GainCompensatorGPU(const std::vector<cv::cuda::GpuMat> &) {
+    throw_no_cuda();
+}
+
 void GainCompensatorGPU::feed(const std::vector<cv::cuda::GpuMat> &,
                               const std::vector<cv::cuda::GpuMat &) {
     throw_no_cuda();
@@ -162,54 +166,56 @@ void GainCompensatorGPU::apply(int index, cv::cuda::GpuMat & image) {
 
 #else
 
-void GainCompensatorGPU::feed(const std::vector<cv::cuda::GpuMat> & images,
-                              const std::vector<cv::cuda::GpuMat> & masks) {
-    CV_Assert(images.size() == masks.size());
+GainCompensatorGPU::GainCompensatorGPU(const std::vector<cv::cuda::GpuMat> & masks) {
+    this->num_images = masks.size();
+    std::cerr << "Initing GainCompensatorGPU, num_images = " << num_images << std::endl;
 
-    std::vector<cv::cuda::GpuMat> norm_images(images.size());
-    for(int i = 0 ; i < images.size() ; i += 1) {
-        CV_Assert(images[i].type() == CV_8UC4);
-        images[i].elementNorm(norm_images[i], CV_32F);
+    this->N = Mat_<int>(num_images, num_images); N.setTo(0);
+
+    for(int i = 0 ; i < num_images ; i += 1) {
+        for(int j = i ; j < num_images ; j += 1) {
+            cv::cuda::GpuMat this_intersect;
+            if(i != j) {
+                cv::cuda::bitwise_and(masks[i], masks[j], this_intersect);
+                int nz = cv::cuda::countNonZero(this_intersect);
+                N(i, j) = N(j, i) = std::max(1, nz);
+                this->intersects.push_back(this_intersect);
+            } else {
+                int nz = cv::cuda::countNonZero(masks[i]);
+                N(i, j) = std::max(1, nz);
+            }
+        }
     }
 
-    int num_images = images.size();
+    this->norm_images.resize(num_images);
+    for(int i = 0 ; i < num_images ; i += 1)
+        norm_images[i].create(masks[i].size(), CV_32F);
 
-    Mat_<int> N(num_images, num_images); N.setTo(0);
-    Mat_<double> I(num_images, num_images); I.setTo(0);
-
-    int intersect_count = (num_images * (num_images + 1)) / 2;
-    std::vector<cv::cuda::Stream> streams(intersect_count);
-
-    std::vector<cv::cuda::GpuMat> count_non_zero_results(intersect_count);
-    std::vector<cv::cuda::HostMem> count_non_zero_results_host;
-
-    std::vector<cv::cuda::GpuMat> intersects(intersect_count);
-    std::vector<cv::cuda::GpuMat> sum1_results(intersect_count), sum2_results(intersect_count);
-    std::vector<cv::cuda::HostMem> sum1_results_host, 
-                                   sum2_results_host;
-
+    this->intersect_count = (num_images * (num_images - 1)) / 2;
+    this->streams.resize(intersect_count);
     for(int i = 0 ; i < intersect_count ; i += 1) {
-        count_non_zero_results_host.push_back(cv::cuda::HostMem(1, 1, CV_32SC1));
+        sum1_results.push_back(cv::cuda::GpuMat(1, 1, CV_64FC1));
+        sum2_results.push_back(cv::cuda::GpuMat(1, 1, CV_64FC1));
         sum1_results_host.push_back(cv::cuda::HostMem(1, 1, CV_64FC1));
         sum2_results_host.push_back(cv::cuda::HostMem(1, 1, CV_64FC1));
     }
+}
+
+void GainCompensatorGPU::feed(const std::vector<cv::cuda::GpuMat> & images) {
+    CV_Assert(images.size() == this->num_images);
+
+    for(int i = 0 ; i < images.size() ; i += 1) {
+        CV_Assert(images[i].type() == CV_8UC4);
+        CV_Assert(images[i].size() == this->norm_images[i].size());
+        images[i].elementNorm(norm_images[i], CV_32F);
+    }
+
+    Mat_<double> I(num_images, num_images); I.setTo(0);
 
     int index = -1;
     for(int i = 0 ; i < images.size() ; i += 1) {
-        for(int j = i ; j < images.size() ; j += 1) {
+        for(int j = i + 1 ; j < images.size() ; j += 1) {
             index += 1;
-
-            if(i != j) {
-                cv::cuda::bitwise_and(masks[i], masks[j], intersects[index], 
-                        cv::noArray(), streams[index]);
-                cv::cuda::countNonZero(intersects[index], count_non_zero_results[index], streams[index]);
-            } else
-                cv::cuda::countNonZero(masks[i], count_non_zero_results[index], streams[index]);
-
-            count_non_zero_results[index].download(count_non_zero_results_host[index], streams[index]);
-
-            if(i == j)
-                continue;
 
             cv::cuda::GpuMat & s1 = sum1_results[index];
             cv::cuda::GpuMat & s2 = sum2_results[index];
@@ -223,14 +229,11 @@ void GainCompensatorGPU::feed(const std::vector<cv::cuda::GpuMat> & images,
 
     index = -1;
     for(int i = 0 ; i < images.size() ; i += 1) {
-        for(int j = i ; j < images.size() ; j += 1) {
+        for(int j = i + 1 ; j < images.size() ; j += 1) {
             index += 1;
             streams[index].waitForCompletion();
 
-            int n = std::max(1, *(int32_t*)count_non_zero_results_host[index].data);
-            N(i, j) = N(j, i) = n;
-            if(i == j)
-                continue;
+            int n = N(i, j);
 
             I(i, j) = *(double *)sum1_results_host[index].data / n;
             I(j, i) = *(double *)sum2_results_host[index].data / n;
