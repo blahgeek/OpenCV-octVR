@@ -60,7 +60,8 @@ namespace cv { namespace cuda { namespace device
             const int y = blockIdx.y * blockDim.y + threadIdx.y;
 
             __shared__ sum_t s_srcPatch[7][18];
-            __shared__ sum_t s_dstPatch[12][32];
+            /*__shared__ sum_t s_dstPatch[12][32];*/
+            __shared__ sum_t s_dstPatch[6][32];
 
             if (threadIdx.x < 18 && threadIdx.y < 7)
             {
@@ -92,9 +93,11 @@ namespace cv { namespace cuda { namespace device
                 sum = sum + (evenFlag * 0.375f ) * s_srcPatch[1 + (threadIdx.y >> 1)][1 + ((tidx    ) >> 1)];
                 sum = sum + ( oddFlag * 0.25f  ) * s_srcPatch[1 + (threadIdx.y >> 1)][1 + ((tidx + 1) >> 1)];
                 sum = sum + (evenFlag * 0.0625f) * s_srcPatch[1 + (threadIdx.y >> 1)][1 + ((tidx + 2) >> 1)];
+
+                s_dstPatch[1 + (threadIdx.y >> 1)][threadIdx.x] = sum;
             }
 
-            s_dstPatch[2 + threadIdx.y][threadIdx.x] = sum;
+            /*s_dstPatch[2 + threadIdx.y][threadIdx.x] = sum;*/
 
             if (threadIdx.y < 2)
             {
@@ -107,9 +110,11 @@ namespace cv { namespace cuda { namespace device
                     sum = sum + (evenFlag * 0.375f ) * s_srcPatch[0][1 + ((tidx    ) >> 1)];
                     sum = sum + ( oddFlag * 0.25f  ) * s_srcPatch[0][1 + ((tidx + 1) >> 1)];
                     sum = sum + (evenFlag * 0.0625f) * s_srcPatch[0][1 + ((tidx + 2) >> 1)];
+
+                    s_dstPatch[0][threadIdx.x] = sum;
                 }
 
-                s_dstPatch[threadIdx.y][threadIdx.x] = sum;
+                /*s_dstPatch[threadIdx.y][threadIdx.x] = sum;*/
             }
 
             if (threadIdx.y > 5)
@@ -123,9 +128,11 @@ namespace cv { namespace cuda { namespace device
                     sum = sum + (evenFlag * 0.375f ) * s_srcPatch[6][1 + ((tidx    ) >> 1)];
                     sum = sum + ( oddFlag * 0.25f  ) * s_srcPatch[6][1 + ((tidx + 1) >> 1)];
                     sum = sum + (evenFlag * 0.0625f) * s_srcPatch[6][1 + ((tidx + 2) >> 1)];
+
+                    s_dstPatch[2 + (threadIdx.y >> 1)][threadIdx.x] = sum;
                 }
 
-                s_dstPatch[4 + threadIdx.y][threadIdx.x] = sum;
+                /*s_dstPatch[4 + threadIdx.y][threadIdx.x] = sum;*/
             }
 
             __syncthreads();
@@ -134,11 +141,25 @@ namespace cv { namespace cuda { namespace device
 
             const int tidy = threadIdx.y;
 
-            sum = sum + 0.0625f * s_dstPatch[2 + tidy - 2][threadIdx.x];
-            sum = sum + 0.25f   * s_dstPatch[2 + tidy - 1][threadIdx.x];
-            sum = sum + 0.375f  * s_dstPatch[2 + tidy    ][threadIdx.x];
-            sum = sum + 0.25f   * s_dstPatch[2 + tidy + 1][threadIdx.x];
-            sum = sum + 0.0625f * s_dstPatch[2 + tidy + 2][threadIdx.x];
+            if(eveny) {
+                sum = sum + 0.0625f * s_dstPatch[1 + (tidy >> 1) - 1][threadIdx.x];
+                /*sum = sum + 0.25f   * s_dstPatch[2 + tidy - 1][threadIdx.x];*/
+                sum = sum + 0.375f  * s_dstPatch[1 + (tidy >> 1)    ][threadIdx.x];
+                /*sum = sum + 0.25f   * s_dstPatch[2 + tidy + 1][threadIdx.x];*/
+                sum = sum + 0.0625f * s_dstPatch[1 + (tidy >> 1) + 1][threadIdx.x];
+            } else {
+                /*sum = sum + 0.0625f * s_dstPatch[2 + tidy - 2][threadIdx.x];*/
+                sum = sum + 0.25f   * s_dstPatch[1 + ((tidy - 1) >> 1)][threadIdx.x];
+                /*sum = sum + 0.375f  * s_dstPatch[2 + tidy    ][threadIdx.x];*/
+                sum = sum + 0.25f   * s_dstPatch[1 + ((tidy + 1) >> 1)][threadIdx.x];
+                /*sum = sum + 0.0625f * s_dstPatch[2 + tidy + 2][threadIdx.x];*/
+            }
+
+            /*sum = sum + 0.0625f * s_dstPatch[2 + tidy - 2][threadIdx.x];*/
+            /*sum = sum + 0.25f   * s_dstPatch[2 + tidy - 1][threadIdx.x];*/
+            /*sum = sum + 0.375f  * s_dstPatch[2 + tidy    ][threadIdx.x];*/
+            /*sum = sum + 0.25f   * s_dstPatch[2 + tidy + 1][threadIdx.x];*/
+            /*sum = sum + 0.0625f * s_dstPatch[2 + tidy + 2][threadIdx.x];*/
 
             if (x < dst.cols && y < dst.rows)
                 dst(y, x) = saturate_cast<T>(4.0f * sum);
