@@ -544,46 +544,41 @@ void MultiBandGPUBlender::blend(std::vector<cuda::GpuMat> & imgs, cuda::GpuMat &
         src_pyr_laplaces[n][0] = imgs[n];
     }
 
-    for(int i = 0 ; i <= num_bands ; i += 1)
-        dst_pyr_laplace[i].setTo(Scalar::all(0), streams[num_images]);
-
     for(int i = 0 ; i < num_bands ; i += 1)
         for(int n = 0 ; n < num_images ; n += 1)
             cuda::fastPyrDown(src_pyr_laplaces[n][i], src_pyr_laplaces[n][i+1], streams[n]);
 
-    streams[num_images].waitForCompletion();
-
-    for(int i = 0 ; i < num_bands ; i += 1) {
-        for(int n = 0 ; n < num_images ; n += 1) {
+    for(int i = 0 ; i < num_bands ; i += 1)
+        for(int n = 0 ; n < num_images ; n += 1)
             cuda::pyrUp(src_pyr_laplaces[n][i+1], tmps[n + i * num_images], streams[n]);
-            cuda::device::vr_add_sub_and_multiply<uchar4>(src_pyr_laplaces[n][i], tmps[n + i * num_images],
-                                                          weight_pyr_gauss_lists[n][i], dst_pyr_laplace[i],
-                                                          cuda::StreamAccessor::getStream(streams[n]));
-        }
-    }
-
-    for(int n = 0 ; n < num_images ; n += 1)
-        cuda::device::vr_add_multiply<uchar4>(src_pyr_laplaces[n][num_bands], weight_pyr_gauss_lists[n][num_bands],
-                                              dst_pyr_laplace[num_bands],
-                                              cuda::StreamAccessor::getStream(streams[n]));
 
     for(int n = 0 ; n < num_images ; n += 1)
         streams[n].waitForCompletion();
 
     std::vector<cv::cuda::GpuMat> dst_tmps(num_bands);
-    for(int i = 0 ; i <= num_bands ; i += 1)
+    for(int i = 0 ; i <= num_bands ; i += 1) {
+        dst_pyr_laplace[i].setTo(Scalar::all(0), streams[i]);
+        for(int n = 0 ; n < num_images ; n += 1) {
+            if(i != num_bands)
+                cuda::device::vr_add_sub_and_multiply<uchar4>(src_pyr_laplaces[n][i], tmps[n + i * num_images],
+                                                              weight_pyr_gauss_lists[n][i], dst_pyr_laplace[i],
+                                                              cuda::StreamAccessor::getStream(streams[i]));
+            else
+                cuda::device::vr_add_multiply<uchar4>(src_pyr_laplaces[n][num_bands], weight_pyr_gauss_lists[n][num_bands],
+                                                      dst_pyr_laplace[num_bands],
+                                                      cuda::StreamAccessor::getStream(streams[i]));
+        }
         cuda::divide(dst_pyr_laplace[i], dst_band_weights[i], dst_pyr_laplace[i], 
                      1, -1, streams[i]);
-
-    for(int i = num_bands ; i > 0 ; i --) {
-        cuda::pyrUp(dst_pyr_laplace[i], dst_tmps[i-1], streams[i]); // choose i-1 to avoid malloc
     }
 
     for(int i = 0 ; i <= num_bands ; i += 1)
         streams[i].waitForCompletion();
 
-    for(int i = num_bands ; i > 0 ; i --)
-        cuda::add(dst_tmps[i-1], dst_pyr_laplace[i-1], dst_pyr_laplace[i-1]);
+    for(int i = num_bands ; i > 0 ; i --) {
+        cuda::pyrUp(dst_pyr_laplace[i], tmps[0]);
+        cuda::add(tmps[0], dst_pyr_laplace[i-1], dst_pyr_laplace[i-1]);
+    }
     dst_pyr_laplace[0].convertTo(dst, CV_8UC3);
 }
 
