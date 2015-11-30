@@ -149,6 +149,12 @@ private:
 
     std::vector<std::vector<cuda::GpuMat> > weight_pyr_gauss_lists;
 
+private:
+    std::vector<cuda::Stream> streams;
+    std::vector<cuda::GpuMat> tmps;
+    std::vector<cuda::GpuMat> dst_tmps;
+    std::vector<std::vector<cuda::GpuMat> > src_pyr_laplaces;
+
 public:
     MultiBandGPUBlender(const std::vector<cuda::GpuMat> & masks, int num_bands_=5);
     void blend(std::vector<cuda::GpuMat> & imgs, cuda::GpuMat & dst);
