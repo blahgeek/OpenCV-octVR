@@ -161,6 +161,9 @@ void MultiMapperImpl::prepare() {
     std::cerr << "Using MultiBandBlender with band number = " << blend_bands << std::endl;
     blender = cv::makePtr<cv::detail::MultiBandGPUBlender>(seam_masks, blend_bands);
     timer.tick("Blender initialize");
+
+    compensator = cv::makePtr<cv::detail::GainCompensatorGPU>(scaled_masks);
+    timer.tick("Gain Compensator initialize");
 }
 
 #ifdef DEBUG_SAVE_MAT
@@ -212,13 +215,10 @@ void MultiMapperImpl::get_output(const std::vector<cv::cuda::HostMem> & inputs, 
     }
 
     std::vector<GpuMat> warped_imgs_uchar_scale(inputs.size());
-    if(this->compensator.empty()) {
-        std::cerr << "Compensator is null, preparing..." << std::endl;
-        for(int i = 0 ; i < inputs.size() ; i += 1)
-            cv::cuda::resize(warped_imgs_uchar[i], warped_imgs_uchar_scale[i],
-                             cv::Size(), working_scales[i], working_scales[i],
-                             cv::INTER_NEAREST, streams[i]);
-    }
+    for(int i = 0 ; i < inputs.size() ; i += 1)
+        cv::cuda::resize(warped_imgs_uchar[i], warped_imgs_uchar_scale[i],
+                         cv::Size(), working_scales[i], working_scales[i],
+                         cv::INTER_NEAREST, streams[i]);
 
     for(auto & s: streams)
         s.waitForCompletion();
@@ -228,14 +228,10 @@ void MultiMapperImpl::get_output(const std::vector<cv::cuda::HostMem> & inputs, 
     SAVE_MAT_VEC("warped_mask", masks);
 
 
-    if(this->compensator.empty()) {
-        std::cerr << "Re-computing compensator gain" << std::endl;
-
-        this->compensator = cv::makePtr<cv::detail::GainCompensatorGPU>();
-        compensator->feed(warped_imgs_uchar_scale, scaled_masks);
-        //compensator->feed(warped_imgs_uchar, masks);
-        timer.tick("Compensator");
-    }
+    std::cerr << "Computing compensator gain" << std::endl;
+    compensator->feed(warped_imgs_uchar_scale);
+    //compensator->feed(warped_imgs_uchar, masks);
+    timer.tick("Compensator");
 
     // TODO Optimize this
     // GainCompensator::apply does img *= gain for every image

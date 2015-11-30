@@ -55,10 +55,6 @@ public:
 
     void get_single_output(const cv::Mat & input, cv::Mat & output) override;
 
-    void reset_compensator() override {
-        compensator.release();
-    }
-
     void dump(std::ofstream & f) override;
 };
 

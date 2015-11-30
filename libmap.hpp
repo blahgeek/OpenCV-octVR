@@ -58,12 +58,6 @@ public:
      */
     virtual void get_single_output(const cv::Mat & input, cv::Mat & output) = 0;
 
-    /**
-     * Normally, compensator gain will be computed based on the first call of get_output
-     * Call reset_compensator if you want to reset(re-compute) it
-     */
-    virtual void reset_compensator() = 0;
-
     virtual void dump(std::ofstream & f) = 0;
 };
 
