@@ -82,7 +82,7 @@ MultiMapperImpl::MultiMapperImpl(const std::string & to, const json & to_opts,
                                       double(j) / out_height));
     this->output_map_points = out_camera->image_to_obj(tmp);
 
-    this->prepare();
+    //this->prepare();
 }
 
 void MultiMapperImpl::add_input(const std::string & from, const json & from_opts) {
