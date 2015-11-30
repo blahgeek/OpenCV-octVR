@@ -59,10 +59,10 @@ namespace cv { namespace cuda { namespace device
             const int x = blockIdx.x * blockDim.x + threadIdx.x;
             const int y = blockIdx.y * blockDim.y + threadIdx.y;
 
-            __shared__ sum_t s_srcPatch[10][10];
-            __shared__ sum_t s_dstPatch[20][16];
+            __shared__ sum_t s_srcPatch[7][18];
+            __shared__ sum_t s_dstPatch[12][32];
 
-            if (threadIdx.x < 10 && threadIdx.y < 10)
+            if (threadIdx.x < 18 && threadIdx.y < 7)
             {
                 int srcx = static_cast<int>((blockIdx.x * blockDim.x) / 2 + threadIdx.x) - 1;
                 int srcy = static_cast<int>((blockIdx.y * blockDim.y) / 2 + threadIdx.y) - 1;
@@ -112,17 +112,17 @@ namespace cv { namespace cuda { namespace device
                 s_dstPatch[threadIdx.y][threadIdx.x] = sum;
             }
 
-            if (threadIdx.y > 13)
+            if (threadIdx.y > 5)
             {
                 sum = VecTraits<sum_t>::all(0);
 
                 if (eveny)
                 {
-                    sum = sum + (evenFlag * 0.0625f) * s_srcPatch[9][1 + ((tidx - 2) >> 1)];
-                    sum = sum + ( oddFlag * 0.25f  ) * s_srcPatch[9][1 + ((tidx - 1) >> 1)];
-                    sum = sum + (evenFlag * 0.375f ) * s_srcPatch[9][1 + ((tidx    ) >> 1)];
-                    sum = sum + ( oddFlag * 0.25f  ) * s_srcPatch[9][1 + ((tidx + 1) >> 1)];
-                    sum = sum + (evenFlag * 0.0625f) * s_srcPatch[9][1 + ((tidx + 2) >> 1)];
+                    sum = sum + (evenFlag * 0.0625f) * s_srcPatch[6][1 + ((tidx - 2) >> 1)];
+                    sum = sum + ( oddFlag * 0.25f  ) * s_srcPatch[6][1 + ((tidx - 1) >> 1)];
+                    sum = sum + (evenFlag * 0.375f ) * s_srcPatch[6][1 + ((tidx    ) >> 1)];
+                    sum = sum + ( oddFlag * 0.25f  ) * s_srcPatch[6][1 + ((tidx + 1) >> 1)];
+                    sum = sum + (evenFlag * 0.0625f) * s_srcPatch[6][1 + ((tidx + 2) >> 1)];
                 }
 
                 s_dstPatch[4 + threadIdx.y][threadIdx.x] = sum;
@@ -146,7 +146,7 @@ namespace cv { namespace cuda { namespace device
 
         template <typename T> void pyrUp_caller(PtrStepSz<T> src, PtrStepSz<T> dst, cudaStream_t stream)
         {
-            const dim3 block(16, 16);
+            const dim3 block(32, 8);
             const dim3 grid(divUp(dst.cols, block.x), divUp(dst.rows, block.y));
 
             pyrUp<<<grid, block, 0, stream>>>(src, dst);
