@@ -15,18 +15,21 @@
 #include <opencv2/core/ocl.hpp>
 #include <opencv2/core/cuda.hpp>
 #include "./libmap.hpp"
+#include <utility>
 #include <unistd.h>
 #include <cuda_profiler_api.h>
 
 using namespace vr;
 
-std::vector<cv::Mat> readImages(std::vector<std::string> filenames) {
+std::pair<std::vector<cv::Mat>, std::vector<cv::Size>> readImages(std::vector<std::string> filenames) {
     std::vector<cv::Mat> imgs;
+    std::vector<cv::Size> sizes;
     for(int i = 0 ; i < filenames.size() ; i += 1) {
         std::cerr << "Reading input #" << i << ": " << filenames[i] << std::endl;
 
         cv::Mat img = cv::imread(filenames[i]);
         std::cerr << "Image size = " << img.size() << std::endl;
+        sizes.push_back(img.size());
 
         cv::Mat img_c4;
         std::vector<cv::Mat> channels;
@@ -36,7 +39,7 @@ std::vector<cv::Mat> readImages(std::vector<std::string> filenames) {
 
         imgs.push_back(img_c4);
     }
-    return imgs;
+    return std::make_pair(imgs, sizes);
 }
 
 int main(int argc, char const *argv[]) {
@@ -49,7 +52,9 @@ int main(int argc, char const *argv[]) {
     char const * map_filename = argv[1];
     char const * output_filename = argv[2];
     std::vector<std::string> input_filenames(argv+3, argv+argc);
-    auto imgs = readImages(input_filenames);
+    std::vector<cv::Mat> imgs;
+    std::vector<cv::Size> in_sizes;
+    std::tie(imgs, in_sizes) = readImages(input_filenames);
 
     std::cerr << "Loading map file " << map_filename << std::endl;
     std::ifstream map_file(map_filename);
@@ -58,7 +63,7 @@ int main(int argc, char const *argv[]) {
     auto output_size = remapper->get_output_size();
     std::cerr << "Done. Output size = " << output_size << std::endl;
 
-    auto async_remapper = AsyncMultiMapper::New(remapper);
+    auto async_remapper = AsyncMultiMapper::New(remapper, in_sizes);
 
     cv::Mat output(output_size, CV_8UC3);
 
