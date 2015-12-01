@@ -62,9 +62,9 @@ public:
     static AsyncMultiMapper * New(MultiMapper * mapper);
 
     virtual void push(std::vector<cv::Mat> & inputs,
-                      cv::Mat & output);
+                      cv::Mat & output) = 0;
     // return the same output as you pushed
-    virtual cv::Mat pop();
+    virtual cv::Mat pop() = 0;
 };
 
 class Timer {

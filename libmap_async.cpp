@@ -34,7 +34,7 @@ void AsyncMultiMapperImpl::run_upload_inputs_hostmem_to_gpumat() {
 
 void AsyncMultiMapperImpl::run_do_mapping() {
     auto gpumats = this->inputs_gpumat_q.pop();
-    cv::cuda::GpuMat output;
+    cv::cuda::GpuMat output(mapper->get_output_size(), CV_8UC3);
     this->mapper->get_output(gpumats, output);
     this->output_gpumat_q.push(std::move(output));
 }
