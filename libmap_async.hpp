@@ -45,12 +45,14 @@ public:
 class AsyncMultiMapperImpl: public AsyncMultiMapper {
 private:
     Queue<std::vector<cv::Mat>> inputs_mat_q;
-    Queue<std::vector<cv::cuda::HostMem>> inputs_hostmem_q;
-    Queue<std::vector<cv::cuda::GpuMat>> inputs_gpumat_q;
-    Queue<cv::cuda::GpuMat> output_gpumat_q;
-    Queue<cv::cuda::HostMem> output_hostmem_q;
-    Queue<cv::Mat> output_empty_mat_q;
-    Queue<cv::Mat> output_mat_q;
+    Queue<std::vector<cv::cuda::HostMem>> inputs_hostmem_q, free_inputs_hostmem_q;
+    Queue<std::vector<cv::cuda::GpuMat>> inputs_gpumat_q, free_inputs_gpumat_q;
+    Queue<cv::cuda::GpuMat> output_gpumat_q, free_output_gpumat_q;
+    Queue<cv::cuda::HostMem> output_hostmem_q, free_output_hostmem_q;
+    Queue<cv::Mat> output_mat_q, free_output_mat_q;
+
+    cv::Size out_size;
+    std::vector<cv::Size> in_sizes;
 
     MultiMapper * mapper;
 
@@ -65,7 +67,7 @@ private:
     void run_copy_output_hostmem_to_mat();
 
 public:
-    AsyncMultiMapperImpl(MultiMapper * m);
+    AsyncMultiMapperImpl(MultiMapper * m, std::vector<cv::Size> in_sizes);
 
     void push(std::vector<cv::Mat> & inputs, cv::Mat & output) override;
     cv::Mat pop() override;

@@ -59,7 +59,7 @@ public:
 
 class AsyncMultiMapper {
 public:
-    static AsyncMultiMapper * New(MultiMapper * mapper);
+    static AsyncMultiMapper * New(MultiMapper * mapper, std::vector<cv::Size> in_sizes);
 
     virtual void push(std::vector<cv::Mat> & inputs,
                       cv::Mat & output) = 0;

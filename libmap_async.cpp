@@ -14,61 +14,91 @@ using namespace vr;
 
 void AsyncMultiMapperImpl::run_copy_inputs_mat_to_hostmem() {
     auto inputs_mat = this->inputs_mat_q.pop();
-    std::vector<cv::cuda::HostMem> hostmems;
-    for(auto & m: inputs_mat) {
-        cv::cuda::HostMem hm;
-        m.copyTo(hm);
-        hostmems.push_back(std::move(hm));
+    auto hostmems = this->free_inputs_hostmem_q.pop();
+
+    for(int i = 0 ; i < inputs_mat.size() ; i += 1) {
+        assert(inputs_mat[i].size() == hostmems[i].size());
+        assert(inputs_mat[i].type() == hostmems[i].type());
+        inputs_mat[i].copyTo(hostmems[i]);
     }
     this->inputs_hostmem_q.push(std::move(hostmems));
 }
 
 void AsyncMultiMapperImpl::run_upload_inputs_hostmem_to_gpumat() {
     auto hostmems = this->inputs_hostmem_q.pop();
-    std::vector<cv::cuda::GpuMat> gpumats(hostmems.size());
+    auto gpumats = this->free_inputs_gpumat_q.pop();
+
     for(int i = 0 ; i < hostmems.size() ; i += 1)
         gpumats[i].upload(hostmems[i], this->upload_stream);
     this->upload_stream.waitForCompletion();
+
     this->inputs_gpumat_q.push(std::move(gpumats));
+    this->free_inputs_hostmem_q.push(std::move(hostmems));
 }
 
 void AsyncMultiMapperImpl::run_do_mapping() {
     auto gpumats = this->inputs_gpumat_q.pop();
-    cv::cuda::GpuMat output(mapper->get_output_size(), CV_8UC3);
+    auto output = this->free_output_gpumat_q.pop();
+
     this->mapper->get_output(gpumats, output);
+
     this->output_gpumat_q.push(std::move(output));
+    this->free_inputs_gpumat_q.push(std::move(gpumats));
 }
 
 void AsyncMultiMapperImpl::run_download_output_gpumat_to_hostmem() {
     auto gpumat = this->output_gpumat_q.pop();
-    cv::cuda::HostMem hm;
-    gpumat.download(hm, this->download_stream);
+    auto hostmem = this->free_output_hostmem_q.pop();
+
+    // cv::cuda::HostMem hm;
+    gpumat.download(hostmem, this->download_stream);
     this->download_stream.waitForCompletion();
-    this->output_hostmem_q.push(std::move(hm));
+
+    this->output_hostmem_q.push(std::move(hostmem));
+    this->free_output_gpumat_q.push(std::move(gpumat));
 }
 
 void AsyncMultiMapperImpl::run_copy_output_hostmem_to_mat() {
-    auto out_mat = this->output_empty_mat_q.pop();
-    auto out_hostmem = this->output_hostmem_q.pop();
-    out_hostmem.createMatHeader().copyTo(out_mat);
-    this->output_mat_q.push(std::move(out_mat));
+    auto mat = this->free_output_mat_q.pop();
+    auto hostmem = this->output_hostmem_q.pop();
+
+    hostmem.createMatHeader().copyTo(mat);
+
+    this->output_mat_q.push(std::move(mat));
+    this->free_output_hostmem_q.push(std::move(hostmem));
 }
 
 void AsyncMultiMapperImpl::push(std::vector<cv::Mat> & inputs, cv::Mat & output) {
     this->inputs_mat_q.push(inputs);
-    this->output_empty_mat_q.push(output);
+    this->free_output_mat_q.push(output);
 }
 
 cv::Mat AsyncMultiMapperImpl::pop() {
     return this->output_mat_q.pop();
 }
 
-AsyncMultiMapper * AsyncMultiMapper::New(MultiMapper * m) {
-    return static_cast<AsyncMultiMapper *>(new AsyncMultiMapperImpl(m));
+AsyncMultiMapper * AsyncMultiMapper::New(MultiMapper * m, std::vector<cv::Size> in_sizes) {
+    return static_cast<AsyncMultiMapper *>(new AsyncMultiMapperImpl(m, in_sizes));
 }
 
-AsyncMultiMapperImpl::AsyncMultiMapperImpl(MultiMapper * m) {
+AsyncMultiMapperImpl::AsyncMultiMapperImpl(MultiMapper * m, std::vector<cv::Size> in_sizes) {
     this->mapper = m;
+    this->out_size = this->mapper->get_output_size();
+    this->in_sizes = in_sizes;
+
+#define BUF_SIZE 3
+    for(int n = 0 ; n < BUF_SIZE ; n += 1) {
+        std::vector<cv::cuda::HostMem> inputs_hostmem;
+        std::vector<cv::cuda::GpuMat> inputs_gpumat;
+        for(auto & s: in_sizes) {
+            inputs_hostmem.push_back(cv::cuda::HostMem(s, CV_8UC4));
+            inputs_gpumat.push_back(cv::cuda::GpuMat(s, CV_8UC4));
+        }
+        free_inputs_hostmem_q.push(std::move(inputs_hostmem));
+        free_inputs_gpumat_q.push(std::move(inputs_gpumat));
+        free_output_gpumat_q.push(cv::cuda::GpuMat(out_size, CV_8UC3));
+        free_output_hostmem_q.push(cv::cuda::HostMem(out_size, CV_8UC3));
+    }
 
 #define RUN_THREAD(X) do { \
     std::cerr << "Running " << #X << std::endl; \
