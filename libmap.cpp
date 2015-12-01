@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-11-30
+* @Last Modified time: 2015-12-01
 */
 
 #include <iostream>
@@ -202,20 +202,17 @@ void MultiMapperImpl::prepare() {
 
 #endif
 
-void MultiMapperImpl::get_output(const std::vector<cv::cuda::HostMem> & inputs, cv::Mat & output) {
+void MultiMapperImpl::get_output(const std::vector<cv::cuda::GpuMat> & gpu_inputs, cv::cuda::GpuMat & output) {
     Timer timer("MultiMapper");
 
-    assert(inputs.size() == masks.size());
-    for(int i = 0 ; i < inputs.size() ; i += 1)
-        assert(inputs[i].type() == CV_8UC4);
+    assert(gpu_inputs.size() == masks.size());
+    for(int i = 0 ; i < gpu_inputs.size() ; i += 1)
+        assert(gpu_inputs[i].type() == CV_8UC4);
     assert(output.type() == CV_8UC3 && output.size() == this->out_size);
-
-    std::vector<GpuMat> gpu_inputs(inputs.size());
     
     std::vector<cv::Point2i> corners;
     
-    for(int i = 0 ; i < inputs.size() ; i += 1) {
-        gpu_inputs[i].upload(inputs[i], streams[i]);
+    for(int i = 0 ; i < gpu_inputs.size() ; i += 1) {
         cv::cuda::fastRemap(gpu_inputs[i], warped_imgs[i], map1s[i], map2s[i], streams[i]);
         cv::cuda::resize(warped_imgs[i], warped_imgs_scale[i],
                          cv::Size(), working_scales[i], working_scales[i],
@@ -234,12 +231,10 @@ void MultiMapperImpl::get_output(const std::vector<cv::cuda::HostMem> & inputs, 
         compensator->apply(i, warped_imgs[i], masks[i]);
     timer.tick("Compensator apply");
 
-    blender->blend(warped_imgs, result);
+    blender->blend(warped_imgs, output);
     timer.tick("Blender blend");
 
-    assert(result.type() == CV_8UC3);
-    result.download(output);
-    timer.tick("Convert result");
+    assert(output.type() == CV_8UC3);
 }
 
 void MultiMapperImpl::get_single_output(const cv::Mat & input, cv::Mat & output) {

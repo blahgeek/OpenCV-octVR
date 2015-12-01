@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-11-28
+* @Last Modified time: 2015-12-01
 */
 
 #ifndef VR_LIBMAP_BASE_H
@@ -45,7 +45,7 @@ public:
      * Generate output image
      * @param  inputs Input images, in BGR_ (CV_8UC4, last channel is ignored)
      */
-    virtual void get_output(const std::vector<cv::cuda::HostMem> & inputs, cv::Mat & output) = 0;
+    virtual void get_output(const std::vector<cv::cuda::GpuMat> & inputs, cv::cuda::GpuMat & output) = 0;
 
     /**
      * Generate single output image, call this if and if only there's only one input
@@ -55,6 +55,16 @@ public:
     virtual void get_single_output(const cv::Mat & input, cv::Mat & output) = 0;
 
     virtual void dump(std::ofstream & f) = 0;
+};
+
+class AsyncMultiMapper {
+public:
+    static AsyncMultiMapper * New(MultiMapper * mapper);
+
+    virtual void push(std::vector<cv::Mat> & inputs,
+                      cv::Mat & output);
+    // return the same output as you pushed
+    virtual cv::Mat pop();
 };
 
 class Timer {

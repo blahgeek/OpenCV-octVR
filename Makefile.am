@@ -9,6 +9,7 @@ LIBS = $(subst -lopencv_ts,,$(OPENCV_LIBS)) -lz
 
 libmap_a_SOURCES = \
 	libmap.cpp \
+	libmap_async.cpp \
 	libmap_loaddump.cpp \
 	camera.cpp \
 	equirectangular.cpp \

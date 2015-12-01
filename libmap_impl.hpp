@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-20
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-11-30
+* @Last Modified time: 2015-12-01
 */
 
 #ifndef VR_LIBMAP_IMPL_H
@@ -58,7 +58,7 @@ public:
         return this->out_size;
     }
 
-    void get_output(const std::vector<cv::cuda::HostMem> & inputs, cv::Mat & output) override;
+    void get_output(const std::vector<cv::cuda::GpuMat> & inputs, cv::cuda::GpuMat & output) override;
 
     void get_single_output(const cv::Mat & input, cv::Mat & output) override;
 
