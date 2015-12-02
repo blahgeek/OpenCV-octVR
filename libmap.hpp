@@ -55,6 +55,8 @@ public:
     virtual void get_single_output(const cv::Mat & input, cv::Mat & output) = 0;
 
     virtual void dump(std::ofstream & f) = 0;
+
+    virtual ~MultiMapper() {}
 };
 
 class AsyncMultiMapper {
@@ -65,6 +67,8 @@ public:
                       cv::Mat & output) = 0;
     // return the same output as you pushed
     virtual cv::Mat pop() = 0;
+
+    virtual ~AsyncMultiMapper() {}
 };
 
 class Timer {
