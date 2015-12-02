@@ -66,9 +66,15 @@ int main(int argc, char const *argv[]) {
     auto async_remapper = AsyncMultiMapper::New(remapper, in_sizes);
 
     cv::Mat output(output_size, CV_8UC3);
+    cv::Mat output2(output_size, CV_8UC3);
+    cv::Mat output3(output_size, CV_8UC3);
 
     cudaProfilerStart();
     async_remapper->push(imgs, output);
+    async_remapper->push(imgs, output2);
+    async_remapper->push(imgs, output3);
+    async_remapper->pop();
+    async_remapper->pop();
     async_remapper->pop();
     cudaProfilerStop();
 

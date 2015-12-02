@@ -227,8 +227,7 @@ void MultiMapperImpl::get_output(const std::vector<cv::cuda::GpuMat> & gpu_input
     compensator->feed(warped_imgs_scale);
     timer.tick("Compensator");
 
-    for(int i = 0 ; i < gpu_inputs.size() ; i += 1)
-        compensator->apply(i, warped_imgs[i], masks[i]);
+    compensator->apply(warped_imgs, masks);
     timer.tick("Compensator apply");
 
     blender->blend(warped_imgs, output);
