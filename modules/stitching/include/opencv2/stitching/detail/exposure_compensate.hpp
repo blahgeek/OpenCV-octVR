@@ -126,7 +126,8 @@ public:
     GainCompensatorGPU(const std::vector<cv::cuda::GpuMat> &masks);
 public:
     void feed(const std::vector<cv::cuda::GpuMat> &images);
-    void apply(int index, cv::cuda::GpuMat & image, cv::cuda::GpuMat & mask);
+    void apply(std::vector<cv::cuda::GpuMat> & imgs, std::vector<cv::cuda::GpuMat> & masks);
+    //void apply(int index, cv::cuda::GpuMat & image, cv::cuda::GpuMat & mask);
     std::vector<double> gains() const;
 
 private:

@@ -42,9 +42,10 @@
 
 #include "precomp.hpp"
 #include <iostream>
+#include "opencv2/core/cuda_stream_accessor.hpp"
 
 namespace cv { namespace cuda { namespace device {
-    void mul_scalar_with_mask(const GpuMat &, float scale, const GpuMat &, GpuMat &);
+    void mul_scalar_with_mask(const GpuMat &, float scale, const GpuMat &, GpuMat &, cudaStream_t stream);
 }}}
 
 
@@ -192,12 +193,14 @@ GainCompensatorGPU::GainCompensatorGPU(const std::vector<cv::cuda::GpuMat> & mas
         norm_images[i].create(masks[i].size(), CV_32F);
 
     this->intersect_count = (num_images * (num_images - 1)) / 2;
-    this->streams.resize(intersect_count);
+    this->streams.resize(std::max(intersect_count, num_images));
     for(int i = 0 ; i < intersect_count ; i += 1) {
-        sum1_results.push_back(cv::cuda::GpuMat(1, 1, CV_64FC1));
-        sum2_results.push_back(cv::cuda::GpuMat(1, 1, CV_64FC1));
-        sum1_results_host.push_back(cv::cuda::HostMem(1, 1, CV_64FC1));
-        sum2_results_host.push_back(cv::cuda::HostMem(1, 1, CV_64FC1));
+        sum1_results_host.push_back(cv::cuda::HostMem(1, 1, CV_64FC1, cv::cuda::HostMem::SHARED));
+        sum2_results_host.push_back(cv::cuda::HostMem(1, 1, CV_64FC1, cv::cuda::HostMem::SHARED));
+        sum1_results.push_back(sum1_results_host.back().createGpuMatHeader());
+        sum2_results.push_back(sum2_results_host.back().createGpuMatHeader());
+        //sum1_results.push_back(cv::cuda::GpuMat(1, 1, CV_64FC1));
+        //sum2_results.push_back(cv::cuda::GpuMat(1, 1, CV_64FC1));
     }
 }
 
@@ -207,8 +210,10 @@ void GainCompensatorGPU::feed(const std::vector<cv::cuda::GpuMat> & images) {
     for(int i = 0 ; i < images.size() ; i += 1) {
         CV_Assert(images[i].type() == CV_8UC4);
         CV_Assert(images[i].size() == this->norm_images[i].size());
-        images[i].elementNorm(norm_images[i], CV_32F);
+        images[i].elementNorm(norm_images[i], CV_32F, streams[i]);
     }
+    for(int i = 0 ; i < num_images ; i += 1)
+        streams[i].waitForCompletion();
 
     Mat_<double> I(num_images, num_images); I.setTo(0);
 
@@ -222,8 +227,8 @@ void GainCompensatorGPU::feed(const std::vector<cv::cuda::GpuMat> & images) {
             cv::cuda::calcSum(norm_images[i], s1, intersects[index], streams[index]);
             cv::cuda::calcSum(norm_images[j], s2, intersects[index], streams[index]);
 
-            s1.download(sum1_results_host[index], streams[index]);
-            s2.download(sum2_results_host[index], streams[index]);
+            //s1.download(sum1_results_host[index], streams[index]);
+            //s2.download(sum2_results_host[index], streams[index]);
         }
     }
 
@@ -260,9 +265,14 @@ void GainCompensatorGPU::feed(const std::vector<cv::cuda::GpuMat> & images) {
     solve(A, b, gains_);
 }
 
-void GainCompensatorGPU::apply(int index, cv::cuda::GpuMat & image, cv::cuda::GpuMat & mask) {
-    float g = gains_(index, 0);
-    cv::cuda::device::mul_scalar_with_mask(image, g, mask, image);
+void GainCompensatorGPU::apply(std::vector<cv::cuda::GpuMat> & imgs, std::vector<cv::cuda::GpuMat> & masks) {
+    CV_Assert(imgs.size() == num_images);
+    CV_Assert(masks.size() == num_images);
+    for(int i = 0 ; i < num_images ; i += 1)
+        cv::cuda::device::mul_scalar_with_mask(imgs[i], gains_(i, 0), masks[i], imgs[i], 
+                                               cuda::StreamAccessor::getStream(streams[i]));
+    for(int i = 0 ; i < num_images ; i += 1)
+        streams[i].waitForCompletion();
 }
 
 #endif

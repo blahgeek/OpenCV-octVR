@@ -31,7 +31,8 @@ __global__ void do_mul_scalar_with_mask(const GlobPtr<T> src,
 
 void mul_scalar_with_mask(const GpuMat & src,
                           float scale, const GpuMat & mask,
-                          GpuMat & dst) {
+                          GpuMat & dst,
+                          cudaStream_t stream) {
     CV_Assert(src.type() == CV_8UC4);
     CV_Assert(mask.type() == CV_8UC1);
     CV_Assert(dst.type() == CV_8UC4);
@@ -39,13 +40,14 @@ void mul_scalar_with_mask(const GpuMat & src,
     const dim3 block(DefaultTransformPolicy::block_size_x, DefaultTransformPolicy::block_size_y);
     const dim3 grid(divUp(src.cols, block.x), divUp(src.rows, block.y));
 
-    do_mul_scalar_with_mask<<<grid, block>>>(globPtr<uchar4>(src),
-                                             scale,
-                                             globPtr<uchar>(mask),
-                                             globPtr<uchar4>(dst),
-                                             src.rows, src.cols);
+    do_mul_scalar_with_mask<<<grid, block, 0, stream>>>(globPtr<uchar4>(src),
+                                                        scale,
+                                                        globPtr<uchar>(mask),
+                                                        globPtr<uchar4>(dst),
+                                                        src.rows, src.cols);
     CV_CUDEV_SAFE_CALL( cudaGetLastError() );
-    CV_CUDEV_SAFE_CALL( cudaDeviceSynchronize() );
+    if(stream == 0)
+        CV_CUDEV_SAFE_CALL( cudaDeviceSynchronize() );
 }
 
 
