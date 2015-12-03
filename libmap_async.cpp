@@ -91,8 +91,8 @@ AsyncMultiMapperImpl::AsyncMultiMapperImpl(MultiMapper * m, std::vector<cv::Size
         std::vector<cv::cuda::HostMem> inputs_hostmem;
         std::vector<cv::cuda::GpuMat> inputs_gpumat;
         for(auto & s: in_sizes) {
-            inputs_hostmem.push_back(cv::cuda::HostMem(s, CV_8UC4));
-            inputs_gpumat.push_back(cv::cuda::GpuMat(s, CV_8UC4));
+            inputs_hostmem.push_back(cv::cuda::HostMem(s, CV_8UC3));
+            inputs_gpumat.push_back(cv::cuda::GpuMat(s, CV_8UC3));
         }
         free_inputs_hostmem_q.push(std::move(inputs_hostmem));
         free_inputs_gpumat_q.push(std::move(inputs_gpumat));
@@ -105,7 +105,7 @@ AsyncMultiMapperImpl::AsyncMultiMapperImpl(MultiMapper * m, std::vector<cv::Size
     auto th = std::thread([](AsyncMultiMapperImpl *p) { \
         while(true) p->X(); \
     }, this); \
-    th.detach(); \
+    this->running_threads.push_back(std::move(th)); \
 } while(false)
 
     RUN_THREAD(run_copy_inputs_mat_to_hostmem);

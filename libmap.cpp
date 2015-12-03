@@ -134,8 +134,10 @@ void MultiMapperImpl::add_input(const std::string & from, const json & from_opts
     this->scaled_masks.push_back(scaled_mask);
 }
 
-void MultiMapperImpl::prepare() {
+void MultiMapperImpl::prepare(std::vector<cv::Size> in_sizes) {
     Timer timer("MultiMapper Prepare");
+
+    assert(in_sizes.size() == masks.size());
 
     std::vector<cv::UMat> host_masks(masks.size());
     for(int i = 0 ; i < masks.size() ; i += 1)
@@ -168,9 +170,11 @@ void MultiMapperImpl::prepare() {
     timer.tick("Gain Compensator initialize");
 
     this->streams.resize(masks.size());
+    this->gpu_inputs.resize(masks.size());
     this->warped_imgs.resize(masks.size());
     this->warped_imgs_scale.resize(masks.size());
     for(int i = 0 ; i < masks.size() ; i += 1) {
+        gpu_inputs[i].create(in_sizes[i], CV_8UC4);
         warped_imgs[i].create(out_size, CV_8UC4);
         cv::cuda::resize(warped_imgs[i], warped_imgs_scale[i],
                          cv::Size(), working_scales[i], working_scales[i],
@@ -179,14 +183,13 @@ void MultiMapperImpl::prepare() {
     this->result.create(out_size, CV_8UC3);
 }
 
-#ifdef DEBUG_SAVE_MAT
-
 #define SAVE_MAT(N, S, MAT) \
     do { \
         char tmp[64]; \
         snprintf(tmp, 64, S "_%d.jpg", N);\
-        cv::Mat __local_mat;
-        MAT.download(__local_mat);
+        std::cerr << "Saving " << tmp << std::endl;\
+        cv::Mat __local_mat;\
+        MAT.download(__local_mat);\
         imwrite(tmp, __local_mat); \
     } while(false)
 
@@ -196,23 +199,23 @@ void MultiMapperImpl::prepare() {
             SAVE_MAT(__i, S, MATS[__i]); \
     } while(false)
 
-#else
+void MultiMapperImpl::debug_save_mats() {
+    SAVE_MAT_VEC("masks", masks);
+    SAVE_MAT_VEC("seam_masks", seam_masks);
+}
 
-#define SAVE_MAT_VEC(S, MATS)
-
-#endif
-
-void MultiMapperImpl::get_output(const std::vector<cv::cuda::GpuMat> & gpu_inputs, cv::cuda::GpuMat & output) {
+void MultiMapperImpl::get_output(const std::vector<cv::cuda::GpuMat> & inputs, cv::cuda::GpuMat & output) {
     Timer timer("MultiMapper");
 
-    assert(gpu_inputs.size() == masks.size());
-    for(int i = 0 ; i < gpu_inputs.size() ; i += 1)
-        assert(gpu_inputs[i].type() == CV_8UC4);
+    assert(inputs.size() == masks.size());
+    for(int i = 0 ; i < inputs.size() ; i += 1)
+        assert(inputs[i].type() == CV_8UC3); // RGB
     assert(output.type() == CV_8UC3 && output.size() == this->out_size);
     
     std::vector<cv::Point2i> corners;
     
-    for(int i = 0 ; i < gpu_inputs.size() ; i += 1) {
+    for(int i = 0 ; i < inputs.size() ; i += 1) {
+        cv::cuda::cvtColor(inputs[i], gpu_inputs[i], cv::COLOR_RGB2RGBA, 4, streams[i]);
         cv::cuda::fastRemap(gpu_inputs[i], warped_imgs[i], map1s[i], map2s[i], streams[i]);
         cv::cuda::resize(warped_imgs[i], warped_imgs_scale[i],
                          cv::Size(), working_scales[i], working_scales[i],

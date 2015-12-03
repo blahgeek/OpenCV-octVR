@@ -40,12 +40,11 @@ private:
 
 private:
     std::vector<cv::cuda::Stream> streams;
+    std::vector<GpuMat> gpu_inputs;
     std::vector<GpuMat> warped_imgs;
 
     std::vector<GpuMat> warped_imgs_scale;
     GpuMat result;
-
-    void prepare();
 
 public:
     MultiMapperImpl(const std::string & to, const json & to_opts, 
@@ -63,6 +62,10 @@ public:
     void get_single_output(const cv::Mat & input, cv::Mat & output) override;
 
     void dump(std::ofstream & f) override;
+
+    void prepare(std::vector<cv::Size> in_sizes) override;
+
+    void debug_save_mats() override;
 };
 
 }

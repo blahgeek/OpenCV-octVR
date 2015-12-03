@@ -15,6 +15,7 @@
 #include <opencv2/highgui.hpp>
 #include <queue>
 #include <mutex>
+#include <thread>
 #include <condition_variable>
 
 namespace vr {
@@ -59,6 +60,8 @@ private:
 private:
     cv::cuda::Stream upload_stream, download_stream;
 
+    std::vector<std::thread> running_threads;
+
 private:
     void run_copy_inputs_mat_to_hostmem();
     void run_upload_inputs_hostmem_to_gpumat();
@@ -71,6 +74,8 @@ public:
 
     void push(std::vector<cv::Mat> & inputs, cv::Mat & output) override;
     cv::Mat pop() override;
+
+    ~AsyncMultiMapperImpl() { running_threads.clear(); }
 };
 
 }

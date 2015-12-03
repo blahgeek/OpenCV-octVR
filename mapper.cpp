@@ -31,13 +31,7 @@ std::pair<std::vector<cv::Mat>, std::vector<cv::Size>> readImages(std::vector<st
         std::cerr << "Image size = " << img.size() << std::endl;
         sizes.push_back(img.size());
 
-        cv::Mat img_c4;
-        std::vector<cv::Mat> channels;
-        cv::split(img, channels);
-        channels.push_back(channels.back());
-        cv::merge(channels, img_c4);
-
-        imgs.push_back(img_c4);
+        imgs.push_back(img);
     }
     return std::make_pair(imgs, sizes);
 }
@@ -62,6 +56,7 @@ int main(int argc, char const *argv[]) {
     assert(remapper != NULL);
     auto output_size = remapper->get_output_size();
     std::cerr << "Done. Output size = " << output_size << std::endl;
+    remapper->prepare(in_sizes);
 
     auto async_remapper = AsyncMultiMapper::New(remapper, in_sizes);
 

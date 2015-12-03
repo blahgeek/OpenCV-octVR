@@ -49,12 +49,16 @@ public:
 
     /**
      * Generate single output image, call this if and if only there's only one input
-     * @param input  Input image, in BGR_
-     * @param output Output image, in BGR_
+     * @param input  Input image, in RGB
+     * @param output Output image, in RGB
      */
     virtual void get_single_output(const cv::Mat & input, cv::Mat & output) = 0;
 
     virtual void dump(std::ofstream & f) = 0;
+
+    virtual void prepare(std::vector<cv::Size> in_sizes) = 0;
+
+    virtual void debug_save_mats() = 0;
 
     virtual ~MultiMapper() {}
 };

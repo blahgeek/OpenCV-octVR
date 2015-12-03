@@ -108,6 +108,4 @@ MultiMapperImpl::MultiMapperImpl(std::ifstream & f) {
         scaled_mask_u.upload(scaled_mask);
         scaled_masks.push_back(scaled_mask_u);
     }
-
-    this->prepare();
 }

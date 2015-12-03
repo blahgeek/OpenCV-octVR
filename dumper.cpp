@@ -62,6 +62,9 @@ int main(int argc, char * const argv[]){
 
     std::ofstream of(opt_outfile);
     remapper->dump(of);
+
+    remapper->prepare(std::vector<cv::Size>(options["inputs"].size(), cv::Size(1,1)));
+    remapper->debug_save_mats();
     
     return 0;
 }
