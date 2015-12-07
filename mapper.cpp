@@ -10,6 +10,7 @@
 #include <thread>
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
+#include <opencv2/imgcodecs.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/calib3d.hpp>
 #include <opencv2/core/ocl.hpp>
@@ -52,13 +53,13 @@ int main(int argc, char const *argv[]) {
 
     std::cerr << "Loading map file " << map_filename << std::endl;
     std::ifstream map_file(map_filename);
-    auto remapper = MultiMapper::New(map_file);
-    assert(remapper != NULL);
-    auto output_size = remapper->get_output_size();
-    std::cerr << "Done. Output size = " << output_size << std::endl;
-    remapper->prepare(in_sizes);
 
-    auto async_remapper = AsyncMultiMapper::New(remapper, in_sizes);
+    MapperTemplate map_template(map_file);
+    auto async_remapper = AsyncMultiMapper::New(map_template, in_sizes);
+    assert(async_remapper != NULL);
+
+    auto output_size = map_template.out_size;
+    std::cerr << "Done. Output size = " << output_size << std::endl;
 
     cv::Mat output(output_size, CV_8UC3);
     cv::Mat output2(output_size, CV_8UC3);
