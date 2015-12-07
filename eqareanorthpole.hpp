@@ -1,7 +1,9 @@
 
 #ifndef VR_LIBMAP_EQAREANORTHPOLE_H_
 #define VR_LIBMAP_EQAREANORTHPOLE_H_ value
-
+#ifndef ARCTIC_LAT
+	#define ATCTIC_LAT (M_PI / 3)
+#endif
 #include "./camera.hpp"
 
 namespace vr {
@@ -15,10 +17,10 @@ public:
     }
 
     cv::Point2d obj_to_image_single(const cv::Point2d & lonlat) override {
-    	if (lonlat.y < M_PI / 3)
+    	if (lonlat.y < ATCTIC_LAT)
 	        return cv::Point2d(NAN, NAN);
 	    else {
-	    	double rho = (M_PI / 2 - lonlat.y) * 3 / M_PI;	//rho [0, 0.5]
+	    	double rho = (M_PI / 2 - lonlat.y) / ATCTIC_LAT;	//rho [0, 0.5]
 	    	double x = rho * sin(lonlat.x) + 0.5;
 	    	double y = rho * cos(lonlat.x) + 0.5;
 	    	return cv::Point2d(x,y);
@@ -34,7 +36,7 @@ public:
 	    		lon = - acos((xy.y - 0.5) / rho);
 	    	else
 	    		lon = acos((xy.y - 0.5) / rho);
-	        return cv::Point2d(lon, M_PI/3);
+	        return cv::Point2d(lon, ATCTIC_LAT);
 	    }
 	    else {
 
@@ -43,7 +45,7 @@ public:
 	    		lon = - acos((xy.y - 0.5) / rho);
 	    	else
 	    		lon = acos((xy.y - 0.5) / rho);
-	    	double lat = M_PI / 2 - rho * M_PI / 3;
+	    	double lat = M_PI / 2 - rho * ATCTIC_LAT;
 
 	    	return cv::Point2d(lon, lat);
 	    }
