@@ -9,7 +9,7 @@
 #include <gtest/gtest.h>
 #include <gtest/extra.h>
 
-#include "./pinhole_cam.hpp"
+#include "../cameras/pinhole_cam.hpp"
 
 using namespace vr;
 

@@ -10,13 +10,13 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 #include "./camera.hpp"
-#include "./equirectangular.hpp"
-#include "./normal.hpp"
-#include "./pinhole_cam.hpp"
-#include "./fisheye_cam.hpp"
-#include "./fullframe_fisheye_cam.hpp"
-#include "./stupidoval.hpp"
-#include "./cubic.hpp"
+#include "./cameras/equirectangular.hpp"
+#include "./cameras/normal.hpp"
+#include "./cameras/pinhole_cam.hpp"
+#include "./cameras/fisheye_cam.hpp"
+#include "./cameras/fullframe_fisheye_cam.hpp"
+#include "./cameras/stupidoval.hpp"
+#include "./cameras/cubic.hpp"
 
 using namespace vr;
 

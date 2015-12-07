@@ -13,11 +13,11 @@ libmap_a_SOURCES = \
 	mapper_template.cpp \
 	timer.cpp \
 	camera.cpp \
-	equirectangular.cpp \
-	pinhole_cam.cpp \
-	fisheye_cam.cpp \
-	fullframe_fisheye_cam.cpp \
-	normal.cpp 
+	cameras/equirectangular.cpp \
+	cameras/pinhole_cam.cpp \
+	cameras/fisheye_cam.cpp \
+	cameras/fullframe_fisheye_cam.cpp \
+	cameras/normal.cpp 
 
 dumper_SOURCES = dumper.cpp
 dumper_LDADD = libmap.a
@@ -28,10 +28,10 @@ mapper_LDADD = libmap.a
 check_PROGRAMS = testall
 
 testall_SOURCES = \
-	test_camera.cpp \
-	test_equirectangular.cpp \
-	test_pinhole.cpp \
-	test.cpp
+	tests/test_camera.cpp \
+	tests/test_equirectangular.cpp \
+	tests/test_pinhole.cpp \
+	tests/test.cpp
 
 testall_LDADD = ../gtest/libgtest.a ../gtest/libgtest_main.a libmap.a
 
