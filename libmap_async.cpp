@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-12-01
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-12-01
+* @Last Modified time: 2015-12-07
 */
 
 
@@ -40,7 +40,7 @@ void AsyncMultiMapperImpl::run_do_mapping() {
     auto gpumats = this->inputs_gpumat_q.pop();
     auto output = this->free_output_gpumat_q.pop();
 
-    this->mapper->get_output(gpumats, output);
+    this->mapper->stitch(gpumats, output);
 
     this->output_gpumat_q.push(std::move(output));
     this->free_inputs_gpumat_q.push(std::move(gpumats));
@@ -77,13 +77,13 @@ cv::Mat AsyncMultiMapperImpl::pop() {
     return this->output_mat_q.pop();
 }
 
-AsyncMultiMapper * AsyncMultiMapper::New(MultiMapper * m, std::vector<cv::Size> in_sizes) {
+AsyncMultiMapper * AsyncMultiMapper::New(const MapperTemplate & m, std::vector<cv::Size> in_sizes) {
     return static_cast<AsyncMultiMapper *>(new AsyncMultiMapperImpl(m, in_sizes));
 }
 
-AsyncMultiMapperImpl::AsyncMultiMapperImpl(MultiMapper * m, std::vector<cv::Size> in_sizes) {
-    this->mapper = m;
-    this->out_size = this->mapper->get_output_size();
+AsyncMultiMapperImpl::AsyncMultiMapperImpl(const MapperTemplate & mt, std::vector<cv::Size> in_sizes) {
+    this->mapper = std::unique_ptr<Mapper>(new Mapper(mt, in_sizes));
+    this->out_size = mt.out_size;
     this->in_sizes = in_sizes;
 
 #define BUF_SIZE 3

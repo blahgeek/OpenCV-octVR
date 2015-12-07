@@ -2,13 +2,14 @@
 * @Author: BlahGeek
 * @Date:   2015-12-01
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-12-01
+* @Last Modified time: 2015-12-07
 */
 
 #ifndef LIBMAP_ASYNC_H_
 #define LIBMAP_ASYNC_H_ value
 
 #include "./libmap.hpp"
+#include "./libmap_impl.hpp"
 #include <opencv2/core.hpp>
 #include <opencv2/core/cuda.hpp>
 #include <opencv2/imgproc.hpp>
@@ -16,6 +17,7 @@
 #include <queue>
 #include <mutex>
 #include <thread>
+#include <memory>
 #include <condition_variable>
 
 namespace vr {
@@ -55,11 +57,10 @@ private:
     cv::Size out_size;
     std::vector<cv::Size> in_sizes;
 
-    MultiMapper * mapper;
+    std::unique_ptr<Mapper> mapper;
 
 private:
     cv::cuda::Stream upload_stream, download_stream;
-
     std::vector<std::thread> running_threads;
 
 private:
@@ -70,12 +71,15 @@ private:
     void run_copy_output_hostmem_to_mat();
 
 public:
-    AsyncMultiMapperImpl(MultiMapper * m, std::vector<cv::Size> in_sizes);
+    AsyncMultiMapperImpl(const MapperTemplate & mt, std::vector<cv::Size> in_sizes);
 
     void push(std::vector<cv::Mat> & inputs, cv::Mat & output) override;
     cv::Mat pop() override;
 
-    ~AsyncMultiMapperImpl() { running_threads.clear(); }
+    ~AsyncMultiMapperImpl() {
+        mapper = nullptr;
+        running_threads.clear();
+    }
 };
 
 }

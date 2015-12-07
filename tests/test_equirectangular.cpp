@@ -9,7 +9,7 @@
 #include <gtest/gtest.h>
 #include <gtest/extra.h>
 
-#include "./equirectangular.hpp"
+#include "../cameras/equirectangular.hpp"
 
 using namespace vr;
 

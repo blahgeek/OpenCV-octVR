@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-12-01
+* @Last Modified time: 2015-12-07
 */
 
 #ifndef VR_LIBMAP_BASE_H
@@ -26,47 +26,41 @@ namespace vr {
 
 using json = nlohmann::json;
 
-/**
- * Stitch multiple images into single one
- */
-class MultiMapper {
+// Multiple input -> single output
+class MapperTemplate {
 public:
-    // Construct MultiMapper using json model.
-    static MultiMapper *
-        New(const std::string & to, const json & to_opts, 
-            int out_width, int out_height);
-    // Construct MultiMapper using dumped data file (using dump())
-    static MultiMapper * New(std::ifstream & f);
+    std::string out_type;
+    json out_opts;
+    cv::Size out_size;
 
-    virtual void add_input(const std::string & from, const json & from_opts) = 0;
+    std::vector<cv::Mat> map1s;
+    std::vector<cv::Mat> map2s;
+    std::vector<cv::Mat> masks;
+    std::vector<cv::Mat> seam_masks;
 
-    virtual cv::Size get_output_size() = 0;
-    /**
-     * Generate output image
-     * @param  inputs Input images, in BGR_ (CV_8UC4, last channel is ignored)
-     */
-    virtual void get_output(const std::vector<cv::cuda::GpuMat> & inputs, cv::cuda::GpuMat & output) = 0;
+public:
+    // Create new template
+    // width/height must be suitable to output model
+    MapperTemplate(const std::string & to,
+                   const json & to_opts,
+                   int width, int height);
+    void add_input(const std::string & from, const json & from_opts);
+    void dump(std::ofstream & f);
 
-    /**
-     * Generate single output image, call this if and if only there's only one input
-     * @param input  Input image, in RGB
-     * @param output Output image, in RGB
-     */
-    virtual void get_single_output(const cv::Mat & input, cv::Mat & output) = 0;
-
-    virtual void dump(std::ofstream & f) = 0;
-
-    virtual void prepare(std::vector<cv::Size> in_sizes) = 0;
-
-    virtual void debug_save_mats() = 0;
-
-    virtual ~MultiMapper() {}
+    // Load existing template
+    explicit MapperTemplate(std::ifstream & f);
 };
 
+// TODO: Multiple output
 class AsyncMultiMapper {
 public:
-    static AsyncMultiMapper * New(MultiMapper * mapper, std::vector<cv::Size> in_sizes);
+    static AsyncMultiMapper * New(const MapperTemplate & mt, std::vector<cv::Size> in_sizes);
 
+    /**
+     * Push one frame
+     * @param inputs Input images, in RGB
+     * @param output Output image, in RGB
+     */
     virtual void push(std::vector<cv::Mat> & inputs,
                       cv::Mat & output) = 0;
     // return the same output as you pushed
