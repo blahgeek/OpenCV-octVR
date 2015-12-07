@@ -17,7 +17,8 @@
 #include "./fullframe_fisheye_cam.hpp"
 #include "./stupidoval.hpp"
 #include "./cubic.hpp"
-
+#include "./eqareanorthpole.hpp"
+#include "./eqareasouthpole.hpp"
 using namespace vr;
 
 std::unique_ptr<Camera> Camera::New(const std::string & type, const json & options) {
@@ -33,7 +34,8 @@ std::unique_ptr<Camera> Camera::New(const std::string & type, const json & optio
     X("fullframe_fisheye", FullFrameFisheyeCamera)
     X("stupidoval", StupidOval)
     X("cubic", Cubic)
-
+    X("eqareanorthpole", Eqareanorthpole)
+    X("eqareasouthpole", Eqareasouthpole)
     return nullptr;
 
     #undef X
