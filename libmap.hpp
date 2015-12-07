@@ -51,20 +51,21 @@ public:
     explicit MapperTemplate(std::ifstream & f);
 };
 
-// TODO: Multiple output
 class AsyncMultiMapper {
 public:
+    static AsyncMultiMapper * New(const std::vector<MapperTemplate> & mts, std::vector<cv::Size> in_sizes);
     static AsyncMultiMapper * New(const MapperTemplate & mt, std::vector<cv::Size> in_sizes);
 
     /**
      * Push one frame
      * @param inputs Input images, in RGB
-     * @param output Output image, in RGB
+     * @param output Output images, in RGB
      */
     virtual void push(std::vector<cv::Mat> & inputs,
-                      cv::Mat & output) = 0;
-    // return the same output as you pushed
-    virtual cv::Mat pop() = 0;
+                      std::vector<cv::Mat> & outputs) = 0;
+    // Single output
+    virtual void push(std::vector<cv::Mat> & inputs, cv::Mat & outputs) = 0;
+    virtual void pop() = 0;
 
     virtual ~AsyncMultiMapper() {}
 };

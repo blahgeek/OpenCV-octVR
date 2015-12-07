@@ -38,53 +38,70 @@ void AsyncMultiMapperImpl::run_upload_inputs_hostmem_to_gpumat() {
 
 void AsyncMultiMapperImpl::run_do_mapping() {
     auto gpumats = this->inputs_gpumat_q.pop();
-    auto output = this->free_output_gpumat_q.pop();
+    auto outputs = this->free_outputs_gpumat_q.pop();
 
-    this->mapper->stitch(gpumats, output);
+    for(int i = 0 ; i < outputs.size() ; i += 1)
+        this->mappers[i]->stitch(gpumats, outputs[i]);
 
-    this->output_gpumat_q.push(std::move(output));
+    this->outputs_gpumat_q.push(std::move(outputs));
     this->free_inputs_gpumat_q.push(std::move(gpumats));
 }
 
-void AsyncMultiMapperImpl::run_download_output_gpumat_to_hostmem() {
-    auto gpumat = this->output_gpumat_q.pop();
-    auto hostmem = this->free_output_hostmem_q.pop();
+void AsyncMultiMapperImpl::run_download_outputs_gpumat_to_hostmem() {
+    auto gpumats = this->outputs_gpumat_q.pop();
+    auto hostmems = this->free_outputs_hostmem_q.pop();
 
-    // cv::cuda::HostMem hm;
-    gpumat.download(hostmem, this->download_stream);
+    for(int i = 0 ; i < gpumats.size() ; i += 1)
+        gpumats[i].download(hostmems[i], this->download_stream);
+
     this->download_stream.waitForCompletion();
 
-    this->output_hostmem_q.push(std::move(hostmem));
-    this->free_output_gpumat_q.push(std::move(gpumat));
+    this->outputs_hostmem_q.push(std::move(hostmems));
+    this->free_outputs_gpumat_q.push(std::move(gpumats));
 }
 
-void AsyncMultiMapperImpl::run_copy_output_hostmem_to_mat() {
-    auto mat = this->free_output_mat_q.pop();
-    auto hostmem = this->output_hostmem_q.pop();
+void AsyncMultiMapperImpl::run_copy_outputs_hostmem_to_mat() {
+    auto mats = this->free_outputs_mat_q.pop();
+    auto hostmems = this->outputs_hostmem_q.pop();
 
-    hostmem.createMatHeader().copyTo(mat);
+    for(int i = 0 ; i < mats.size() ; i += 1)
+        hostmems[i].createMatHeader().copyTo(mats[i]);
 
-    this->output_mat_q.push(std::move(mat));
-    this->free_output_hostmem_q.push(std::move(hostmem));
+    this->outputs_mat_q.push(std::move(mats));
+    this->free_outputs_hostmem_q.push(std::move(hostmems));
+}
+
+void AsyncMultiMapperImpl::push(std::vector<cv::Mat> & inputs, 
+                                std::vector<cv::Mat> & outputs) {
+    assert(inputs.size() == in_sizes.size());
+    assert(outputs.size() == out_sizes.size());
+
+    this->inputs_mat_q.push(inputs);
+    this->free_outputs_mat_q.push(outputs);
 }
 
 void AsyncMultiMapperImpl::push(std::vector<cv::Mat> & inputs, cv::Mat & output) {
-    this->inputs_mat_q.push(inputs);
-    this->free_output_mat_q.push(output);
+    std::vector<cv::Mat> out({output});
+    this->push(inputs, out);
 }
 
-cv::Mat AsyncMultiMapperImpl::pop() {
-    return this->output_mat_q.pop();
+void AsyncMultiMapperImpl::pop() {
+    this->outputs_mat_q.pop();
 }
 
 AsyncMultiMapper * AsyncMultiMapper::New(const MapperTemplate & m, std::vector<cv::Size> in_sizes) {
+    return AsyncMultiMapper::New(std::vector<MapperTemplate>({m}), in_sizes);
+}
+AsyncMultiMapper * AsyncMultiMapper::New(const std::vector<MapperTemplate> & m, std::vector<cv::Size> in_sizes) {
     return static_cast<AsyncMultiMapper *>(new AsyncMultiMapperImpl(m, in_sizes));
 }
 
-AsyncMultiMapperImpl::AsyncMultiMapperImpl(const MapperTemplate & mt, std::vector<cv::Size> in_sizes) {
-    this->mapper = std::unique_ptr<Mapper>(new Mapper(mt, in_sizes));
-    this->out_size = mt.out_size;
+AsyncMultiMapperImpl::AsyncMultiMapperImpl(const std::vector<MapperTemplate> & mts, std::vector<cv::Size> in_sizes) {
     this->in_sizes = in_sizes;
+    for(int i = 0 ; i < mts.size() ; i += 1) {
+        this->mappers.emplace_back(new Mapper(mts[i], in_sizes));
+        this->out_sizes.push_back(mts[i].out_size);
+    }
 
 #define BUF_SIZE 3
     for(int n = 0 ; n < BUF_SIZE ; n += 1) {
@@ -96,8 +113,15 @@ AsyncMultiMapperImpl::AsyncMultiMapperImpl(const MapperTemplate & mt, std::vecto
         }
         free_inputs_hostmem_q.push(std::move(inputs_hostmem));
         free_inputs_gpumat_q.push(std::move(inputs_gpumat));
-        free_output_gpumat_q.push(cv::cuda::GpuMat(out_size, CV_8UC3));
-        free_output_hostmem_q.push(cv::cuda::HostMem(out_size, CV_8UC3));
+
+        std::vector<cv::cuda::GpuMat> outputs_gpumat;
+        std::vector<cv::cuda::HostMem> outputs_hostmem;
+        for(int i = 0 ; i < mts.size() ; i += 1) {
+            outputs_gpumat.push_back(cv::cuda::GpuMat(out_sizes[i], CV_8UC3));
+            outputs_hostmem.push_back(cv::cuda::HostMem(out_sizes[i], CV_8UC3));
+        }
+        free_outputs_gpumat_q.push(std::move(outputs_gpumat));
+        free_outputs_hostmem_q.push(std::move(outputs_hostmem));
     }
 
 #define RUN_THREAD(X) do { \
@@ -111,6 +135,6 @@ AsyncMultiMapperImpl::AsyncMultiMapperImpl(const MapperTemplate & mt, std::vecto
     RUN_THREAD(run_copy_inputs_mat_to_hostmem);
     RUN_THREAD(run_upload_inputs_hostmem_to_gpumat);
     RUN_THREAD(run_do_mapping);
-    RUN_THREAD(run_download_output_gpumat_to_hostmem);
-    RUN_THREAD(run_copy_output_hostmem_to_mat);
+    RUN_THREAD(run_download_outputs_gpumat_to_hostmem);
+    RUN_THREAD(run_copy_outputs_hostmem_to_mat);
 }

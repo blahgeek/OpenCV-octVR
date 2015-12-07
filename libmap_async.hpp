@@ -50,14 +50,15 @@ private:
     Queue<std::vector<cv::Mat>> inputs_mat_q;
     Queue<std::vector<cv::cuda::HostMem>> inputs_hostmem_q, free_inputs_hostmem_q;
     Queue<std::vector<cv::cuda::GpuMat>> inputs_gpumat_q, free_inputs_gpumat_q;
-    Queue<cv::cuda::GpuMat> output_gpumat_q, free_output_gpumat_q;
-    Queue<cv::cuda::HostMem> output_hostmem_q, free_output_hostmem_q;
-    Queue<cv::Mat> output_mat_q, free_output_mat_q;
 
-    cv::Size out_size;
+    Queue<std::vector<cv::cuda::GpuMat>> outputs_gpumat_q, free_outputs_gpumat_q;
+    Queue<std::vector<cv::cuda::HostMem>> outputs_hostmem_q, free_outputs_hostmem_q;
+    Queue<std::vector<cv::Mat>> outputs_mat_q, free_outputs_mat_q;
+
+    std::vector<cv::Size> out_sizes;
     std::vector<cv::Size> in_sizes;
 
-    std::unique_ptr<Mapper> mapper;
+    std::vector<std::unique_ptr<Mapper>> mappers;
 
 private:
     cv::cuda::Stream upload_stream, download_stream;
@@ -67,17 +68,20 @@ private:
     void run_copy_inputs_mat_to_hostmem();
     void run_upload_inputs_hostmem_to_gpumat();
     void run_do_mapping();
-    void run_download_output_gpumat_to_hostmem();
-    void run_copy_output_hostmem_to_mat();
+    void run_download_outputs_gpumat_to_hostmem();
+    void run_copy_outputs_hostmem_to_mat();
 
 public:
-    AsyncMultiMapperImpl(const MapperTemplate & mt, std::vector<cv::Size> in_sizes);
+    AsyncMultiMapperImpl(const std::vector<MapperTemplate> & mt, std::vector<cv::Size> in_sizes);
 
-    void push(std::vector<cv::Mat> & inputs, cv::Mat & output) override;
-    cv::Mat pop() override;
+    void push(std::vector<cv::Mat> & inputs, 
+              std::vector<cv::Mat> & outputs) override;
+    void push(std::vector<cv::Mat> & inputs,
+              cv::Mat & output) override;
+    void pop() override;
 
     ~AsyncMultiMapperImpl() {
-        mapper = nullptr;
+        mappers.clear();
         running_threads.clear();
     }
 };
