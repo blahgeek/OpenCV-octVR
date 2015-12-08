@@ -45,7 +45,7 @@
 #if !defined HAVE_CUDA || defined(CUDA_DISABLER)
 
 void cv::cuda::remap(InputArray, OutputArray, InputArray, InputArray, int, int, Scalar, Stream&){ throw_no_cuda(); }
-void cv::cuda::fastRemap(InputArray, OutputArray, InputArray, InputArray, Stream& ) { throw_no_cuda(); }
+void cv::cuda::fastRemap(InputArray, OutputArray, InputArray, InputArray, bool, Stream& ) { throw_no_cuda(); }
 
 #else // HAVE_CUDA
 
@@ -59,11 +59,11 @@ namespace cv { namespace cuda { namespace device
 
         template <typename T>
         void fast_remap_caller(GpuMat src, PtrStepf xmap, PtrStepf ymap,
-                               PtrStepSz<T> dst, cudaStream_t stream);
+                               PtrStepSz<T> dst, bool fill_zero, cudaStream_t stream);
     }
 }}}
 
-void cv::cuda::fastRemap(InputArray _src, OutputArray _dst, InputArray _xmap, InputArray _ymap, Stream& stream) {
+void cv::cuda::fastRemap(InputArray _src, OutputArray _dst, InputArray _xmap, InputArray _ymap, bool fill_zero, Stream& stream) {
     using namespace cv::cuda::device::imgproc;
 
     GpuMat src = _src.getGpuMat();
@@ -77,7 +77,7 @@ void cv::cuda::fastRemap(InputArray _src, OutputArray _dst, InputArray _xmap, In
     _dst.create(xmap.size(), src.type());
     GpuMat dst = _dst.getGpuMat();
 
-    fast_remap_caller<uchar4>(src, xmap, ymap, dst, StreamAccessor::getStream(stream));
+    fast_remap_caller<uchar4>(src, xmap, ymap, dst, fill_zero, StreamAccessor::getStream(stream));
 }
 
 void cv::cuda::remap(InputArray _src, OutputArray _dst, InputArray _xmap, InputArray _ymap, int interpolation, int borderMode, Scalar borderValue, Stream& stream)

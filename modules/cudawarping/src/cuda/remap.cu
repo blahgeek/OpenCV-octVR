@@ -62,8 +62,6 @@ namespace cv { namespace cuda { namespace device
             {
                 const float xcoo = mapx.ptr(y)[x];
                 const float ycoo = mapy.ptr(y)[x];
-                if(xcoo < 0)
-                    return;
 
                 dst.ptr(y)[x] = saturate_cast<T>(src(ycoo, xcoo));
             }
