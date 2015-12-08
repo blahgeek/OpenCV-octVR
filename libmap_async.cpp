@@ -40,8 +40,12 @@ void AsyncMultiMapperImpl::run_do_mapping() {
     auto gpumats = this->inputs_gpumat_q.pop();
     auto outputs = this->free_outputs_gpumat_q.pop();
 
-    for(int i = 0 ; i < outputs.size() ; i += 1)
-        this->mappers[i]->stitch(gpumats, outputs[i]);
+    for(int i = 0 ; i < outputs.size() ; i += 1) {
+        if(this->blend)
+            this->mappers[i]->stitch(gpumats, outputs[i]);
+        else
+            this->mappers[i]->remap(gpumats, outputs[i]);
+    }
 
     this->outputs_gpumat_q.push(std::move(outputs));
     this->free_inputs_gpumat_q.push(std::move(gpumats));
@@ -89,17 +93,18 @@ void AsyncMultiMapperImpl::pop() {
     this->outputs_mat_q.pop();
 }
 
-AsyncMultiMapper * AsyncMultiMapper::New(const MapperTemplate & m, std::vector<cv::Size> in_sizes) {
-    return AsyncMultiMapper::New(std::vector<MapperTemplate>({m}), in_sizes);
+AsyncMultiMapper * AsyncMultiMapper::New(const MapperTemplate & m, std::vector<cv::Size> in_sizes, bool blend) {
+    return AsyncMultiMapper::New(std::vector<MapperTemplate>({m}), in_sizes, blend);
 }
-AsyncMultiMapper * AsyncMultiMapper::New(const std::vector<MapperTemplate> & m, std::vector<cv::Size> in_sizes) {
-    return static_cast<AsyncMultiMapper *>(new AsyncMultiMapperImpl(m, in_sizes));
+AsyncMultiMapper * AsyncMultiMapper::New(const std::vector<MapperTemplate> & m, std::vector<cv::Size> in_sizes, bool blend) {
+    return static_cast<AsyncMultiMapper *>(new AsyncMultiMapperImpl(m, in_sizes, blend));
 }
 
-AsyncMultiMapperImpl::AsyncMultiMapperImpl(const std::vector<MapperTemplate> & mts, std::vector<cv::Size> in_sizes) {
+AsyncMultiMapperImpl::AsyncMultiMapperImpl(const std::vector<MapperTemplate> & mts, std::vector<cv::Size> in_sizes, bool blend) {
     this->in_sizes = in_sizes;
+    this->blend = blend;
     for(int i = 0 ; i < mts.size() ; i += 1) {
-        this->mappers.emplace_back(new Mapper(mts[i], in_sizes));
+        this->mappers.emplace_back(new Mapper(mts[i], in_sizes, blend));
         this->out_sizes.push_back(mts[i].out_size);
     }
 

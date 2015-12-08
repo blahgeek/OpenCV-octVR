@@ -42,7 +42,7 @@ private:
     GpuMat result;
 
 public:
-    Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes);
+    Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes, bool blend=true);
     void stitch(const std::vector<GpuMat> & inputs, GpuMat & output);
     void remap(const std::vector<GpuMat> & inputs, GpuMat & output);
 };

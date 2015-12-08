@@ -29,11 +29,11 @@
 
 // TODO Set by options
 #define WORKING_MEGAPIX 0.1
-#define BLENDER_STRENGTH 0.05
+#define BLENDER_STRENGTH 0.08
 
 using namespace vr;
 
-Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes) {
+Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes, bool blend) {
     Timer timer("Mapper constructor");
 
     std::vector<GpuMat> scaled_masks;
@@ -57,16 +57,8 @@ Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes) {
     }
     timer.tick("Uploading mats");
 
-    double blend_width = sqrt(out_size.area() * 1.0f) * BLENDER_STRENGTH;
-    int blend_bands = int(ceil(log(blend_width)/log(2.)) - 1.);
-    std::cerr << "Using MultiBandBlender with band number = " << blend_bands << std::endl;
-    this->blender = cv::makePtr<cv::detail::MultiBandGPUBlender>(seam_masks, blend_bands);
-    timer.tick("Blender initialize");
-
-    this->compensator = cv::makePtr<cv::detail::GainCompensatorGPU>(scaled_masks);
-    timer.tick("Gain Compensator initialize");
-
     this->streams.resize(masks.size());
+
     this->gpu_inputs.resize(masks.size());
     this->warped_imgs.resize(masks.size());
     this->warped_imgs_scale.resize(masks.size());
@@ -78,7 +70,21 @@ Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes) {
                          cv::INTER_NEAREST);
     }
     this->result.create(out_size, CV_8UC3);
+
+    if(!blend)
+        return;
+
     timer.tick("Allocating internal mats");
+
+    double blend_width = sqrt(out_size.area() * 1.0f) * BLENDER_STRENGTH;
+    int blend_bands = int(ceil(log(blend_width)/log(2.)) - 1.);
+    std::cerr << "Using MultiBandBlender with band number = " << blend_bands << std::endl;
+    this->blender = cv::makePtr<cv::detail::MultiBandGPUBlender>(seam_masks, blend_bands);
+    timer.tick("Blender initialize");
+
+    this->compensator = cv::makePtr<cv::detail::GainCompensatorGPU>(scaled_masks);
+    timer.tick("Gain Compensator initialize");
+
 }
 
 void Mapper::stitch(const std::vector<GpuMat> & inputs,
@@ -94,7 +100,7 @@ void Mapper::stitch(const std::vector<GpuMat> & inputs,
     
     for(int i = 0 ; i < inputs.size() ; i += 1) {
         cv::cuda::cvtColor(inputs[i], gpu_inputs[i], cv::COLOR_RGB2RGBA, 4, streams[i]);
-        cv::cuda::fastRemap(gpu_inputs[i], warped_imgs[i], map1s[i], map2s[i], streams[i]);
+        cv::cuda::fastRemap(gpu_inputs[i], warped_imgs[i], map1s[i], map2s[i], true, streams[i]);
         cv::cuda::resize(warped_imgs[i], warped_imgs_scale[i],
                          cv::Size(), working_scale, working_scale,
                          cv::INTER_NEAREST, streams[i]);
@@ -124,17 +130,22 @@ void Mapper::remap(const std::vector<GpuMat> & inputs,
     assert(inputs.size() == masks.size());
     for(int i = 0 ; i < inputs.size() ; i += 1)
         assert(inputs[i].type() == CV_8UC3); // RGB
-    assert(output.type() == CV_8UC3 && output.size() == this->out_size);
+
+    assert(output.type() == CV_8UC3);
+    assert(output.size() == this->out_size);
     
     for(int i = 0 ; i < inputs.size() ; i += 1) {
-        // FIXME
-        // cv::cuda::cvtColor(inputs[i], gpu_inputs[i], cv::COLOR_RGB2RGBA, 4, streams[i]);
-        cv::cuda::remap(gpu_inputs[i], output, map1s[i], map2s[i], 
-                        cv::INTER_LINEAR, cv::BORDER_CONSTANT, cv::Scalar(), streams[i]);
-        // cv::cuda::fastRemap(gpu_inputs[i], warped_imgs[i], map1s[i], map2s[i], streams[i]);
+        cv::cuda::cvtColor(inputs[i], gpu_inputs[i], cv::COLOR_RGB2RGBA, 4, streams[i]);
+        cv::cuda::fastRemap(gpu_inputs[i], warped_imgs[0], map1s[i], map2s[i], false, streams[i]);
     }
 
     for(auto & s: streams)
         s.waitForCompletion();
     timer.tick("Remapping images");
+
+    cv::cuda::cvtColor(warped_imgs[0], output, cv::COLOR_RGBA2RGB, 3, streams[0]);
+    streams[0].waitForCompletion();
+
+    timer.tick("Convert");
+
 }
