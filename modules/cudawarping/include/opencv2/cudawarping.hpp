@@ -87,7 +87,7 @@ CV_EXPORTS void remap(InputArray src, OutputArray dst, InputArray xmap, InputArr
                       int interpolation, int borderMode = BORDER_CONSTANT, Scalar borderValue = Scalar(),
                       Stream& stream = Stream::Null());
 
-CV_EXPORTS void fastRemap(InputArray src, OutputArray dst, InputArray xmap, InputArray ymap, Stream & stream = Stream::Null());
+CV_EXPORTS void fastRemap(InputArray src, OutputArray dst, InputArray xmap, InputArray ymap, bool fill_zero, Stream & stream = Stream::Null());
 
 /** @brief Resizes an image.
 

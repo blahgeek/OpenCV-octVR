@@ -20,7 +20,8 @@ namespace cv { namespace cuda { namespace device
         template <typename T>
         __global__ void fast_remap(cv::cudev::Texture<T> src,
                                    PtrStepf mapx, PtrStepf mapy,
-                                   PtrStepSz<T> dst) {
+                                   PtrStepSz<T> dst,
+                                   bool fill_zero) {
             const int x = blockDim.x * blockIdx.x + threadIdx.x;
             const int y = blockDim.y * blockIdx.y + threadIdx.y;
 
@@ -29,7 +30,8 @@ namespace cv { namespace cuda { namespace device
                 const float xcoo = mapx.ptr(y)[x];
                 const float ycoo = mapy.ptr(y)[x];
                 if(xcoo < 0) {
-                    dst.ptr(y)[x] = VecTraits<T>::all(0);
+                    if(fill_zero)
+                        dst.ptr(y)[x] = VecTraits<T>::all(0);
                     return;
                 }
 
@@ -42,19 +44,19 @@ namespace cv { namespace cuda { namespace device
         }
 
         template <typename T>
-        void fast_remap_caller(GpuMat src, PtrStepf mapx, PtrStepf mapy, PtrStepSz<T> dst, cudaStream_t stream) {
+        void fast_remap_caller(GpuMat src, PtrStepf mapx, PtrStepf mapy, PtrStepSz<T> dst, bool fill_zero, cudaStream_t stream) {
             cv::cudev::Texture<T> src_tex(cv::cudev::globPtr<T>(src), true, cudaFilterModeLinear);
 
             dim3 block(16, 16);
             dim3 grid(divUp(dst.cols, block.x), divUp(dst.rows, block.y));
 
-            fast_remap<<<grid, block, 0, stream>>>(src_tex, mapx, mapy, dst);
+            fast_remap<<<grid, block, 0, stream>>>(src_tex, mapx, mapy, dst, fill_zero);
             cudaSafeCall( cudaGetLastError() );
             if(stream == 0)
                 cudaSafeCall( cudaDeviceSynchronize() );
         }
 
-        template void fast_remap_caller(GpuMat, PtrStepf, PtrStepf, PtrStepSz<uchar4>, cudaStream_t);
+        template void fast_remap_caller(GpuMat, PtrStepf, PtrStepf, PtrStepSz<uchar4>, bool fill_zero, cudaStream_t);
         
     } // namespace imgproc
 }}} // namespace cv { namespace cuda { namespace cudev
