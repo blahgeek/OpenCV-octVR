@@ -42,11 +42,15 @@
 
 #include "precomp.hpp"
 #include <iostream>
+#include "opencv2/core/private.cuda.hpp"
+
+#if defined HAVE_CUDA && !defined(CUDA_DISABLER)
 #include "opencv2/core/cuda_stream_accessor.hpp"
 
 namespace cv { namespace cuda { namespace device {
     void mul_scalar_with_mask(const GpuMat &, float scale, const GpuMat &, GpuMat &, cudaStream_t stream);
 }}}
+#endif
 
 
 namespace cv {
@@ -156,12 +160,11 @@ GainCompensatorGPU::GainCompensatorGPU(const std::vector<cv::cuda::GpuMat> &) {
     throw_no_cuda();
 }
 
-void GainCompensatorGPU::feed(const std::vector<cv::cuda::GpuMat> &,
-                              const std::vector<cv::cuda::GpuMat &) {
+void GainCompensatorGPU::feed(const std::vector<cv::cuda::GpuMat> &) {
     throw_no_cuda();
 }
 
-void GainCompensatorGPU::apply(int index, cv::cuda::GpuMat & image) {
+void GainCompensatorGPU::apply(std::vector<cv::cuda::GpuMat> &, std::vector<cv::cuda::GpuMat> &) {
     throw_no_cuda();
 }
 

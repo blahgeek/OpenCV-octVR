@@ -42,7 +42,10 @@
 
 #include "precomp.hpp"
 #include "opencl_kernels_stitching.hpp"
+#include "opencv2/core/private.cuda.hpp"
 #include <iostream>
+
+#if defined HAVE_CUDA && !defined(CUDA_DISABLER)
 #include "opencv2/core/cuda_stream_accessor.hpp"
 
 
@@ -58,7 +61,7 @@ void vr_add_multiply(const GpuMat & A,
                      const GpuMat & W, 
                      GpuMat & D, cudaStream_t stream);
 }}}
-
+#endif
 
 
 namespace cv {
