@@ -24,12 +24,12 @@ int main(int argc, char * const argv[]){
 
     const char * usage = "Usage: %s [OPTIONS] -o OUTPUT_FILE CONFIG_JSON\n"
                          "Options:\n"
-                         "    -w X:    Set output width, default to 3840\n"
+                         "    -w X:    Set output width, default to 0\n"
                          "    -h X:    Set output height, default to 0 (do not set width and height both)\n"
                          "    -d X:    Save masks to debug directory\n"
                          "";
 
-    int opt_width = 3840;
+    int opt_width = 0;
     int opt_height = 0;
     char * opt_debug = NULL;
     char * opt_outfile = NULL;
