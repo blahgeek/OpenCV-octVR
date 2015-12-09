@@ -69,6 +69,12 @@ public:
                       std::vector<UMat> &masks) = 0;
 };
 
+class CV_EXPORTS BFSSeamFinder: public SeamFinder {
+public:
+    void find(const std::vector<UMat> &, const std::vector<Point> &,
+              std::vector<UMat> &) override;
+};
+
 /** @brief Stub seam estimator which does nothing.
  */
 class CV_EXPORTS NoSeamFinder : public SeamFinder

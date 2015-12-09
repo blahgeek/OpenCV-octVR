@@ -41,6 +41,7 @@
 //M*/
 
 #include "precomp.hpp"
+#include <iostream>
 #include <map>
 
 namespace cv {
@@ -80,6 +81,77 @@ void PairwiseSeamFinder::run()
                 findInPair(i, j, roi);
         }
     }
+}
+
+void BFSSeamFinder::find(const std::vector<UMat> &, 
+                         const std::vector<Point> & corners,
+                         std::vector<UMat> & umasks) {
+    for(auto & c: corners)
+        CV_Assert(c == Point(0, 0));
+    for(int i = 1 ; i < umasks.size() ; i += 1)
+        CV_Assert(umasks[i].size() == umasks[i-1].size());
+    auto size = umasks[0].size();
+    auto count = umasks.size();
+
+    std::vector<Mat> masks;
+    for(auto & umask: umasks)
+        masks.push_back(umask.getMat(ACCESS_RW));
+
+    Mat bits(size, CV_32SC1);
+    bits.setTo(0);
+    for(int n = 0 ; n < count ; n += 1) {
+        Mat & m = masks[n];
+        for(int y = 0 ; y < m.rows ; y += 1) {
+            unsigned char * row = m.ptr<unsigned char>(y);
+            int32_t * bits_row = bits.ptr<int32_t>(y);
+            for(int x = 0 ; x < m.cols ; x += 1) {
+                if(row[x])
+                    bits_row[x] |= (1 << n);
+            }
+        }
+    }
+
+    int changed = 0;
+    do {
+        changed = 0;
+        for(int n = 0 ; n < count ; n += 1) {
+            Mat & m = masks[n];
+            for(int y = 0 ; y < m.rows ; y += 1) {
+                unsigned char * last_row = (y == 0 ? NULL : m.ptr<unsigned char>(y - 1));
+                unsigned char * row = m.ptr<unsigned char>(y);
+                unsigned char * next_row = (y == m.rows - 1 ? NULL : m.ptr<unsigned char>(y+1));
+                int32_t * bits_row = bits.ptr<int32_t>(y);
+
+                for(int x = 0 ; x < m.cols ; x += 1) {
+                    if(row[x] == 0)
+                        continue;
+
+                    bool in_border = false;
+                    if(last_row == NULL || last_row[x] == 0)
+                        in_border = true;
+                    if(next_row == NULL || next_row[x] == 0)
+                        in_border = true;
+                    if(x == 0 || row[x-1] == 0)
+                        in_border = true;
+                    if(x == m.cols - 1 || row[x+1] == 0)
+                        in_border = true;
+
+                    if(in_border && (bits_row[x] & ~(1 << n))) {
+                        row[x] = 42;
+                        bits_row[x] &= ~(1 << n);
+                        changed += 1;
+                    }
+                }
+            }
+            for(int y = 0 ; y < m.rows ; y += 1) {
+                unsigned char * row = m.ptr<unsigned char>(y);
+                for(int x = 0 ; x < m.cols ; x += 1)
+                    if(row[x] == 42)
+                        row[x] = 0;
+            }
+        }
+        std::cerr << "BFSSeamFinder looping... changed = " << changed << std::endl;
+    } while(changed);
 }
 
 void VoronoiSeamFinder::find(const std::vector<UMat> &src, const std::vector<Point> &corners,
