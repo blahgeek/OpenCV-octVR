@@ -45,6 +45,8 @@ public:
                    const json & to_opts,
                    int width, int height);
     void add_input(const std::string & from, const json & from_opts);
+    // Prepare seam masks with provided images (optional)
+    void create_masks(const std::vector<cv::Mat> & imgs = std::vector<cv::Mat>());
     void dump(std::ofstream & f);
 
     // Load existing template

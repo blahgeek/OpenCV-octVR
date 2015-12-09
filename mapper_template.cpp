@@ -9,6 +9,7 @@
 #include "./libmap.hpp"
 #include "./camera.hpp"
 #include <stdio.h>
+#include <opencv2/imgproc.hpp>
 #include <opencv2/stitching/detail/seam_finders.hpp>
 
 using namespace vr;
@@ -77,26 +78,52 @@ void MapperTemplate::add_input(const std::string & from,
     this->masks.push_back(mask);
 }
 
+void MapperTemplate::create_masks(const std::vector<cv::Mat> & imgs) {
+    std::vector<cv::UMat> srcs(masks.size()), umasks(masks.size());
+
+    cv::Size scaled_size = this->out_size;
+    double scale = std::min(1.0, 800.0 / out_size.width);
+    scaled_size.width *= scale;
+    scaled_size.height *= scale;
+    std::cerr << "Scaled size: " << scaled_size << std::endl;
+
+    for(int i = 0 ; i < masks.size() ; i += 1) {
+        if(i < imgs.size()) {
+            cv::Mat tmp0, tmp1;
+            cv::remap(imgs[i], tmp0, map1s[i], map2s[i], cv::INTER_LINEAR);
+            tmp0.convertTo(tmp1, CV_32FC3, 1.0/255.0);
+            cv::resize(tmp1, srcs[i], scaled_size);
+        }
+        else
+            srcs[i].create(scaled_size, CV_8UC3);
+        cv::resize(masks[i], umasks[i], scaled_size);
+    }
+
+    cv::Ptr<cv::detail::SeamFinder> seam_finder;
+    if(imgs.empty()) {
+        // VoronoiSeamFinder do not care about image content
+        std::cerr << "Using voronoi seam finder..." << std::endl;
+        seam_finder = new cv::detail::VoronoiSeamFinder();
+    }
+    else {
+        std::cerr << "Using graph cut seam finder..." << std::endl;
+        seam_finder = new cv::detail::GraphCutSeamFinder();
+    }
+    seam_finder->find(srcs,
+                      std::vector<cv::Point2i>(masks.size(), cv::Point2i(0, 0)),
+                      umasks);
+
+    this->seam_masks.resize(masks.size());
+    for(int i = 0 ; i < masks.size() ; i += 1)
+        cv::resize(umasks[i], seam_masks[i], this->out_size);
+
+}
+
 static const char * DUMP_MAGIC = "VRv02";
 
 void MapperTemplate::dump(std::ofstream & f) {
-    if(this->seam_masks.empty()) {
-        // VoronoiSeamFinder does not care about images
-        cv::Ptr<cv::detail::SeamFinder> seam_finder = new cv::detail::VoronoiSeamFinder();
-
-        std::vector<cv::UMat> srcs(masks.size()), umasks(masks.size());
-        for(int i = 0 ; i < masks.size() ; i += 1) {
-            srcs[i].create(masks[i].size(), CV_8UC3);
-            masks[i].copyTo(umasks[i]);
-        }
-        seam_finder->find(srcs, 
-                          std::vector<cv::Point2i>(masks.size(), cv::Point2i(0, 0)),
-                          umasks);
-
-        this->seam_masks.resize(masks.size());
-        for(int i = 0 ; i < masks.size() ; i += 1)
-            umasks[i].copyTo(seam_masks[i]);
-    }
+    if(this->seam_masks.empty())
+        this->create_masks();
 
     f.write(DUMP_MAGIC, strlen(DUMP_MAGIC));
 

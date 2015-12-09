@@ -70,6 +70,20 @@ int main(int argc, char * const argv[]){
         fprintf(stderr, "Input: %s\n", i["type"].get<std::string>().c_str());
         mt.add_input(i["type"], i["options"]);
     }
+    
+    if(!(argc == 1 || argc - 1 == options["inputs"].size())) {
+        fprintf(stderr, "Invalid argument\n");
+        return 1;
+    }
+    if(argc > 1) {
+        std::vector<cv::Mat> imgs;
+        for(int i = 1 ; i < argc ; i += 1) {
+            fprintf(stderr, "Reading image %s...\n", argv[i]);
+            cv::Mat img = cv::imread(argv[i], 1);
+            imgs.push_back(img);
+        }
+        mt.create_masks(imgs);
+    }
 
     std::ofstream of(opt_outfile);
     mt.dump(of);
