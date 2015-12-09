@@ -21,7 +21,7 @@ public:
 	        return cv::Point2d(NAN, NAN);
 	    else {
 	    	double rho = (M_PI / 2 - lonlat.y) / ARCTIC_CIRCLE;	//rho [0, 0.5]
-	    	double x = rho * sin(lonlat.x) + 0.5;
+	    	double x = - rho * sin(lonlat.x) + 0.5;
 	    	double y = rho * cos(lonlat.x) + 0.5;
 	    	return cv::Point2d(x,y);
 	    }
