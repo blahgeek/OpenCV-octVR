@@ -30,7 +30,7 @@ private:
 
 private:
     cv::Ptr<cv::detail::GainCompensatorGPU> compensator;
-    cv::Ptr<cv::detail::MultiBandGPUBlender> blender;
+    cv::Ptr<cv::detail::GPUStaticBlender> blender;
 
     double working_scale;
 
@@ -42,7 +42,10 @@ private:
     GpuMat result;
 
 public:
-    Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes, bool blend=true);
+    // blend: 0  : Do not blend
+    //        > 0: Multi-band blend width
+    //        < 0: Feather blend width
+    Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes, int blend=128);
     void stitch(const std::vector<GpuMat> & inputs, GpuMat & output);
     void remap(const std::vector<GpuMat> & inputs, GpuMat & output);
 };

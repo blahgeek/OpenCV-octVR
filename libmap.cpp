@@ -29,11 +29,10 @@
 
 // TODO Set by options
 #define WORKING_MEGAPIX 0.1
-#define BLENDER_STRENGTH 0.08
 
 using namespace vr;
 
-Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes, bool blend) {
+Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes, int blend) {
     Timer timer("Mapper constructor");
 
     std::vector<GpuMat> scaled_masks;
@@ -71,15 +70,21 @@ Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes, bool b
     }
     this->result.create(out_size, CV_8UC3);
 
-    if(!blend)
+    if(blend == 0)
         return;
 
     timer.tick("Allocating internal mats");
 
-    double blend_width = sqrt(out_size.area() * 1.0f) * BLENDER_STRENGTH;
-    int blend_bands = int(ceil(log(blend_width)/log(2.)) - 1.);
-    std::cerr << "Using MultiBandBlender with band number = " << blend_bands << std::endl;
-    this->blender = cv::makePtr<cv::detail::MultiBandGPUBlender>(seam_masks, blend_bands);
+    if(blend > 0) {
+        int blend_bands = int(ceil(log(blend)/log(2.)) - 1.);
+        std::cerr << "Using MultiBandBlender with band number = " << blend_bands << std::endl;
+        this->blender = cv::makePtr<cv::detail::MultiBandGPUBlender>(seam_masks, blend_bands);
+    } else {
+        float sharpness = 1.0 / float(-blend);
+        std::cerr << "Using FeatherBlender with sharpness = " << sharpness << std::endl;
+        this->blender = cv::makePtr<cv::detail::FeatherGPUBlender>(masks, sharpness);
+    }
+
     timer.tick("Blender initialize");
 
     this->compensator = cv::makePtr<cv::detail::GainCompensatorGPU>(scaled_masks);

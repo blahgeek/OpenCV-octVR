@@ -47,7 +47,7 @@ public:
 
 class AsyncMultiMapperImpl: public AsyncMultiMapper {
 private:
-    bool blend = true;
+    bool do_blend = true;
 private:
     Queue<std::vector<cv::Mat>> inputs_mat_q;
     Queue<std::vector<cv::cuda::HostMem>> inputs_hostmem_q, free_inputs_hostmem_q;
@@ -74,7 +74,7 @@ private:
     void run_copy_outputs_hostmem_to_mat();
 
 public:
-    AsyncMultiMapperImpl(const std::vector<MapperTemplate> & mt, std::vector<cv::Size> in_sizes, bool blend);
+    AsyncMultiMapperImpl(const std::vector<MapperTemplate> & mt, std::vector<cv::Size> in_sizes, int blend=128);
 
     void push(std::vector<cv::Mat> & inputs, 
               std::vector<cv::Mat> & outputs) override;

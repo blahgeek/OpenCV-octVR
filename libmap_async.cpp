@@ -41,7 +41,7 @@ void AsyncMultiMapperImpl::run_do_mapping() {
     auto outputs = this->free_outputs_gpumat_q.pop();
 
     for(int i = 0 ; i < outputs.size() ; i += 1) {
-        if(this->blend)
+        if(this->do_blend)
             this->mappers[i]->stitch(gpumats, outputs[i]);
         else
             this->mappers[i]->remap(gpumats, outputs[i]);
@@ -93,16 +93,16 @@ void AsyncMultiMapperImpl::pop() {
     this->outputs_mat_q.pop();
 }
 
-AsyncMultiMapper * AsyncMultiMapper::New(const MapperTemplate & m, std::vector<cv::Size> in_sizes, bool blend) {
+AsyncMultiMapper * AsyncMultiMapper::New(const MapperTemplate & m, std::vector<cv::Size> in_sizes, int blend) {
     return AsyncMultiMapper::New(std::vector<MapperTemplate>({m}), in_sizes, blend);
 }
-AsyncMultiMapper * AsyncMultiMapper::New(const std::vector<MapperTemplate> & m, std::vector<cv::Size> in_sizes, bool blend) {
+AsyncMultiMapper * AsyncMultiMapper::New(const std::vector<MapperTemplate> & m, std::vector<cv::Size> in_sizes, int blend) {
     return static_cast<AsyncMultiMapper *>(new AsyncMultiMapperImpl(m, in_sizes, blend));
 }
 
-AsyncMultiMapperImpl::AsyncMultiMapperImpl(const std::vector<MapperTemplate> & mts, std::vector<cv::Size> in_sizes, bool blend) {
+AsyncMultiMapperImpl::AsyncMultiMapperImpl(const std::vector<MapperTemplate> & mts, std::vector<cv::Size> in_sizes, int blend) {
     this->in_sizes = in_sizes;
-    this->blend = blend;
+    this->do_blend = (blend != 0);
     for(int i = 0 ; i < mts.size() ; i += 1) {
         this->mappers.emplace_back(new Mapper(mts[i], in_sizes, blend));
         this->out_sizes.push_back(mts[i].out_size);

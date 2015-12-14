@@ -55,8 +55,8 @@ public:
 
 class AsyncMultiMapper {
 public:
-    static AsyncMultiMapper * New(const std::vector<MapperTemplate> & mts, std::vector<cv::Size> in_sizes, bool blend=true);
-    static AsyncMultiMapper * New(const MapperTemplate & mt, std::vector<cv::Size> in_sizes, bool blend=true);
+    static AsyncMultiMapper * New(const std::vector<MapperTemplate> & mts, std::vector<cv::Size> in_sizes, int blend=128);
+    static AsyncMultiMapper * New(const MapperTemplate & mt, std::vector<cv::Size> in_sizes, int blend=128);
 
     /**
      * Push one frame
