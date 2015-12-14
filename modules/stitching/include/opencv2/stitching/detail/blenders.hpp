@@ -44,6 +44,7 @@
 #define __OPENCV_STITCHING_BLENDERS_HPP__
 
 #include "opencv2/core.hpp"
+#include "opencv2/core/cuda.hpp"
 
 namespace cv {
 namespace detail {
@@ -140,11 +141,22 @@ private:
     int weight_type_; //CV_32F or CV_16S
 };
 
-class CV_EXPORTS MultiBandGPUBlender {
+
+class CV_EXPORTS GPUStaticBlender {
+protected:
+    int num_images;
+    cv::Size image_size;
+public:
+    GPUStaticBlender(const std::vector<cuda::GpuMat> & masks);
+    void blend(std::vector<cuda::GpuMat> &, cuda::GpuMat & dst);
+    virtual ~GPUStaticBlender() {}
+protected:
+    virtual void do_blend(std::vector<cuda::GpuMat> &, cuda::GpuMat & dst) = 0;
+};
+
+class CV_EXPORTS MultiBandGPUBlender: public GPUStaticBlender {
 private:
     int num_bands;
-    int num_images;
-    Size final_size;
     std::vector<cuda::GpuMat> dst_pyr_laplace, dst_band_weights;
 
     std::vector<std::vector<cuda::GpuMat> > weight_pyr_gauss_lists;
@@ -157,7 +169,18 @@ private:
 
 public:
     MultiBandGPUBlender(const std::vector<cuda::GpuMat> & masks, int num_bands_=5);
-    void blend(std::vector<cuda::GpuMat> & imgs, cuda::GpuMat & dst);
+    void do_blend(std::vector<cuda::GpuMat> & imgs, cuda::GpuMat & dst) override;
+};
+
+class CV_EXPORTS FeatherGPUBlender: public GPUStaticBlender {
+private:
+    cuda::Stream stream;
+    std::vector<cuda::GpuMat> weight_maps;
+    cuda::GpuMat dst_16s;
+    float sharpness;
+public:
+    FeatherGPUBlender(const std::vector<cuda::GpuMat> & masks, float sharpness=0.02f);
+    void do_blend(std::vector<cuda::GpuMat> & imgs, cuda::GpuMat & dst) override;
 };
 
 
