@@ -521,22 +521,39 @@ void FeatherGPUBlender::do_blend(std::vector<cuda::GpuMat> &, cuda::GpuMat & ) {
 #else
 
 FeatherGPUBlender::FeatherGPUBlender(const std::vector<cuda::GpuMat> & masks,
-                                     float sharpness): GPUStaticBlender(masks) {
+                                     int border): GPUStaticBlender(masks) {
     this->sharpness = sharpness;
     std::cerr << "Initing FeatherGPUBlender with sharpness = " << sharpness << std::endl;
 
     cuda::GpuMat dst_weight_map(masks[0].size(), CV_32F);
     dst_weight_map.setTo(1e-5f);
 
-    for(auto & mask: masks) {
+    for(int i = 0 ; i < num_images ; i += 1) {
         cv::Mat host_mask, host_weight_map;
-        mask.download(host_mask);
-        createWeightMap(host_mask, sharpness, host_weight_map);
+        masks[i].download(host_mask);
+
+        cv::Mat tmp;
+
+        distanceTransform(host_mask, host_weight_map, DIST_L2, 3);
+        subtract(host_weight_map, border, tmp);
+        threshold(tmp, host_weight_map, 0.f, 0.f, THRESH_TOZERO);
+
         cuda::GpuMat weight_map;
         weight_map.upload(host_weight_map);
         cv::cuda::add(weight_map, dst_weight_map, dst_weight_map);
+
         this->weight_maps.push_back(std::move(weight_map));
     }
+
+    //for(auto & mask: masks) {
+        //cv::Mat host_mask, host_weight_map;
+        //mask.download(host_mask);
+        //createWeightMap(host_mask, sharpness, host_weight_map);
+        //cuda::GpuMat weight_map;
+        //weight_map.upload(host_weight_map);
+        //cv::cuda::add(weight_map, dst_weight_map, dst_weight_map);
+        //this->weight_maps.push_back(std::move(weight_map));
+    //}
 
     for(auto & weight_map: this->weight_maps)
         cv::cuda::divide(weight_map, dst_weight_map, weight_map, masks.size());

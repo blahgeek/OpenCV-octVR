@@ -179,7 +179,7 @@ private:
     cuda::GpuMat dst_16s;
     float sharpness;
 public:
-    FeatherGPUBlender(const std::vector<cuda::GpuMat> & masks, float sharpness=0.02f);
+    FeatherGPUBlender(const std::vector<cuda::GpuMat> & masks, int border);
     void do_blend(std::vector<cuda::GpuMat> & imgs, cuda::GpuMat & dst) override;
 };
 
