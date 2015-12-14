@@ -80,9 +80,9 @@ Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes, int bl
         std::cerr << "Using MultiBandBlender with band number = " << blend_bands << std::endl;
         this->blender = cv::makePtr<cv::detail::MultiBandGPUBlender>(seam_masks, blend_bands);
     } else {
-        float sharpness = 1.0 / float(-blend);
-        std::cerr << "Using FeatherBlender with sharpness = " << sharpness << std::endl;
-        this->blender = cv::makePtr<cv::detail::FeatherGPUBlender>(masks, sharpness);
+        //float sharpness = 1.0 / float(-blend);
+        std::cerr << "Using FeatherBlender with border = " << -blend << std::endl;
+        this->blender = cv::makePtr<cv::detail::FeatherGPUBlender>(masks, -blend);
     }
 
     timer.tick("Blender initialize");
