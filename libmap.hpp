@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-12-07
+* @Last Modified time: 2015-12-25
 */
 
 #ifndef VR_LIBMAP_BASE_H
@@ -33,10 +33,15 @@ public:
     json out_opts;
     cv::Size out_size;
 
-    std::vector<cv::Mat> map1s;
-    std::vector<cv::Mat> map2s;
-    std::vector<cv::Mat> masks;
-    std::vector<cv::Mat> seam_masks;
+    typedef struct {
+        cv::Mat map1, map2;
+        cv::Mat mask;
+    } Input;
+
+    std::vector<Input> inputs;
+    std::vector<Input> overlay_inputs;
+
+    std::vector<cv::Mat> seam_masks;  // only for inputs (not overlay_inputs)
 
 public:
     // Create new template
@@ -44,7 +49,7 @@ public:
     MapperTemplate(const std::string & to,
                    const json & to_opts,
                    int width, int height);
-    void add_input(const std::string & from, const json & from_opts);
+    void add_input(const std::string & from, const json & from_opts, bool overlay=false);
     // Prepare seam masks with provided images (optional)
     void create_masks(const std::vector<cv::Mat> & imgs = std::vector<cv::Mat>());
     void dump(std::ofstream & f);

@@ -103,8 +103,10 @@ int main(int argc, char * const argv[]){
     } while(false)
 
     if(opt_debug) {
-        SAVE_MAT_VEC(opt_debug, "masks", mt.masks);
-        SAVE_MAT_VEC(opt_debug, "seam_masks", mt.seam_masks);
+        for(int i = 0 ; i < mt.inputs.size() ; i += 1) {
+            SAVE_MAT(opt_debug, i, "masks", mt.inputs[i].mask);
+            SAVE_MAT(opt_debug, i, "seam_masks", mt.seam_masks[i]);
+        }
     }
     // remapper->prepare(std::vector<cv::Size>(options["inputs"].size(), cv::Size(1,1)));
     // remapper->debug_save_mats();

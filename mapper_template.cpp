@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-12-07
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-12-07
+* @Last Modified time: 2015-12-25
 */
 
 #include <iostream>
@@ -35,7 +35,8 @@ out_type(to), out_opts(to_opts) {
 }
 
 void MapperTemplate::add_input(const std::string & from,
-                               const json & from_opts) {
+                               const json & from_opts,
+                               bool overlay) {
     std::unique_ptr<Camera> out_camera = Camera::New(out_type, out_opts);
     std::unique_ptr<Camera> cam = Camera::New(from, from_opts);
     if(!cam)
@@ -73,13 +74,19 @@ void MapperTemplate::add_input(const std::string & from,
         }
     }
 
-    this->map1s.push_back(map1);
-    this->map2s.push_back(map2);
-    this->masks.push_back(mask);
+    MapperTemplate::Input input;
+    input.map1 = map1;
+    input.map2 = map2;
+    input.mask = mask;
+
+    if(overlay)
+        this->overlay_inputs.push_back(input);
+    else
+        this->inputs.push_back(input);
 }
 
 void MapperTemplate::create_masks(const std::vector<cv::Mat> & imgs) {
-    std::vector<cv::UMat> srcs(masks.size()), umasks(masks.size());
+    std::vector<cv::UMat> srcs(inputs.size()), umasks(inputs.size());
 
     cv::Size scaled_size = this->out_size;
     double scale = std::min(1.0, 800.0 / out_size.width);
@@ -87,16 +94,16 @@ void MapperTemplate::create_masks(const std::vector<cv::Mat> & imgs) {
     scaled_size.height *= scale;
     std::cerr << "Scaled size: " << scaled_size << std::endl;
 
-    for(int i = 0 ; i < masks.size() ; i += 1) {
+    for(int i = 0 ; i < inputs.size() ; i += 1) {
         if(i < imgs.size()) {
             cv::Mat tmp0, tmp1;
-            cv::remap(imgs[i], tmp0, map1s[i], map2s[i], cv::INTER_LINEAR);
+            cv::remap(imgs[i], tmp0, inputs[i].map1, inputs[i].map2, cv::INTER_LINEAR);
             tmp0.convertTo(tmp1, CV_32FC3, 1.0/255.0);
             cv::resize(tmp1, srcs[i], scaled_size);
         }
         else
             srcs[i].create(scaled_size, CV_8UC3);
-        cv::resize(masks[i], umasks[i], scaled_size);
+        cv::resize(inputs[i].mask, umasks[i], scaled_size);
     }
 
     cv::Ptr<cv::detail::SeamFinder> seam_finder;
@@ -112,16 +119,16 @@ void MapperTemplate::create_masks(const std::vector<cv::Mat> & imgs) {
         seam_finder = new cv::detail::GraphCutSeamFinder();
     }
     seam_finder->find(srcs,
-                      std::vector<cv::Point2i>(masks.size(), cv::Point2i(0, 0)),
+                      std::vector<cv::Point2i>(inputs.size(), cv::Point2i(0, 0)),
                       umasks);
 
-    this->seam_masks.resize(masks.size());
-    for(int i = 0 ; i < masks.size() ; i += 1)
+    this->seam_masks.resize(inputs.size());
+    for(int i = 0 ; i < inputs.size() ; i += 1)
         cv::resize(umasks[i], seam_masks[i], this->out_size);
 
 }
 
-static const char * DUMP_MAGIC = "VRv02";
+static const char * DUMP_MAGIC = "VRv03";
 
 void MapperTemplate::dump(std::ofstream & f) {
     if(this->seam_masks.empty())
@@ -133,22 +140,33 @@ void MapperTemplate::dump(std::ofstream & f) {
         f.write(reinterpret_cast<char *>(&x), sizeof(int64_t));
     };
 
+    auto Wmat = [&](cv::Mat & m) {
+        W64i(m.type());
+        W64i(m.rows);
+        W64i(m.cols);
+        int elem_size = m.elemSize();
+        for(int k = 0 ; k < m.rows ; k += 1)
+            f.write(m.ptr<char>(k), m.cols * elem_size);
+    };
+
     W64i(out_size.width);
     W64i(out_size.height);
 
-    W64i(map1s.size());
-    for(int i = 0 ; i < map1s.size() ; i += 1) {
-        assert(map1s[i].type() == CV_32FC1 && map1s[i].size() == out_size);
-        assert(map2s[i].type() == CV_32FC1 && map2s[i].size() == out_size);
-        assert(masks[i].type() == CV_8UC1 && masks[i].size() == out_size);
-        assert(seam_masks[i].type() == CV_8UC1 && seam_masks[i].size() == out_size);
+    W64i(inputs.size());
+    for(auto & input: inputs) {
+        Wmat(input.map1);
+        Wmat(input.map2);
+        Wmat(input.mask);
+    }
+    assert(inputs.size() == seam_masks.size());
+    for(auto & m: seam_masks)
+        Wmat(m);
 
-        for(int k = 0 ; k < out_size.height ; k += 1) {
-            f.write(map1s[i].ptr<char>(k), out_size.width * 4);
-            f.write(map2s[i].ptr<char>(k), out_size.width * 4);
-            f.write(masks[i].ptr<char>(k), out_size.width);
-            f.write(seam_masks[i].ptr<char>(k), out_size.width);
-        }
+    W64i(overlay_inputs.size());
+    for(auto & input: overlay_inputs) {
+        Wmat(input.map1);
+        Wmat(input.map2);
+        Wmat(input.mask);
     }
 }
 
@@ -164,24 +182,34 @@ MapperTemplate::MapperTemplate(std::ifstream & f) {
         return _ret;
     };
 
+    auto Rmat = [&]() -> cv::Mat {
+        int type = R64i();
+        int rows = R64i();
+        int cols = R64i();
+        cv::Mat ret(rows, cols, type);
+        int elem_size = ret.elemSize();
+        for(int k = 0 ; k < rows ; k += 1)
+            f.read(ret.ptr<char>(k), cols * elem_size);
+        return ret;
+    };
+
     this->out_size.width = R64i();
     this->out_size.height = R64i();
 
-    int in_count = R64i();
-    this->map1s.resize(in_count);
-    this->map2s.resize(in_count);
-    this->masks.resize(in_count);
-    this->seam_masks.resize(in_count);
-    for(int i = 0 ; i < in_count ; i += 1) {
-        for(int k = 0 ; k < out_size.height ; k += 1) {
-            map1s[i].create(out_size, CV_32FC1);
-            map2s[i].create(out_size, CV_32FC1);
-            masks[i].create(out_size, CV_8UC1);
-            seam_masks[i].create(out_size, CV_8UC1);
-            f.read(map1s[i].ptr<char>(k), out_size.width * 4);
-            f.read(map2s[i].ptr<char>(k), out_size.width * 4);
-            f.read(masks[i].ptr<char>(k), out_size.width);
-            f.read(seam_masks[i].ptr<char>(k), out_size.width);
-        }
+    this->inputs.resize(R64i());
+    for(auto & input: inputs) {
+        input.map1 = Rmat();
+        input.map2 = Rmat();
+        input.mask = Rmat();
+    }
+    this->seam_masks.resize(this->inputs.size());
+    for(int i = 0 ; i < this->seam_masks.size() ; i += 1)
+        this->seam_masks[i] = Rmat();
+
+    this->overlay_inputs.resize(R64i());
+    for(auto & input: overlay_inputs) {
+        input.map1 = Rmat();
+        input.map2 = Rmat();
+        input.mask = Rmat();
     }
 }
