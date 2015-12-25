@@ -69,7 +69,7 @@ Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes, int bl
     this->gpu_inputs.resize(mt.inputs.size() + mt.overlay_inputs.size());
     this->warped_imgs.resize(mt.inputs.size() + mt.overlay_inputs.size());
 
-    this->warped_imgs_scale.resize(mt.inputs.size());
+    this->warped_imgs_scale.resize(mt.inputs.size() + mt.overlay_inputs.size());
     for(int i = 0 ; i < mt.inputs.size() ; i += 1) {
         gpu_inputs[i].create(in_sizes[i], CV_8UC4);
         warped_imgs[i].create(out_size, CV_8UC4);
@@ -79,8 +79,9 @@ Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes, int bl
     }
 
     for(int i = mt.inputs.size() ; i < mt.inputs.size() + mt.overlay_inputs.size() ; i += 1) {
-        // gpu_inputs[i].create(in_sizes[i], CV_8UC3);
-        warped_imgs[i].create(out_size, CV_8UC3);
+        gpu_inputs[i].create(in_sizes[i], CV_8UC4);
+        warped_imgs[i].create(out_size, CV_8UC4);
+        warped_imgs_scale[i].create(out_size, CV_8UC3);  // NOTICE
     }
 
     this->result.create(out_size, CV_8UC3);
@@ -129,15 +130,20 @@ void Mapper::stitch(const std::vector<GpuMat> & inputs,
     }
 
     for(int i = nonoverlay_num ; i < inputs.size() ; i += 1) {
-        cv::cuda::remap(inputs[i], warped_imgs[i], map1s[i], map2s[i], 
-                        cv::INTER_LINEAR, cv::BORDER_CONSTANT, cv::Scalar(), streams[i]);
+        cv::cuda::cvtColor(inputs[i], gpu_inputs[i], cv::COLOR_RGB2RGBA, 4, streams[i]);
+        cv::cuda::fastRemap(gpu_inputs[i], warped_imgs[i], map1s[i], map2s[i], false, streams[i]);
+        cv::cuda::cvtColor(warped_imgs[i], warped_imgs_scale[i], cv::COLOR_RGBA2RGB, 3, streams[i]);
+        //cv::cuda::remap(inputs[i], warped_imgs[i], map1s[i], map2s[i], 
+                        //cv::INTER_LINEAR, cv::BORDER_CONSTANT, cv::Scalar(), streams[i]);
     }
 
     for(auto & s: streams)
         s.waitForCompletion();
     timer.tick("Uploading and remapping and resizing images");
 
-    compensator->feed(warped_imgs_scale);
+    std::vector<GpuMat> partial_warped_imgs_scale(warped_imgs_scale.begin(),
+                                                  warped_imgs_scale.begin() + nonoverlay_num);
+    compensator->feed(partial_warped_imgs_scale);
     timer.tick("Compensator");
 
     std::vector<GpuMat> partial_warped_imgs(warped_imgs.begin(), warped_imgs.begin() + nonoverlay_num);
@@ -150,7 +156,7 @@ void Mapper::stitch(const std::vector<GpuMat> & inputs,
     timer.tick("Blender blend");
 
     for(int i = nonoverlay_num ; i < inputs.size() ; i += 1)
-        warped_imgs[i].copyTo(output, masks[i], streams[0]);
+        warped_imgs_scale[i].copyTo(output, masks[i], streams[0]);
     streams[0].waitForCompletion();
 
     assert(output.type() == CV_8UC3);

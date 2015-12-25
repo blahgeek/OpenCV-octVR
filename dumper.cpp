@@ -70,6 +70,12 @@ int main(int argc, char * const argv[]){
         fprintf(stderr, "Input: %s\n", i["type"].get<std::string>().c_str());
         mt.add_input(i["type"], i["options"]);
     }
+    if(options.find("overlay") != options.end()) {
+        for(auto i: options["overlay"]) {
+            fprintf(stderr, "Overlay input: %s\n", i["type"].get<std::string>().c_str());
+            mt.add_input(i["type"], i["options"], true);
+        }
+    }
     
     if(!(argc == 1 || argc - 1 == options["inputs"].size())) {
         fprintf(stderr, "Invalid argument\n");

@@ -28,3 +28,13 @@ cv::Point2d Normal::image_to_obj_single(const cv::Point2d & xy) {
 
     return sphere_xyz_to_lonlat(cv::Point3d(xx, yy, zz));
 }
+
+cv::Point2d Normal::obj_to_image_single(const cv::Point2d & lonlat) {
+    cv::Point3d xxyyzz = sphere_lonlat_to_xyz(lonlat);
+    if(xxyyzz.x < 0)
+        return cv::Point2d(NAN, NAN);
+    xxyyzz /= (xxyyzz.x / cam_x);
+    return cv::Point2d(1.0 - (xxyyzz.z + cam_z) / 2.0 / cam_z,
+                       (cam_y - xxyyzz.y) / 2.0 / cam_y);
+}
+
