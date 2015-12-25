@@ -10,6 +10,7 @@
 
 #include "./camera.hpp"
 #include "./libmap.hpp"
+#include "dongle_license.h"
 #include <opencv2/stitching/detail/exposure_compensate.hpp>
 #include <opencv2/stitching/detail/blenders.hpp>
 
@@ -20,6 +21,13 @@ namespace vr {
 using cv::cuda::GpuMat;
 
 class Mapper {
+
+#ifdef VR_LIBMAP_PROTECTOR
+private:
+    license_t lic_t;
+    int lic_cnt;
+#endif
+
 private:
     cv::Size out_size;
 
