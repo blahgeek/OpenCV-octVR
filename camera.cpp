@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-20
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-11-15
+* @Last Modified time: 2015-12-07
 */
 
 #include <iostream>
@@ -10,13 +10,15 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 #include "./camera.hpp"
-#include "./equirectangular.hpp"
-#include "./normal.hpp"
-#include "./pinhole_cam.hpp"
-#include "./fisheye_cam.hpp"
-#include "./fullframe_fisheye_cam.hpp"
-#include "./stupidoval.hpp"
-#include "./cubic.hpp"
+#include "./cameras/equirectangular.hpp"
+#include "./cameras/normal.hpp"
+#include "./cameras/pinhole_cam.hpp"
+#include "./cameras/fisheye_cam.hpp"
+#include "./cameras/fullframe_fisheye_cam.hpp"
+#include "./cameras/stupidoval.hpp"
+#include "./cameras/cubic.hpp"
+#include "./cameras/eqareanorthpole.hpp"
+#include "./cameras/eqareasouthpole.hpp"
 
 using namespace vr;
 
@@ -33,7 +35,8 @@ std::unique_ptr<Camera> Camera::New(const std::string & type, const json & optio
     X("fullframe_fisheye", FullFrameFisheyeCamera)
     X("stupidoval", StupidOval)
     X("cubic", Cubic)
-
+    X("eqareanorthpole", Eqareanorthpole)
+    X("eqareasouthpole", Eqareasouthpole)
     return nullptr;
 
     #undef X

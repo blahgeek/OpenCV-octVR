@@ -2,13 +2,14 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-11-16
+* @Last Modified time: 2015-12-07
 */
 
 #ifndef VR_LIBMAP_BASE_H
 #define VR_LIBMAP_BASE_H value
 
 #include "json.hpp"
+#include "../configure.h"
 #include <utility>
 #include <cmath>
 #include <cassert>
@@ -26,47 +27,50 @@ namespace vr {
 
 using json = nlohmann::json;
 
-/**
- * Stitch multiple images into single one
- */
-class MultiMapper {
+// Multiple input -> single output
+class MapperTemplate {
 public:
-    // Construct MultiMapper using json model.
-    static MultiMapper *
-        New(const std::string & to, const json & to_opts, 
-            int out_width, int out_height);
-    // Construct MultiMapper using dumped data file (using dump())
-    static MultiMapper * New(std::ifstream & f);
+    std::string out_type;
+    json out_opts;
+    cv::Size out_size;
 
-    virtual void add_input(const std::string & from, const json & from_opts,
-                           int in_width, int in_height) = 0;
+    std::vector<cv::Mat> map1s;
+    std::vector<cv::Mat> map2s;
+    std::vector<cv::Mat> masks;
+    std::vector<cv::Mat> seam_masks;
 
-    // call be after all add_input()
-    // or constructing with data file
-    virtual void prepare() = 0;
+public:
+    // Create new template
+    // width/height must be suitable to output model
+    MapperTemplate(const std::string & to,
+                   const json & to_opts,
+                   int width, int height);
+    void add_input(const std::string & from, const json & from_opts);
+    // Prepare seam masks with provided images (optional)
+    void create_masks(const std::vector<cv::Mat> & imgs = std::vector<cv::Mat>());
+    void dump(std::ofstream & f);
 
-    virtual cv::Size get_output_size() = 0;
-    virtual cv::Size get_input_size(int index) = 0;
+    // Load existing template
+    explicit MapperTemplate(std::ifstream & f);
+};
+
+class AsyncMultiMapper {
+public:
+    static AsyncMultiMapper * New(const std::vector<MapperTemplate> & mts, std::vector<cv::Size> in_sizes, int blend=128);
+    static AsyncMultiMapper * New(const MapperTemplate & mt, std::vector<cv::Size> in_sizes, int blend=128);
+
     /**
-     * Generate output image
-     * @param  inputs Input images, in BGR (CV_8UC3)
+     * Push one frame
+     * @param inputs Input images, in RGB
+     * @param output Output images, in RGB
      */
-    virtual void get_output(const std::vector<cv::cuda::HostMem> & inputs, cv::Mat & output) = 0;
+    virtual void push(std::vector<cv::Mat> & inputs,
+                      std::vector<cv::Mat> & outputs) = 0;
+    // Single output
+    virtual void push(std::vector<cv::Mat> & inputs, cv::Mat & outputs) = 0;
+    virtual void pop() = 0;
 
-    /**
-     * Generate single output image, call this if and if only there's only one input
-     * @param input  Input image, in BGR
-     * @param output Output image, in BGR
-     */
-    virtual void get_single_output(const cv::Mat & input, cv::Mat & output) = 0;
-
-    /**
-     * Normally, compensator gain will be computed based on the first call of get_output
-     * Call reset_compensator if you want to reset(re-compute) it
-     */
-    virtual void reset_compensator() = 0;
-
-    virtual void dump(std::ofstream & f) = 0;
+    virtual ~AsyncMultiMapper() {}
 };
 
 class Timer {
