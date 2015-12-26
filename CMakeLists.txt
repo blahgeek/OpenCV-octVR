@@ -17,3 +17,14 @@ add_executable(dumper dumper.cpp)
 
 install(TARGETS map ARCHIVE DESTINATION lib)
 install(FILES libmap.hpp DESTINATION include)
+
+if(WITH_TESTS)
+    add_executable(testall 
+                   tests/test_camera.cpp
+                   tests/test_equirectangular.cpp
+                   tests/test_pinhole.cpp
+                   tests/test.cpp
+                  )
+    target_link_libraries(testall gtest gtest_main)
+    add_test(NAME testall COMMAND testall)
+endif(WITH_TESTS)

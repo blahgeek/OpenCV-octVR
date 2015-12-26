@@ -12,7 +12,7 @@
 #include <time.h>
 #include <stdlib.h>
 
-#include "./camera.hpp"
+#include "../camera.hpp"
 
 using namespace vr;
 
