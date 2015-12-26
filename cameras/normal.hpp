@@ -29,6 +29,7 @@ public:
     }
 
     cv::Point2d image_to_obj_single(const cv::Point2d & xy) override;
+    cv::Point2d obj_to_image_single(const cv::Point2d & lonlat) override;
 
 };
 

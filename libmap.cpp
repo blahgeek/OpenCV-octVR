@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-12-07
+* @Last Modified time: 2015-12-25
 */
 
 #include <iostream>
@@ -42,37 +42,53 @@ Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes, int bl
 
     std::vector<GpuMat> scaled_masks;
 
+    this->nonoverlay_num = mt.inputs.size();
+
     this->out_size = mt.out_size;
-    this->map1s.resize(mt.map1s.size());
-    this->map2s.resize(mt.map1s.size());
-    this->masks.resize(mt.map1s.size());
-    this->seam_masks.resize(mt.map1s.size());
-    scaled_masks.resize(mt.map1s.size());
+    this->map1s.resize(mt.inputs.size() + mt.overlay_inputs.size());
+    this->map2s.resize(mt.inputs.size() + mt.overlay_inputs.size());
+    this->masks.resize(mt.inputs.size() + mt.overlay_inputs.size());
+
+    this->seam_masks.resize(mt.inputs.size());
+    scaled_masks.resize(mt.inputs.size());
 
     this->working_scale = std::min(1.0, sqrt(WORKING_MEGAPIX * 1e6 / out_size.area()));
 
-    for(int i = 0 ; i < mt.map1s.size() ; i += 1) {
-        map1s[i].upload(mt.map1s[i]);
-        map2s[i].upload(mt.map2s[i]);
-        masks[i].upload(mt.masks[i]);
+    for(int i = 0 ; i < nonoverlay_num ; i += 1) {
+        map1s[i].upload(mt.inputs[i].map1);
+        map2s[i].upload(mt.inputs[i].map2);
+        masks[i].upload(mt.inputs[i].mask);
         seam_masks[i].upload(mt.seam_masks[i]);
         cv::cuda::resize(masks[i], scaled_masks[i],
                          cv::Size(), working_scale, working_scale);
     }
+    for(int i = 0 ; i < mt.overlay_inputs.size() ; i += 1) {
+        map1s[i + nonoverlay_num].upload(mt.overlay_inputs[i].map1);
+        map2s[i + nonoverlay_num].upload(mt.overlay_inputs[i].map2);
+        masks[i + nonoverlay_num].upload(mt.overlay_inputs[i].mask);
+    }
+
     timer.tick("Uploading mats");
 
-    this->streams.resize(masks.size());
+    this->streams.resize(mt.inputs.size() + mt.overlay_inputs.size());
+    this->gpu_inputs.resize(mt.inputs.size() + mt.overlay_inputs.size());
+    this->warped_imgs.resize(mt.inputs.size() + mt.overlay_inputs.size());
 
-    this->gpu_inputs.resize(masks.size());
-    this->warped_imgs.resize(masks.size());
-    this->warped_imgs_scale.resize(masks.size());
-    for(int i = 0 ; i < masks.size() ; i += 1) {
+    this->warped_imgs_scale.resize(mt.inputs.size() + mt.overlay_inputs.size());
+    for(int i = 0 ; i < mt.inputs.size() ; i += 1) {
         gpu_inputs[i].create(in_sizes[i], CV_8UC4);
         warped_imgs[i].create(out_size, CV_8UC4);
         cv::cuda::resize(warped_imgs[i], warped_imgs_scale[i],
                          cv::Size(), working_scale, working_scale,
                          cv::INTER_NEAREST);
     }
+
+    for(int i = mt.inputs.size() ; i < mt.inputs.size() + mt.overlay_inputs.size() ; i += 1) {
+        gpu_inputs[i].create(in_sizes[i], CV_8UC4);
+        warped_imgs[i].create(out_size, CV_8UC4);
+        warped_imgs_scale[i].create(out_size, CV_8UC3);  // NOTICE
+    }
+
     this->result.create(out_size, CV_8UC3);
 
     if(blend == 0)
@@ -87,7 +103,8 @@ Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes, int bl
     } else {
         //float sharpness = 1.0 / float(-blend);
         std::cerr << "Using FeatherBlender with border = " << -blend << std::endl;
-        this->blender = cv::makePtr<cv::detail::FeatherGPUBlender>(masks, -blend);
+        this->blender = cv::makePtr<cv::detail::FeatherGPUBlender>(std::vector<GpuMat>(masks.begin(), masks.begin() + nonoverlay_num), 
+                                                                   -blend);
     }
 
     timer.tick("Blender initialize");
@@ -98,7 +115,7 @@ Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes, int bl
 }
 
 void Mapper::stitch(const std::vector<GpuMat> & inputs,
-                        GpuMat & output) {
+                    GpuMat & output) {
 #ifdef WITH_DONGLE_LICENSE
     this->lic_cnt += 1;
     if (this->lic_cnt % 3000 == 0) {
@@ -114,8 +131,8 @@ void Mapper::stitch(const std::vector<GpuMat> & inputs,
     assert(output.type() == CV_8UC3 && output.size() == this->out_size);
     
     std::vector<cv::Point2i> corners;
-    
-    for(int i = 0 ; i < inputs.size() ; i += 1) {
+
+    for(int i = 0 ; i < nonoverlay_num ; i += 1) {
         cv::cuda::cvtColor(inputs[i], gpu_inputs[i], cv::COLOR_RGB2RGBA, 4, streams[i]);
         cv::cuda::fastRemap(gpu_inputs[i], warped_imgs[i], map1s[i], map2s[i], true, streams[i]);
         cv::cuda::resize(warped_imgs[i], warped_imgs_scale[i],
@@ -124,18 +141,35 @@ void Mapper::stitch(const std::vector<GpuMat> & inputs,
         corners.emplace_back(0, 0);
     }
 
+    for(int i = nonoverlay_num ; i < inputs.size() ; i += 1) {
+        cv::cuda::cvtColor(inputs[i], gpu_inputs[i], cv::COLOR_RGB2RGBA, 4, streams[i]);
+        cv::cuda::fastRemap(gpu_inputs[i], warped_imgs[i], map1s[i], map2s[i], false, streams[i]);
+        cv::cuda::cvtColor(warped_imgs[i], warped_imgs_scale[i], cv::COLOR_RGBA2RGB, 3, streams[i]);
+        //cv::cuda::remap(inputs[i], warped_imgs[i], map1s[i], map2s[i], 
+                        //cv::INTER_LINEAR, cv::BORDER_CONSTANT, cv::Scalar(), streams[i]);
+    }
+
     for(auto & s: streams)
         s.waitForCompletion();
     timer.tick("Uploading and remapping and resizing images");
 
-    compensator->feed(warped_imgs_scale);
+    std::vector<GpuMat> partial_warped_imgs_scale(warped_imgs_scale.begin(),
+                                                  warped_imgs_scale.begin() + nonoverlay_num);
+    compensator->feed(partial_warped_imgs_scale);
     timer.tick("Compensator");
 
-    compensator->apply(warped_imgs, masks);
+    std::vector<GpuMat> partial_warped_imgs(warped_imgs.begin(), warped_imgs.begin() + nonoverlay_num);
+    std::vector<GpuMat> partial_masks(masks.begin(), masks.begin() + nonoverlay_num);
+
+    compensator->apply(partial_warped_imgs, partial_masks);
     timer.tick("Compensator apply");
 
-    blender->blend(warped_imgs, output);
+    blender->blend(partial_warped_imgs, output);
     timer.tick("Blender blend");
+
+    for(int i = nonoverlay_num ; i < inputs.size() ; i += 1)
+        warped_imgs_scale[i].copyTo(output, masks[i], streams[0]);
+    streams[0].waitForCompletion();
 
     assert(output.type() == CV_8UC3);
 }

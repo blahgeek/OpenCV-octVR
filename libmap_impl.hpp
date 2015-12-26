@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-20
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-12-07
+* @Last Modified time: 2015-12-25
 */
 
 #ifndef VR_LIBMAP_IMPL_H
@@ -31,6 +31,7 @@ private:
 private:
     cv::Size out_size;
 
+    int nonoverlay_num;
     std::vector<GpuMat> map1s; // CV_32FC1
     std::vector<GpuMat> map2s;
     std::vector<GpuMat> masks; 
