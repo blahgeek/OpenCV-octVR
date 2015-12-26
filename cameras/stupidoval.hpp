@@ -8,7 +8,7 @@
 #ifndef VR_LIBMAP_STUPIDOVAL_H_
 #define VR_LIBMAP_STUPIDOVAL_H_ value
 
-#include "./camera.hpp"
+#include "../camera.hpp"
 #include <math.h>
 
 namespace vr {

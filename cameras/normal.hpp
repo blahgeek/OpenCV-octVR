@@ -8,8 +8,8 @@
 #ifndef VR_LIBMAP_NORMAL_H
 #define VR_LIBMAP_NORMAL_H value
 
-#include "./libmap.hpp"
-#include "./libmap_impl.hpp"
+#include "../libmap.hpp"
+#include "../libmap_impl.hpp"
 
 namespace vr {
 

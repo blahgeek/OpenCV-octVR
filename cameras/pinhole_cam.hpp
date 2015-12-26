@@ -8,8 +8,8 @@
 #ifndef VR_LIBMAP_PINHOLE_CAM_H
 #define VR_LIBMAP_PINHOLE_CAM_H value
 
-#include "./libmap.hpp"
-#include "./libmap_impl.hpp"
+#include "../libmap.hpp"
+#include "../libmap_impl.hpp"
 
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>

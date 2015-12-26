@@ -4,7 +4,7 @@
 #ifndef ARCTIC_CIRCLE
 	#define ARCTIC_CIRCLE (M_PI / 3)
 #endif
-#include "./camera.hpp"
+#include "../camera.hpp"
 
 namespace vr {
 

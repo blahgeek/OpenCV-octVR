@@ -8,7 +8,7 @@
 #ifndef VR_LIBMAP_FULLFRAME_FISHEYE_H_
 #define VR_LIBMAP_FULLFRAME_FISHEYE_H_ value
 
-#include "./camera.hpp"
+#include "../camera.hpp"
 
 namespace vr {
 
