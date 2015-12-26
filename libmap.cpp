@@ -33,7 +33,7 @@
 using namespace vr;
 
 Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes, int blend) {
-#ifdef VR_LIBMAP_PROTECTOR
+#ifdef WITH_DONGLE_LICENSE
     lic_runtime_init(&(this->lic_t), 601);
     this->lic_cnt = 0;
 #endif
@@ -99,7 +99,7 @@ Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes, int bl
 
 void Mapper::stitch(const std::vector<GpuMat> & inputs,
                         GpuMat & output) {
-#ifdef VR_LIBMAP_PROTECTOR
+#ifdef WITH_DONGLE_LICENSE
     this->lic_cnt += 1;
     if (this->lic_cnt % 3000 == 0) {
         lic_runtime_check(&(this->lic_t));

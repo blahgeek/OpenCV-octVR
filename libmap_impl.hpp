@@ -22,7 +22,7 @@ using cv::cuda::GpuMat;
 
 class Mapper {
 
-#ifdef VR_LIBMAP_PROTECTOR
+#ifdef WITH_DONGLE_LICENSE
 private:
     license_t lic_t;
     int lic_cnt;

@@ -9,7 +9,6 @@
 #define VR_LIBMAP_BASE_H value
 
 #include "json.hpp"
-#include "../configure.h"
 #include <utility>
 #include <cmath>
 #include <cassert>
