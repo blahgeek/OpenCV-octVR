@@ -531,6 +531,7 @@ public:
 
 private:
     Ptr<Impl> impl_;
+    Event(const Ptr<Impl>& impl);
 
     friend struct EventAccessor;
 };
