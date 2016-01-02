@@ -13,6 +13,7 @@ add_library(map STATIC
 
 link_libraries(map)
 add_executable(dumper dumper.cpp)
+add_executable(monkey_gen monkey_gen.cpp)
 
 if (CUDA_FOUND)
     add_executable(mapper mapper.cpp)

@@ -130,6 +130,21 @@ Camera(json(
                                  CV_8U);
     this->exclude_mask.setTo(0);
     this->drawExcludeMask(options["mask_points"]);
+
+    #define VAR(n) (this->radial_distortion[n])
+
+    // print debug info
+    json debug = {
+        {"radial_distortion", {VAR(0), VAR(1), VAR(2), VAR(3), VAR(4), VAR(5)}},
+        {"hfov", this->hfov},
+        {"center_shift", {this->center_shift.x, this->center_shift.y}},
+        {"size", {this->size.width, this->size.height}},
+        {"rotate", {this->rotate_matrix.at<double>(0, 0), this->rotate_matrix.at<double>(0, 1), this->rotate_matrix.at<double>(0, 2),
+                    this->rotate_matrix.at<double>(1, 0), this->rotate_matrix.at<double>(1, 1), this->rotate_matrix.at<double>(1, 2),
+                    this->rotate_matrix.at<double>(2, 0), this->rotate_matrix.at<double>(2, 1), this->rotate_matrix.at<double>(2, 2),
+                   }}
+    };
+    std::cout << debug.dump(4) << std::endl;
 }
 
 void FullFrameFisheyeCamera::drawExcludeMask(const json & mask_points) {
@@ -152,8 +167,6 @@ double FullFrameFisheyeCamera::get_aspect_ratio() {
 
 cv::Point2d FullFrameFisheyeCamera::do_radial_distort(cv::Point2d orig) {
     double r, scale;
-
-    #define VAR(n) (this->radial_distortion[n])
 
     r = (sqrt( orig.x*orig.x + orig.y*orig.y )) / VAR(4);
     if( r < VAR(5) )
