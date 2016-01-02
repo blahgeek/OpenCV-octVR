@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-12-25
+* @Last Modified time: 2016-01-02
 */
 
 #include <iostream>
@@ -21,11 +21,15 @@
 #include <opencv2/stitching/detail/util.hpp>
 #include <opencv2/stitching/detail/warpers.hpp>
 #include <opencv2/stitching/warpers.hpp>
+#include <assert.h>
 
 #include <opencv2/core/cuda.hpp>
+
+#ifdef HAVE_CUDA
 #include <opencv2/cudawarping.hpp>
 #include <opencv2/cudaimgproc.hpp>
 #include <opencv2/cudaarithm.hpp>
+#endif
 
 // TODO Set by options
 #define WORKING_MEGAPIX 0.1
@@ -38,6 +42,7 @@ Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes, int bl
     this->lic_cnt = 0;
 #endif
 
+#ifdef HAVE_CUDA
     Timer timer("Mapper constructor");
 
     std::vector<GpuMat> scaled_masks;
@@ -111,6 +116,9 @@ Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes, int bl
 
     this->compensator = cv::makePtr<cv::detail::GainCompensatorGPU>(scaled_masks);
     timer.tick("Gain Compensator initialize");
+#else
+    assert(false);
+#endif
 
 }
 
@@ -123,6 +131,7 @@ void Mapper::stitch(const std::vector<GpuMat> & inputs,
     }
 #endif
 
+#ifdef HAVE_CUDA
     Timer timer("Stitch");
 
     assert(inputs.size() == masks.size());
@@ -176,12 +185,17 @@ void Mapper::stitch(const std::vector<GpuMat> & inputs,
     streams[inputs.size()].waitForCompletion();
 
     assert(output.type() == CV_8UC3);
+
+#else
+    assert(false);
+#endif
 }
 
 void Mapper::remap(const std::vector<GpuMat> & inputs,
                        GpuMat & output) {
     Timer timer("Remap");
 
+#ifdef HAVE_CUDA
     assert(inputs.size() == masks.size());
     for(int i = 0 ; i < inputs.size() ; i += 1)
         assert(inputs[i].type() == CV_8UC3); // RGB
@@ -202,5 +216,9 @@ void Mapper::remap(const std::vector<GpuMat> & inputs,
     streams[0].waitForCompletion();
 
     timer.tick("Convert");
+
+#else 
+    assert(false);
+#endif
 
 }

@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-20
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-12-25
+* @Last Modified time: 2016-01-02
 */
 
 #ifndef VR_LIBMAP_IMPL_H
@@ -10,11 +10,14 @@
 
 #include "./camera.hpp"
 #include "./libmap.hpp"
-#include "dongle_license.h"
 #include <opencv2/stitching/detail/exposure_compensate.hpp>
 #include <opencv2/stitching/detail/blenders.hpp>
 
 #include <opencv2/core/cuda.hpp>
+
+#ifdef WITH_DONGLE_LICENSE
+#include "dongle_license.h"
+#endif
 
 namespace vr {
 
