@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-11-09
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-11-16
+* @Last Modified time: 2016-01-02
 */
 
 #include <iostream>
@@ -18,7 +18,10 @@
 #include "./libmap.hpp"
 #include <utility>
 #include <unistd.h>
+
+#ifdef HAVE_CUDA
 #include <cuda_profiler_api.h>
+#endif
 
 using namespace vr;
 
@@ -65,14 +68,18 @@ int main(int argc, char const *argv[]) {
     cv::Mat output2(output_size, CV_8UC3);
     cv::Mat output3(output_size, CV_8UC3);
 
+#ifdef HAVE_CUDA
     cudaProfilerStart();
+#endif
     async_remapper->push(imgs, output);
     async_remapper->push(imgs, output2);
     async_remapper->push(imgs, output3);
     async_remapper->pop();
     async_remapper->pop();
     async_remapper->pop();
+#ifdef HAVE_CUDA
     cudaProfilerStop();
+#endif
 
     cv::imwrite(output_filename, output);
 

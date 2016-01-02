@@ -12,8 +12,11 @@ add_library(map STATIC
            )
 
 link_libraries(map)
-add_executable(mapper mapper.cpp)
 add_executable(dumper dumper.cpp)
+
+if (CUDA_FOUND)
+    add_executable(mapper mapper.cpp)
+endif (CUDA_FOUND)
 
 install(TARGETS map ARCHIVE DESTINATION lib)
 install(FILES libmap.hpp DESTINATION include)
