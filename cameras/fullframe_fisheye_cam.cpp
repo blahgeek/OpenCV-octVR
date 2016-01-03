@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-11-03
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-01-02
+* @Last Modified time: 2016-01-03
 */
 
 #include <iostream>
@@ -103,14 +103,7 @@ static double CalcCorrectionRadius_copy(double *coeff )
 }
 
 FullFrameFisheyeCamera::FullFrameFisheyeCamera(const json & options): 
-// Camera(options) {
-Camera(json(
-       {{"rotate", {
-            options["roll"].get<double>(), 
-            -options["yaw"].get<double>(), 
-            -options["pitch"].get<double>()
-        }}}
-)) {
+Camera(options) {
     this->hfov = options["hfov"].get<double>();
     this->size.width = options["width"].get<int>();
     this->size.height = options["height"].get<int>();
