@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-12-25
+* @Last Modified time: 2016-01-07
 */
 
 #ifndef VR_LIBMAP_BASE_H
@@ -58,24 +58,24 @@ public:
     explicit MapperTemplate(std::ifstream & f);
 };
 
-class AsyncMultiMapper {
-public:
-    static AsyncMultiMapper * New(const std::vector<MapperTemplate> & mts, std::vector<cv::Size> in_sizes, int blend=128);
-    static AsyncMultiMapper * New(const MapperTemplate & mt, std::vector<cv::Size> in_sizes, int blend=128);
+// class AsyncMultiMapper {
+// public:
+//     static AsyncMultiMapper * New(const std::vector<MapperTemplate> & mts, std::vector<cv::Size> in_sizes, int blend=128);
+//     static AsyncMultiMapper * New(const MapperTemplate & mt, std::vector<cv::Size> in_sizes, int blend=128);
 
-    /**
-     * Push one frame
-     * @param inputs Input images, in RGB
-     * @param output Output images, in RGB
-     */
-    virtual void push(std::vector<cv::Mat> & inputs,
-                      std::vector<cv::Mat> & outputs) = 0;
-    // Single output
-    virtual void push(std::vector<cv::Mat> & inputs, cv::Mat & outputs) = 0;
-    virtual void pop() = 0;
+//     *
+//      * Push one frame
+//      * @param inputs Input images, in RGB
+//      * @param output Output images, in RGB
+     
+//     virtual void push(std::vector<cv::Mat> & inputs,
+//                       std::vector<cv::Mat> & outputs) = 0;
+//     // Single output
+//     virtual void push(std::vector<cv::Mat> & inputs, cv::Mat & outputs) = 0;
+//     virtual void pop() = 0;
 
-    virtual ~AsyncMultiMapper() {}
-};
+//     virtual ~AsyncMultiMapper() {}
+// };
 
 class Timer {
 protected:

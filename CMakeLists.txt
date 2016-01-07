@@ -1,6 +1,5 @@
 add_library(map STATIC
             libmap.cpp
-            libmap_async.cpp
             mapper_template.cpp
             timer.cpp
             camera.cpp
@@ -14,6 +13,7 @@ add_library(map STATIC
 link_libraries(map)
 add_executable(dumper dumper.cpp)
 add_executable(monkey_gen monkey_gen.cpp)
+add_executable(mapper mapper.cpp)
 
 if (CUDA_FOUND)
     add_executable(mapper mapper.cpp)
