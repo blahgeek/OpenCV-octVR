@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-11-03
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-01-03
+* @Last Modified time: 2016-01-06
 */
 
 #include <iostream>
@@ -137,7 +137,7 @@ Camera(options) {
                     this->rotate_matrix.at<double>(2, 0), this->rotate_matrix.at<double>(2, 1), this->rotate_matrix.at<double>(2, 2),
                    }}
     };
-    std::cout << debug.dump(4) << std::endl;
+    std::cout << debug.dump(4) << ", " << std::endl;
 }
 
 void FullFrameFisheyeCamera::drawExcludeMask(const json & mask_points) {
