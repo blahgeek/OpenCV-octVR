@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-01-07
+* @Last Modified time: 2016-01-08
 */
 
 #include <iostream>
@@ -61,10 +61,14 @@ Mapper::Mapper(const MapperTemplate & mt,
     timer.tick("Copying maps and masks");
 
     std::vector<cv::Point> corners(mt.inputs.size(), cv::Point(0, 0));
+    std::vector<cv::UMat> weight_maps;
     cv::detail::FeatherBlender blender;
     blender.createWeightMaps(this->masks,
                              corners,
-                             this->feather_masks);
+                             weight_maps);
+    this->feather_masks.resize(weight_maps.size());
+    for(int i = 0 ; i < weight_maps.size() ; i += 1)
+        weight_maps[i].convertTo(this->feather_masks[i], CV_8U, 255.0);
 
     timer.tick("Prepare feather masks");
 }
@@ -75,20 +79,36 @@ void Mapper::stitch(const std::vector<UMat> & inputs, UMat & output) {
     output.create(this->out_size, CV_8UC3);
     output.setTo(0);
 
+    std::vector<UMat> output_channels(3);
+    for(int k = 0 ; k < 3 ; k += 1)
+        output_channels[k].create(this->out_size, CV_32F);
+
     for(int i = 0 ; i < this->masks.size() ; i += 1) {
         assert(inputs[i].type() == CV_8UC3);
 
-        cv::UMat remapped_img;
-        cv::remap(inputs[i], remapped_img, 
-                  this->map1s[i], this->map2s[i],
-                  cv::INTER_LINEAR);
+        std::vector<UMat> input_channels(3);
+        std::vector<UMat> remapped_channels(3);
+
+        cv::split(inputs[i], input_channels);
+        timer.tick("Split input");
+
+        for(int k = 0 ; k < 3 ; k += 1)
+            cv::remap(input_channels[k], 
+                      remapped_channels[k],
+                      this->map1s[i], this->map2s[i],
+                      cv::INTER_LINEAR);
         timer.tick("remap");
 
-        // cv::accumulateProduct(remapped_img, feather_masks[i], output);
-
-        cv::add(output, remapped_img, output, this->masks[i]);
-        timer.tick("add");
+        for(int k = 0 ; k < 3 ; k += 1)
+            cv::accumulateProduct(remapped_channels[k],
+                                  this->feather_masks[i],
+                                  output_channels[k]); // TODO: mask
+        timer.tick("accumulate product");
     }
+
+    UMat output_f;
+    cv::merge(output_channels, output_f);
+    output_f.convertTo(output, CV_8UC3, 1.0/255.0);
 
 }
 
