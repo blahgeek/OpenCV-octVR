@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-20
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-11-15
+* @Last Modified time: 2016-01-16
 */
 
 #ifndef VR_LIBMAP_CAMERA_H
@@ -31,12 +31,15 @@ class Camera {
 protected:
     std::vector<double> rotate_vector;
     cv::Mat rotate_matrix;
+    cv::Mat exclude_mask;
 
 protected:
     cv::Point2d sphere_xyz_to_lonlat(const cv::Point3d & xyz);
     cv::Point3d sphere_lonlat_to_xyz(const cv::Point2d & lonlat);
 
     void sphere_rotate(std::vector<cv::Point3d> & points, bool reverse);
+
+    void drawExcludeMask(const json & masks);
 
 public:
     /**

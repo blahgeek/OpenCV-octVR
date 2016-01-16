@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-11-03
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-01-02
+* @Last Modified time: 2016-01-16
 */
 
 #ifndef VR_LIBMAP_FULLFRAME_FISHEYE_H_
@@ -19,11 +19,8 @@ protected:
     cv::Point2d center_shift; // 0-1
     cv::Size size;
 
-    cv::Mat exclude_mask;
-
 protected:
     cv::Point2d do_radial_distort(cv::Point2d src);
-    void drawExcludeMask(const json & mask_points);
 
 public:
     FullFrameFisheyeCamera(const json & options);

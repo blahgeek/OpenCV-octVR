@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-11-03
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-01-06
+* @Last Modified time: 2016-01-16
 */
 
 #include <iostream>
@@ -118,12 +118,6 @@ Camera(options) {
     this->radial_distortion[4] = (size.width < size.height ? size.width : size.height) / 2.0;
     this->radial_distortion[5] = CalcCorrectionRadius_copy(this->radial_distortion);
 
-    this->exclude_mask = cv::Mat(this->size.height + EXCLUDE_MASK_PADDING * 2,
-                                 this->size.width + EXCLUDE_MASK_PADDING * 2, 
-                                 CV_8U);
-    this->exclude_mask.setTo(0);
-    this->drawExcludeMask(options["mask_points"]);
-
     #define VAR(n) (this->radial_distortion[n])
 
     // print debug info
@@ -138,20 +132,6 @@ Camera(options) {
                    }}
     };
     std::cout << debug.dump(4) << ", " << std::endl;
-}
-
-void FullFrameFisheyeCamera::drawExcludeMask(const json & mask_points) {
-    std::vector<std::vector<cv::Point2i>> points_v;
-    for(auto m: mask_points) {
-        int point_num = m.size() / 2;
-        std::cerr << "Drawing exlude mask... " << point_num << " points" << std::endl;
-        std::vector<cv::Point2i> points;
-        for(int i = 0 ; i < point_num ; i += 1)
-            points.emplace_back(m[i*2].get<int>() + EXCLUDE_MASK_PADDING, 
-                                m[i*2+1].get<int>() + EXCLUDE_MASK_PADDING);
-        points_v.push_back(points);
-    }
-    cv::fillPoly(this->exclude_mask, points_v, 255);
 }
 
 double FullFrameFisheyeCamera::get_aspect_ratio() {
@@ -194,13 +174,6 @@ cv::Point2d FullFrameFisheyeCamera::obj_to_image_single(const cv::Point2d & lonl
 
     ret.x += 0.5;
     ret.y += 0.5;
-
-    int W = ret.x * this->size.width;
-    int H = ret.y * this->size.height;
-    if(W < 0 || W >= this->size.width ||
-       H < 0 || H >= this->size.height ||
-       this->exclude_mask.at<unsigned char>(H + EXCLUDE_MASK_PADDING, W + EXCLUDE_MASK_PADDING) == 255)
-        return cv::Point2d(NAN, NAN);
 
     return ret;
 }
