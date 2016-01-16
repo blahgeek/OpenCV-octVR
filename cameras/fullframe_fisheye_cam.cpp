@@ -104,9 +104,25 @@ static double CalcCorrectionRadius_copy(double *coeff )
 
 FullFrameFisheyeCamera::FullFrameFisheyeCamera(const json & options): 
 Camera(options) {
-    this->hfov = options["hfov"].get<double>();
+
     this->size.width = options["width"].get<int>();
     this->size.height = options["height"].get<int>();
+    if(options.find("circular_crop") != options.end()) {
+        auto crop_args = options["circular_crop"].get<std::vector<double>>();
+        circular_crop.x = - this->size.width * 0.5 
+                          - crop_args[0] * this->size.width
+                          + crop_args[2] * this->size.width;
+        circular_crop.y = - this->size.height * 0.5 
+                          - crop_args[1] * this->size.width
+                          + crop_args[2] * this->size.width;
+        circular_crop.width = this->size.width;
+        circular_crop.height = this->size.height;
+
+        this->size.height = crop_args[2] * 2 * this->size.width;
+        this->size.width = crop_args[2] * 2 * this->size.width;
+    }
+
+    this->hfov = options["hfov"].get<double>();
     this->center_shift.x = options["center_dx"].get<double>();
     this->center_shift.y = options["center_dy"].get<double>();
 
@@ -174,6 +190,15 @@ cv::Point2d FullFrameFisheyeCamera::obj_to_image_single(const cv::Point2d & lonl
 
     ret.x += 0.5;
     ret.y += 0.5;
+
+    if(this->circular_crop.area() > 0) {
+        if((ret.x - 0.5) * (ret.x - 0.5) + (ret.y - 0.5) * (ret.y - 0.5) > 0.25)
+            return cv::Point2d(NAN, NAN);
+        ret.x = (ret.x * this->size.width) - circular_crop.x;
+        ret.y = (ret.y * this->size.height) - circular_crop.y;
+        ret.x /= double(circular_crop.width);
+        ret.y /= double(circular_crop.height);
+    }
 
     return ret;
 }

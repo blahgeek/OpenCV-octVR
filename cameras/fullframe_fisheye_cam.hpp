@@ -14,6 +14,7 @@ namespace vr {
 
 class FullFrameFisheyeCamera: public Camera {
 protected:
+    cv::Rect circular_crop;
     double radial_distortion[6];
     double hfov; // horizon fov
     cv::Point2d center_shift; // 0-1

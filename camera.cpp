@@ -61,18 +61,17 @@ Camera::Camera(const json & options) {
 
     this->rotate_matrix = (rotate_x * rotate_z) * rotate_y;
 
-    if(options.find("masks") != options.end()) {
+    if(options.find("exclude_masks") != options.end()) {
         int width = options["width"].get<int>();
         int height = options["height"].get<int>();
         this->exclude_mask = cv::Mat(height, width, CV_8U);
         this->exclude_mask.setTo(0);
-        this->drawExcludeMask(options["masks"]);
+        this->drawExcludeMask(options["exclude_masks"]);
     }
 }
 
 void Camera::drawExcludeMask(const json & masks) {
-    bool is_exclude = masks["exclude"].get<bool>();
-    for(auto & area: masks["areas"]) {
+    for(auto & area: masks) {
         auto area_type = area["type"].get<std::string>();
         auto args = area["args"].get<std::vector<double>>();
         if(area_type == "polygonal") {
@@ -83,23 +82,8 @@ void Camera::drawExcludeMask(const json & masks) {
             cv::fillPoly(this->exclude_mask, 
                          std::vector<std::vector<cv::Point2i>>({points}), 255);
         }
-        else if (area_type == "circle") {
-            int x = this->exclude_mask.cols * 0.5 + this->exclude_mask.cols * args[0];
-            int y = this->exclude_mask.rows * 0.5 + this->exclude_mask.cols * args[1]; // Yes it is
-            int radius = this->exclude_mask.cols * args[2];
-            std::cerr << "Drawing circle mask... "
-                      << "center: " << x << ", " << y
-                      << ", radius: " << radius << std::endl;
-            cv::circle(this->exclude_mask, 
-                       cv::Point(x, y), radius, 255, -1);
-        }
         else
             assert(false);
-    }
-    if(!is_exclude) {
-        cv::Mat reverse;
-        cv::bitwise_not(this->exclude_mask, reverse);
-        this->exclude_mask = reverse;
     }
 }
 
@@ -142,12 +126,13 @@ std::vector<cv::Point2d> Camera::obj_to_image(const std::vector<cv::Point2d> & l
     // compute
     for(auto & xyz: xyzs) {
         auto p = obj_to_image_single(sphere_xyz_to_lonlat(xyz));
-        if(!this->exclude_mask.empty() && 
-           p.x >= 0 && p.x < 1 && p.y >= 0 && p.y < 1) {
-            int W = p.x * this->exclude_mask.cols;
-            int H = p.y * this->exclude_mask.rows;
-            if(this->exclude_mask.at<unsigned char>(H, W))
-                p = cv::Point2d(NAN, NAN);
+        if(p.x >= 0 && p.x < 1 && p.y >= 0 && p.y < 1) {
+            if(!this->exclude_mask.empty()) {
+                int W = p.x * this->exclude_mask.cols;
+                int H = p.y * this->exclude_mask.rows;
+                if(this->exclude_mask.at<unsigned char>(H, W))
+                    p = cv::Point2d(NAN, NAN);
+            }
         }
         ret.push_back(p);
     }
