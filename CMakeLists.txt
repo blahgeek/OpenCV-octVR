@@ -1,5 +1,6 @@
 add_library(map STATIC
             libmap.cpp
+            libmap_cpu.cpp
             libmap_async.cpp
             mapper_template.cpp
             timer.cpp
@@ -14,10 +15,7 @@ add_library(map STATIC
 link_libraries(map)
 add_executable(dumper dumper.cpp)
 add_executable(monkey_gen monkey_gen.cpp)
-
-if (CUDA_FOUND)
-    add_executable(mapper mapper.cpp)
-endif (CUDA_FOUND)
+add_executable(mapper mapper.cpp)
 
 install(TARGETS map ARCHIVE DESTINATION lib)
 install(FILES libmap.hpp DESTINATION include)
