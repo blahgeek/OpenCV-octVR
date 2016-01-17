@@ -510,7 +510,7 @@ void MultiBandGPUBlender::do_blend(std::vector<cuda::GpuMat> &, cuda::GpuMat &) 
     throw_no_cuda();
 }
 
-FeatherGPUBlender::FeatherGPUBlender(const std::vector<cuda::GpuMat> & masks, float) : GPUStaticBlender(masks) {
+FeatherGPUBlender::FeatherGPUBlender(const std::vector<cuda::GpuMat> & masks, int) : GPUStaticBlender(masks) {
     throw_no_cuda();
 }
 
