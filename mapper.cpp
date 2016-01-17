@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-11-09
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-01-16
+* @Last Modified time: 2016-01-17
 */
 
 #include <iostream>
@@ -72,14 +72,20 @@ int main(int argc, char const *argv[]) {
     std::cerr << "Done. Output size = " << output_size << std::endl;
 
 #ifdef HAVE_CUDA
+    std::vector<cv::Mat> ms;
+    for(auto & um: imgs) {
+        cv::Mat x;
+        um.copyTo(x);
+        ms.push_back(x);
+    }
     cv::Mat output(output_size, CV_8UC3);
     cv::Mat output2(output_size, CV_8UC3);
     cv::Mat output3(output_size, CV_8UC3);
 
     cudaProfilerStart();
-    async_remapper->push(imgs, output);
-    async_remapper->push(imgs, output2);
-    async_remapper->push(imgs, output3);
+    async_remapper->push(ms, output);
+    async_remapper->push(ms, output2);
+    async_remapper->push(ms, output3);
     async_remapper->pop();
     async_remapper->pop();
     async_remapper->pop();
