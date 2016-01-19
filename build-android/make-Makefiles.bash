@@ -2,7 +2,6 @@
 export ANDROID_NDK="/usr/local/opt/android-ndk/"
 export ANDROID_SDK="/usr/local/opt/android-sdk/"
 cmake \
-    -GNinja \
     -DCMAKE_CXX_FLAGS="-std=c++11" \
     -DCMAKE_TOOLCHAIN_FILE=`pwd`/../platforms/android/android.toolchain.cmake \
     -DWITH_OPENCL=ON \
@@ -19,3 +18,8 @@ cmake \
     -DANDROID_OPENCL_SDK=`pwd`/../android-opencl-sdk \
     -DWITH_TBB=ON \
     ..
+
+echo "******************************************************"
+echo "* WARNING: Using cmake version > 3.2.0 may not work  *"
+echo "*          Check 'cmake --version' now               *"
+echo "******************************************************"
