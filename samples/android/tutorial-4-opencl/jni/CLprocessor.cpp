@@ -1,9 +1,10 @@
 #define __CL_ENABLE_EXCEPTIONS
 #define CL_USE_DEPRECATED_OPENCL_1_1_APIS /*let's give a chance for OpenCL 1.1 devices*/
-#include <CL/cl.hpp>
 
 #include <GLES2/gl2.h>
 #include <EGL/egl.h>
+
+#include <CL/cl.hpp>
 
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
@@ -104,7 +105,12 @@ extern "C" void initCL()
     try
     {
         haveOpenCL = false;
-        cl::Platform p = cl::Platform::getDefault();
+
+        std::vector<cl::Platform> platforms;
+        cl::Platform::get(&platforms);
+        cl::Platform p = platforms[0];
+
+        //cl::Platform p = cl::Platform::getDefault();
         std::string ext = p.getInfo<CL_PLATFORM_EXTENSIONS>();
         if(ext.find("cl_khr_gl_sharing") == std::string::npos)
             LOGE("Warning: CL-GL sharing isn't supported by PLATFORM");
