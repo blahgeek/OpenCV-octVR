@@ -34,7 +34,7 @@ public class Tutorial4Activity extends Activity {
         // processor = new DualCamProcessor();
 
         frontCamView = (CameraGLSurfaceView) findViewById(R.id.front_cam_gl_surface_view);
-        frontCamView.setCameraIndex(0);
+        frontCamView.setCameraIndex(1);
         frontCamView.setMaxCameraPreviewSize(1280, 720);
         frontCamView.setCameraTextureListener(new CameraGLSurfaceView.CameraTextureListener() {
             public void onCameraViewStarted(int width, int height) {
@@ -49,10 +49,11 @@ public class Tutorial4Activity extends Activity {
         });
 
         backCamView = (CameraGLSurfaceView) findViewById(R.id.back_cam_gl_surface_view);
-        backCamView.setCameraIndex(1);
+        backCamView.setCameraIndex(0);
         backCamView.setMaxCameraPreviewSize(1280, 720);
         backCamView.setCameraTextureListener(new CameraGLSurfaceView.CameraTextureListener() {
             public void onCameraViewStarted(int width, int height) {
+                NativePart.initCL();
                 // processor.onCameraViewStarted(width, height);
             }
             public void onCameraViewStopped() {

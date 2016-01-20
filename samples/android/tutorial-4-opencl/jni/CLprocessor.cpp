@@ -10,6 +10,8 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/core/ocl.hpp>
 
+#include <mutex>
+
 #include "common.hpp"
 
 void dumpCLinfo()
@@ -60,8 +62,10 @@ void dumpCLinfo()
 cl::Context theContext;
 cl::CommandQueue theQueue;
 bool haveOpenCL = false;
+std::mutex mutex;
 
 extern "C" void initCL() {
+    std::lock_guard<std::mutex> lock(mutex);
     static bool inited = false;
     if (inited) {
         LOGD("OpenCL already inited, return");
@@ -131,9 +135,10 @@ extern "C" void initCL() {
 
 #define GL_TEXTURE_2D 0x0DE1
 
+
 void copyGltoUMat(int tex, cv::UMat & m) {
     LOGD("loading texture data %d", tex);
-    int64_t t = getTimeMs();
+    auto t = getTimeMs();
     cl::ImageGL ImageIn(theContext, CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0, tex);
     std::vector<cl::Memory> images(1, ImageIn);
     theQueue.enqueueAcquireGLObjects(&images);
@@ -143,47 +148,72 @@ void copyGltoUMat(int tex, cv::UMat & m) {
     LOGD("loading texture data to OpenCV UMat costs %d ms", getTimeInterval(t));
 }
 
-cv::UMat frontFrame;
-
-extern "C"
-int processFrontFrame(int texIn, int texOut, int width, int height) {
-    LOGD("processFrontFrame(%d, %d, %d, %d)", texIn, texOut, width, height);
-    copyGltoUMat(texIn, frontFrame);
-    return 0;
-}
-
-extern "C"
-int processBackFrame(int texIn, int texOut, int width, int height) {
-    LOGD("processBackFrame(%d, %d, %d, %d)", texIn, texOut, width, height);
-    if(frontFrame.empty()) {
-        LOGD("frontFrame not available, return");
-        return 0;
-    }
-    cv::UMat backFrame;
-    copyGltoUMat(texIn, backFrame);
-
-    int64_t t = getTimeMs();
-    cv::UMat result;
-    // cv::bitwise_not(frontIn, result);
-    LOGD("sizes: %dx%d, %dx%d", frontFrame.rows, frontFrame.cols,
-         backFrame.rows, backFrame.cols);
-    cv::add(frontFrame, backFrame, result);
-    cv::ocl::finish();
-    LOGD("OpenCV processing costs %d ms", getTimeInterval(t));
-
-    t = getTimeMs();
-    cl::ImageGL imgOut(theContext, CL_MEM_WRITE_ONLY, GL_TEXTURE_2D, 0, texOut);
+void copyUMattoGl(cv::UMat & m, int tex) {
+    auto t = getTimeMs();
+    cl::ImageGL imgOut(theContext, CL_MEM_WRITE_ONLY, GL_TEXTURE_2D, 0, tex);
     std::vector<cl::Memory> images(1, imgOut);
     theQueue.enqueueAcquireGLObjects(&images);
-    cl_mem clBuffer = (cl_mem)result.handle(cv::ACCESS_READ);
+    cl_mem clBuffer = (cl_mem)m.handle(cv::ACCESS_READ);
     cl_command_queue q = (cl_command_queue)cv::ocl::Queue::getDefault().ptr();
     size_t offset = 0;
     size_t origin[3] = { 0, 0, 0 };
-    size_t region[3] = { width, height, 1 };
+    size_t region[3] = { m.cols, m.rows, 1 };
     CV_Assert(clEnqueueCopyBufferToImage (q, clBuffer, imgOut(), offset, origin, region, 0, NULL, NULL) == CL_SUCCESS);
     theQueue.enqueueReleaseGLObjects(&images);
     cv::ocl::finish();
     LOGD("uploading results to texture costs %d ms", getTimeInterval(t));
+}
+
+cv::UMat frontFrame;
+
+extern "C"
+int processFrontFrame(int texIn, int texOut, int width, int height) {
+    std::lock_guard<std::mutex> lock(mutex);
+    LOGD("processFrontFrame(%d, %d, %d, %d)", texIn, texOut, width, height);
+
+    cv::UMat in, out;
+    copyGltoUMat(texIn, in);
+    cv::bitwise_not(in, out);
+    copyUMattoGl(out, texOut);
+    return 1;
+}
+
+extern "C"
+int processBackFrame(int texIn, int texOut, int width, int height) {
+    std::lock_guard<std::mutex> lock(mutex);
+    LOGD("processBackFrame(%d, %d, %d, %d)", texIn, texOut, width, height);
+    // if(frontFrame.empty()) {
+    //     LOGD("frontFrame not available, return");
+    //     return 0;
+    // }
+    cv::UMat in, out;
+    copyGltoUMat(texIn, in);
+    cv::bitwise_not(in, out);
+    copyUMattoGl(out, texOut);
+    return 1;
+
+    // int64_t t = getTimeMs();
+    // cv::UMat result;
+    // // cv::bitwise_not(frontIn, result);
+    // LOGD("sizes: %dx%d, %dx%d", frontFrame.rows, frontFrame.cols,
+    //      backFrame.rows, backFrame.cols);
+    // cv::addWeighted(frontFrame, 0.5, backFrame, 0.5, 1.0, result);
+    // cv::ocl::finish();
+    // LOGD("OpenCV processing costs %d ms", getTimeInterval(t));
+
+    // t = getTimeMs();
+    // cl::ImageGL imgOut(theContext, CL_MEM_WRITE_ONLY, GL_TEXTURE_2D, 0, texOut);
+    // std::vector<cl::Memory> images(1, imgOut);
+    // theQueue.enqueueAcquireGLObjects(&images);
+    // cl_mem clBuffer = (cl_mem)result.handle(cv::ACCESS_READ);
+    // cl_command_queue q = (cl_command_queue)cv::ocl::Queue::getDefault().ptr();
+    // size_t offset = 0;
+    // size_t origin[3] = { 0, 0, 0 };
+    // size_t region[3] = { width, height, 1 };
+    // CV_Assert(clEnqueueCopyBufferToImage (q, clBuffer, imgOut(), offset, origin, region, 0, NULL, NULL) == CL_SUCCESS);
+    // theQueue.enqueueReleaseGLObjects(&images);
+    // cv::ocl::finish();
+    // LOGD("uploading results to texture costs %d ms", getTimeInterval(t));
 
     return 1;
 }
