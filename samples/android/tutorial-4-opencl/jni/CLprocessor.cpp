@@ -133,87 +133,33 @@ extern "C" void initCL() {
     LOGD("initCL completed");
 }
 
-#define GL_TEXTURE_2D 0x0DE1
-
-
-void copyGltoUMat(int tex, cv::UMat & m) {
-    LOGD("loading texture data %d", tex);
-    auto t = getTimeMs();
-    cl::ImageGL ImageIn(theContext, CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0, tex);
-    std::vector<cl::Memory> images(1, ImageIn);
-    theQueue.enqueueAcquireGLObjects(&images);
-    theQueue.finish();
-    cv::ocl::convertFromImage(ImageIn(), m);
-    theQueue.enqueueReleaseGLObjects(&images);
-    LOGD("loading texture data to OpenCV UMat costs %d ms", getTimeInterval(t));
-}
-
-void copyUMattoGl(cv::UMat & m, int tex) {
-    auto t = getTimeMs();
-    cl::ImageGL imgOut(theContext, CL_MEM_WRITE_ONLY, GL_TEXTURE_2D, 0, tex);
-    std::vector<cl::Memory> images(1, imgOut);
-    theQueue.enqueueAcquireGLObjects(&images);
-    cl_mem clBuffer = (cl_mem)m.handle(cv::ACCESS_READ);
-    cl_command_queue q = (cl_command_queue)cv::ocl::Queue::getDefault().ptr();
-    size_t offset = 0;
-    size_t origin[3] = { 0, 0, 0 };
-    size_t region[3] = { m.cols, m.rows, 1 };
-    CV_Assert(clEnqueueCopyBufferToImage (q, clBuffer, imgOut(), offset, origin, region, 0, NULL, NULL) == CL_SUCCESS);
-    theQueue.enqueueReleaseGLObjects(&images);
-    cv::ocl::finish();
-    LOGD("uploading results to texture costs %d ms", getTimeInterval(t));
-}
-
-cv::UMat frontFrame;
+cv::UMat umat, umat_rgb;
 
 extern "C"
-int processFrontFrame(int texIn, int texOut, int width, int height) {
-    std::lock_guard<std::mutex> lock(mutex);
-    LOGD("processFrontFrame(%d, %d, %d, %d)", texIn, texOut, width, height);
+int processFrontFrame(long pIn, long pOut) {
+    cv::Mat * in = (cv::Mat *)pIn;
+    cv::Mat * out = (cv::Mat *)pOut;
+    CV_Assert(in != NULL && out != NULL);
 
-    cv::UMat in, out;
-    copyGltoUMat(texIn, in);
-    cv::bitwise_not(in, out);
-    copyUMattoGl(out, texOut);
-    return 1;
+    LOGD("processFrontFrame, %dx%d, type=%d (pIn=%d, pOut=%d)", 
+         in->cols, in->rows, in->type(), pIn, pOut);
+
+    // cv::UMat umat, umat_rgb;
+    in->copyTo(umat);
+    cv::cvtColor(umat, umat_rgb, cv::COLOR_YUV2RGBA_NV21, 4);
+    umat_rgb.copyTo(*out);
+
+    return 0;
 }
 
 extern "C"
-int processBackFrame(int texIn, int texOut, int width, int height) {
-    std::lock_guard<std::mutex> lock(mutex);
-    LOGD("processBackFrame(%d, %d, %d, %d)", texIn, texOut, width, height);
-    // if(frontFrame.empty()) {
-    //     LOGD("frontFrame not available, return");
-    //     return 0;
-    // }
-    cv::UMat in, out;
-    copyGltoUMat(texIn, in);
-    cv::bitwise_not(in, out);
-    copyUMattoGl(out, texOut);
-    return 1;
+int processBackFrame(long pIn, long pOut) {
+    cv::Mat * in = (cv::Mat *)pIn;
+    cv::Mat * out = (cv::Mat *)pOut;
+    CV_Assert(in != NULL && out != NULL);
 
-    // int64_t t = getTimeMs();
-    // cv::UMat result;
-    // // cv::bitwise_not(frontIn, result);
-    // LOGD("sizes: %dx%d, %dx%d", frontFrame.rows, frontFrame.cols,
-    //      backFrame.rows, backFrame.cols);
-    // cv::addWeighted(frontFrame, 0.5, backFrame, 0.5, 1.0, result);
-    // cv::ocl::finish();
-    // LOGD("OpenCV processing costs %d ms", getTimeInterval(t));
+    LOGD("processBackFrame, %dx%d, type=%d (pIn=%d, pOut=%d)", 
+         in->cols, in->rows, in->type(), pIn, pOut);
 
-    // t = getTimeMs();
-    // cl::ImageGL imgOut(theContext, CL_MEM_WRITE_ONLY, GL_TEXTURE_2D, 0, texOut);
-    // std::vector<cl::Memory> images(1, imgOut);
-    // theQueue.enqueueAcquireGLObjects(&images);
-    // cl_mem clBuffer = (cl_mem)result.handle(cv::ACCESS_READ);
-    // cl_command_queue q = (cl_command_queue)cv::ocl::Queue::getDefault().ptr();
-    // size_t offset = 0;
-    // size_t origin[3] = { 0, 0, 0 };
-    // size_t region[3] = { width, height, 1 };
-    // CV_Assert(clEnqueueCopyBufferToImage (q, clBuffer, imgOut(), offset, origin, region, 0, NULL, NULL) == CL_SUCCESS);
-    // theQueue.enqueueReleaseGLObjects(&images);
-    // cv::ocl::finish();
-    // LOGD("uploading results to texture costs %d ms", getTimeInterval(t));
-
-    return 1;
+    return 0;
 }

@@ -12,6 +12,7 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.view.ViewGroup.LayoutParams;
 
+import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.Size;
@@ -294,6 +295,12 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
     }
 
     private class JavaCameraFrame implements CvCameraViewFrame {
+
+        @Override
+        public Mat raw() {
+            return mYuvFrameData;
+        }
+
         @Override
         public Mat gray() {
             return mYuvFrameData.submat(0, mHeight, 0, mWidth);

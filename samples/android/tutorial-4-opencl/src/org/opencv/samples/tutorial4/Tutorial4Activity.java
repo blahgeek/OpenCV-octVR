@@ -1,6 +1,9 @@
 package org.opencv.samples.tutorial4;
 
-import org.opencv.android.CameraGLSurfaceView;
+import org.opencv.android.JavaCameraView;
+import org.opencv.core.Mat;
+import org.opencv.core.Core;
+import org.opencv.imgproc.Imgproc;
 
 import android.util.Log;
 import android.app.Activity;
@@ -15,8 +18,12 @@ import android.widget.TextView;
 
 public class Tutorial4Activity extends Activity {
 
-    // private DualCamProcessor processor;
-    private CameraGLSurfaceView frontCamView, backCamView;
+    static
+    {
+        System.loadLibrary("opencv_java3");
+    }
+
+    private JavaCameraView frontCamView, backCamView;
     private TextView mProcMode;
 
     @Override
@@ -33,34 +40,43 @@ public class Tutorial4Activity extends Activity {
 
         // processor = new DualCamProcessor();
 
-        frontCamView = (CameraGLSurfaceView) findViewById(R.id.front_cam_gl_surface_view);
-        frontCamView.setCameraIndex(1);
-        frontCamView.setMaxCameraPreviewSize(1280, 720);
-        frontCamView.setCameraTextureListener(new CameraGLSurfaceView.CameraTextureListener() {
+        frontCamView = (JavaCameraView) findViewById(R.id.front_cam_gl_surface_view);
+        frontCamView.setMaxFrameSize(1280, 720);
+        frontCamView.setCvCameraViewListener(new JavaCameraView.CvCameraViewListener2() {
+            private Mat in = new Mat();
+            private Mat out = new Mat();
             public void onCameraViewStarted(int width, int height) {
-                NativePart.initCL();
+                // NativePart.initCL();
             }
             public void onCameraViewStopped() {
-                // processor.onCameraViewStopped();
             }
-            public boolean onCameraTexture(int texIn, int texOut, int width, int height) {
-                return NativePart.processFrontFrame(texIn, texOut, width, height) > 0;
+            public Mat onCameraFrame(JavaCameraView.CvCameraViewFrame frame) {
+                in = frame.raw();
+                int modified = NativePart.processFrontFrame(in.getNativeObjAddr(), out.getNativeObjAddr());
+                if(modified > 0)
+                    return out;
+                else
+                    return null;
             }
         });
 
-        backCamView = (CameraGLSurfaceView) findViewById(R.id.back_cam_gl_surface_view);
-        backCamView.setCameraIndex(0);
-        backCamView.setMaxCameraPreviewSize(1280, 720);
-        backCamView.setCameraTextureListener(new CameraGLSurfaceView.CameraTextureListener() {
+        backCamView = (JavaCameraView) findViewById(R.id.back_cam_gl_surface_view);
+        backCamView.setMaxFrameSize(1280, 720);
+        backCamView.setCvCameraViewListener(new JavaCameraView.CvCameraViewListener2() {
+            private Mat in = new Mat();
+            private Mat out = new Mat();
             public void onCameraViewStarted(int width, int height) {
-                NativePart.initCL();
-                // processor.onCameraViewStarted(width, height);
+                // NativePart.initCL();
             }
             public void onCameraViewStopped() {
-                // processor.onCameraViewStopped();
             }
-            public boolean onCameraTexture(int texIn, int texOut, int width, int height) {
-                return NativePart.processBackFrame(texIn, texOut, width, height) > 0;
+            public Mat onCameraFrame(JavaCameraView.CvCameraViewFrame frame) {
+                in = frame.raw();
+                int modified = NativePart.processBackFrame(in.getNativeObjAddr(), out.getNativeObjAddr());
+                if(modified > 0)
+                    return out;
+                else
+                    return null;
             }
         });
 
@@ -76,16 +92,16 @@ public class Tutorial4Activity extends Activity {
 
     @Override
     protected void onPause() {
-        frontCamView.onPause();
-        backCamView.onPause();
+        frontCamView.disableView();
+        backCamView.disableView();
         super.onPause();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        backCamView.onResume();
-        frontCamView.onResume();
+        backCamView.enableView();
+        frontCamView.enableView();
     }
 
     // @Override

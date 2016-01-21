@@ -1,4 +1,6 @@
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout 
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:opencv="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent" >
 
@@ -6,34 +8,21 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" >
 
-        <org.opencv.android.CameraGLSurfaceView
+        <org.opencv.android.JavaCameraView
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="5"
+            opencv:show_fps="true"
+            opencv:camera_id="1"
             android:id="@+id/front_cam_gl_surface_view" />
 
-        <org.opencv.android.CameraGLSurfaceView
+        <org.opencv.android.JavaCameraView
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="5"
+            opencv:show_fps="true"
+            opencv:camera_id="0"
             android:id="@+id/back_cam_gl_surface_view" />
         </LinearLayout>
-
-
-    <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation = "vertical" >
-	    <TextView
-	        android:layout_width="wrap_content"
-	        android:layout_height="wrap_content"
-	        android:id="@+id/fps_text_view"
-	        android:text="FPS:" />
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:id="@+id/proc_mode_text_view"
-            android:text="Processing mode:" />
-	    </LinearLayout>
 
 </FrameLayout>

@@ -7,9 +7,12 @@ public class NativePart {
         System.loadLibrary("JNIpart");
     }
 
+    /**
+     * Process frame, pFrame is native pointer of Mat
+     * @return        1: modified, 0: unmodified
+     */
+    public static native int processFrontFrame(long pIn, long pOut);
+    public static native int processBackFrame(long pIn, long pOut);
+
     public static native int initCL();
-    public static native int processFrontFrame(int texIn, int texOut,
-                                               int width, int height);
-    public static native int processBackFrame(int texIn, int texOut,
-                                              int width, int height);
 }
