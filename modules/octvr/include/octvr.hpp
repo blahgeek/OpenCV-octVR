@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-12-25
+* @Last Modified time: 2016-01-21
 */
 
 #ifndef VR_LIBMAP_BASE_H
@@ -17,10 +17,11 @@
 #include <string>
 #include <tuple>
 #include <fstream>
-#include <opencv2/core.hpp>
 #include <stdint.h>
 #include <iostream>
 #include <sys/time.h>
+
+#include "opencv2/core.hpp"
 
 namespace vr {
 
@@ -75,6 +76,21 @@ public:
     virtual void pop() = 0;
 
     virtual ~AsyncMultiMapper() {}
+};
+
+class CPUMapper {
+
+private:
+    cv::Size out_size;
+
+    std::vector<cv::UMat> map1s;
+    std::vector<cv::UMat> map2s;
+    std::vector<cv::UMat> masks;
+    std::vector<cv::UMat> feather_masks;
+
+public:
+    CPUMapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes);
+    void stitch(const std::vector<cv::UMat> & inputs, cv::UMat & output);
 };
 
 class Timer {

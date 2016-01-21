@@ -2,15 +2,16 @@
 * @Author: BlahGeek
 * @Date:   2015-12-07
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-12-25
+* @Last Modified time: 2016-01-21
 */
 
 #include <iostream>
-#include "./libmap.hpp"
-#include "./camera.hpp"
 #include <stdio.h>
-#include <opencv2/imgproc.hpp>
-#include <opencv2/stitching/detail/seam_finders.hpp>
+#include "opencv2/imgproc.hpp"
+#include "opencv2/stitching/detail/seam_finders.hpp"
+
+#include "octvr.hpp"
+#include "./camera.hpp"
 
 using namespace vr;
 
@@ -106,7 +107,7 @@ void MapperTemplate::create_masks(const std::vector<cv::Mat> & imgs) {
         cv::resize(inputs[i].mask, umasks[i], scaled_size);
     }
 
-    cv::Ptr<cv::detail::SeamFinder> seam_finder;
+    cv::detail::SeamFinder * seam_finder = nullptr;
     if(imgs.empty()) {
         // VoronoiSeamFinder do not care about image content
         //std::cerr << "Using voronoi seam finder..." << std::endl;
@@ -126,6 +127,7 @@ void MapperTemplate::create_masks(const std::vector<cv::Mat> & imgs) {
     for(int i = 0 ; i < inputs.size() ; i += 1)
         cv::resize(umasks[i], seam_masks[i], this->out_size);
 
+    delete seam_finder;
 }
 
 static const char * DUMP_MAGIC = "VRv03";

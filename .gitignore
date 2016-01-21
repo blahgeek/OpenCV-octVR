@@ -25,3 +25,5 @@ CMakeCache.txt
 
 build
 build-android
+
+*.sublime-workspace

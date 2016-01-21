@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-20
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-01-16
+* @Last Modified time: 2016-01-21
 */
 
 #ifndef VR_LIBMAP_CAMERA_H
@@ -16,7 +16,7 @@
 #include <vector>
 #include <string>
 #include <tuple>
-#include <opencv2/core.hpp>
+#include "opencv2/core.hpp"
 
 namespace vr {
 

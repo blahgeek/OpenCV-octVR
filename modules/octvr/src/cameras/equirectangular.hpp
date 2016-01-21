@@ -2,14 +2,13 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-12-08
+* @Last Modified time: 2016-01-21
 */
 
 #ifndef VR_LIBMAP_EQUIRECTANGULAR_H
 #define VR_LIBMAP_EQUIRECTANGULAR_H value
 
 #include "../camera.hpp"
-#include "../libmap_impl.hpp"
 
 namespace vr {
 

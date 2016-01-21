@@ -2,11 +2,11 @@
 * @Author: BlahGeek
 * @Date:   2015-11-03
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-01-16
+* @Last Modified time: 2016-01-21
 */
 
 #include <iostream>
-#include <opencv2/imgproc.hpp>
+#include "opencv2/imgproc.hpp"
 #include "./fullframe_fisheye_cam.hpp"
 
 using namespace vr;

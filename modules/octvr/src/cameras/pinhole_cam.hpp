@@ -2,19 +2,18 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-11-15
+* @Last Modified time: 2016-01-21
 */
 
 #ifndef VR_LIBMAP_PINHOLE_CAM_H
 #define VR_LIBMAP_PINHOLE_CAM_H value
 
-#include "../libmap.hpp"
-#include "../libmap_impl.hpp"
+#include "../camera.hpp"
 
-#include <opencv2/core.hpp>
-#include <opencv2/imgproc.hpp>
-#include <opencv2/highgui.hpp>
-#include <opencv2/calib3d.hpp>
+#include "opencv2/core.hpp"
+#include "opencv2/imgproc.hpp"
+#include "opencv2/highgui.hpp"
+#include "opencv2/calib3d.hpp"
 #include <string>
 #include <vector>
 

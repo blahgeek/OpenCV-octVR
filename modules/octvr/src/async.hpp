@@ -2,18 +2,20 @@
 * @Author: BlahGeek
 * @Date:   2015-12-01
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-12-07
+* @Last Modified time: 2016-01-21
 */
 
 #ifndef LIBMAP_ASYNC_H_
 #define LIBMAP_ASYNC_H_ value
 
-#include "./libmap.hpp"
-#include "./libmap_impl.hpp"
-#include <opencv2/core.hpp>
-#include <opencv2/core/cuda.hpp>
-#include <opencv2/imgproc.hpp>
-#include <opencv2/highgui.hpp>
+#include "opencv2/core.hpp"
+#include "opencv2/core/cuda.hpp"
+#include "opencv2/imgproc.hpp"
+#include "opencv2/highgui.hpp"
+
+#include "octvr.hpp"
+#include "./mapper.hpp"
+
 #include <queue>
 #include <mutex>
 #include <thread>

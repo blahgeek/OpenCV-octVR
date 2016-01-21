@@ -2,34 +2,26 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-01-16
+* @Last Modified time: 2016-01-21
 */
 
 #include <iostream>
-#include "./libmap_impl.hpp"
+#include "./mapper.hpp"
 
-#include <opencv2/core.hpp>
-#include <opencv2/imgproc.hpp>
-#include <opencv2/highgui.hpp>
-#include <opencv2/stitching/detail/autocalib.hpp>
-#include <opencv2/stitching/detail/blenders.hpp>
-#include <opencv2/stitching/detail/camera.hpp>
-#include <opencv2/stitching/detail/exposure_compensate.hpp>
-#include <opencv2/stitching/detail/matchers.hpp>
-#include <opencv2/stitching/detail/motion_estimators.hpp>
-#include <opencv2/stitching/detail/seam_finders.hpp>
-#include <opencv2/stitching/detail/util.hpp>
-#include <opencv2/stitching/detail/warpers.hpp>
-#include <opencv2/stitching/warpers.hpp>
+#include "opencv2/core.hpp"
+#include "opencv2/imgproc.hpp"
+#include "opencv2/highgui.hpp"
+#include "opencv2/stitching/detail/autocalib.hpp"
+#include "opencv2/stitching/detail/blenders.hpp"
+#include "opencv2/stitching/detail/camera.hpp"
+#include "opencv2/stitching/detail/exposure_compensate.hpp"
+#include "opencv2/stitching/detail/matchers.hpp"
+#include "opencv2/stitching/detail/motion_estimators.hpp"
+#include "opencv2/stitching/detail/seam_finders.hpp"
+#include "opencv2/stitching/detail/util.hpp"
+#include "opencv2/stitching/detail/warpers.hpp"
+#include "opencv2/stitching/warpers.hpp"
 #include <assert.h>
-
-#include <opencv2/core/cuda.hpp>
-
-#ifdef HAVE_CUDA
-#include <opencv2/cudawarping.hpp>
-#include <opencv2/cudaimgproc.hpp>
-#include <opencv2/cudaarithm.hpp>
-#endif
 
 using namespace vr;
 

@@ -2,18 +2,19 @@
 * @Author: BlahGeek
 * @Date:   2015-10-20
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-01-16
+* @Last Modified time: 2016-01-21
 */
 
 #ifndef VR_LIBMAP_IMPL_H
 #define VR_LIBMAP_IMPL_H value
 
+#include "octvr.hpp"
 #include "./camera.hpp"
-#include "./libmap.hpp"
-#include <opencv2/stitching/detail/exposure_compensate.hpp>
-#include <opencv2/stitching/detail/blenders.hpp>
 
-#include <opencv2/core/cuda.hpp>
+#include "opencv2/stitching/detail/exposure_compensate.hpp"
+#include "opencv2/stitching/detail/blenders.hpp"
+
+#include "opencv2/core/cuda.hpp"
 
 #ifdef WITH_DONGLE_LICENSE
 #include "dongle_license.h"
@@ -61,21 +62,6 @@ public:
     Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes, int blend=128);
     void stitch(const std::vector<GpuMat> & inputs, GpuMat & output);
     void remap(const std::vector<GpuMat> & inputs, GpuMat & output);
-};
-
-class CPUMapper {
-
-private:
-    cv::Size out_size;
-
-    std::vector<UMat> map1s;
-    std::vector<UMat> map2s;
-    std::vector<UMat> masks;
-    std::vector<UMat> feather_masks;
-
-public:
-    CPUMapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes);
-    void stitch(const std::vector<UMat> & inputs, UMat & output);
 };
 
 }

@@ -2,21 +2,22 @@
 * @Author: BlahGeek
 * @Date:   2015-11-09
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-01-17
+* @Last Modified time: 2016-01-21
 */
 
 #include <iostream>
 #include <fstream>
 #include <thread>
-#include <opencv2/core.hpp>
-#include <opencv2/imgproc.hpp>
-#include <opencv2/imgcodecs.hpp>
-#include <opencv2/highgui.hpp>
-#include <opencv2/calib3d.hpp>
-#include <opencv2/core/ocl.hpp>
-#include <opencv2/core/cuda.hpp>
-#include "./libmap.hpp"
-#include "./libmap_impl.hpp"
+#include "opencv2/core.hpp"
+#include "opencv2/imgproc.hpp"
+#include "opencv2/imgcodecs.hpp"
+#include "opencv2/highgui.hpp"
+#include "opencv2/calib3d.hpp"
+#include "opencv2/core/ocl.hpp"
+#include "opencv2/core/cuda.hpp"
+
+#include "./octvr.hpp"
+
 #include <utility>
 #include <unistd.h>
 
