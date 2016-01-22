@@ -9,9 +9,9 @@ if(ANDROID_NATIVE_API_LEVEL LESS 14)
 endif()
 
 if(BUILD_FAT_JAVA_LIB)
-  set(native_deps opencv_java)
+  set(native_deps opencv_java opencv_octvr)
 else()
-  set(native_deps opencv_imgproc)
+  set(native_deps opencv_imgproc opencv_octvr)
 endif()
 
 include_directories(${ANDROID_OPENCL_SDK}/include)

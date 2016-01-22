@@ -22,6 +22,6 @@ LOCAL_C_INCLUDES += $(OPENCL_SDK)/include
 LOCAL_LDLIBS += -L$(OPENCL_SDK)/lib/$(TARGET_ARCH_ABI) -lOpenCL
 
 LOCAL_MODULE    := MonkeyVRJNI
-LOCAL_SRC_FILES := jni.c CLprocessor.cpp
+LOCAL_SRC_FILES := jni.cpp monkey.cpp
 LOCAL_LDLIBS    += -llog -lGLESv2 -lEGL
 include $(BUILD_SHARED_LIBRARY)
