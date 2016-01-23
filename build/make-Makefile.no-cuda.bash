@@ -11,4 +11,5 @@ cmake \
     -D WITH_OPENEXR=OFF \
     -D BUILD_TESTS=OFF \
     -D BUILD_PERF_TESTS=OFF \
+    $@ \
     ..
