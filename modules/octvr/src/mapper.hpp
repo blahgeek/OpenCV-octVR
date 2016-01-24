@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-20
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-01-21
+* @Last Modified time: 2016-01-24
 */
 
 #ifndef VR_LIBMAP_IMPL_H
@@ -10,6 +10,7 @@
 
 #include "octvr.hpp"
 #include "./camera.hpp"
+#include "cvconfig.h"
 
 #include "opencv2/stitching/detail/exposure_compensate.hpp"
 #include "opencv2/stitching/detail/blenders.hpp"

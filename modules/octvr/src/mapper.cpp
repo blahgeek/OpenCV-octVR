@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-01-21
+* @Last Modified time: 2016-01-24
 */
 
 #include <iostream>
@@ -24,6 +24,8 @@
 #include <assert.h>
 
 #include "opencv2/core/cuda.hpp"
+
+#include "cvconfig.h"
 
 #ifdef HAVE_CUDA
 #include "opencv2/cudawarping.hpp"

@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-11-09
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-01-21
+* @Last Modified time: 2016-01-24
 */
 
 #include <iostream>
@@ -16,6 +16,7 @@
 #include "opencv2/core/ocl.hpp"
 #include "opencv2/core/cuda.hpp"
 
+#include "cvconfig.h"
 #include "./octvr.hpp"
 
 #include <utility>
