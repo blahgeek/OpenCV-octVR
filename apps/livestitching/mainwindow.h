@@ -12,6 +12,8 @@
 #include <QCameraViewfinder>
 #include <QCameraImageCapture>
 
+#include "./qjsonmodel.h"
+
 namespace Ui {
 class MainWindow;
 }
@@ -85,6 +87,9 @@ public:
 
 private:
    Ui::MainWindow *ui;
+
+   QJsonModel json_model;
+   QJsonDocument json_document;
 //   QTimer    *timer;
 //   QImage    *imag;
 //   CvCapture *camera;// 视频获取结构， 用来作为视频获取函数的一个参数

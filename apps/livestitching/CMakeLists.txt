@@ -10,6 +10,7 @@ endif()
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
+set(CMAKE_AUTORCC ON)
 
 find_package(Qt5Widgets REQUIRED)
 find_package(Qt5Multimedia REQUIRED)
@@ -20,7 +21,11 @@ ocv_include_directories("${OpenCV_SOURCE_DIR}/include/opencv")
 
 ocv_add_executable(livestitching
                    main.cpp
-                   mainwindow.cpp)
+                   mainwindow.cpp
+                   qjsonitem.cpp
+                   qjsonmodel.cpp
+                   icons.qrc
+                   )
 
 ocv_target_link_libraries(livestitching ${OPENCV_LIVESTITCHING_DEPS})
 target_link_libraries(livestitching Qt5::Widgets Qt5::Multimedia Qt5::MultimediaWidgets)

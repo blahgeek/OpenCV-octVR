@@ -10,6 +10,8 @@
 #include <QRegExp>
 #include <QLineEdit>
 #include <QCameraInfo>
+#include <QProcess>
+#include <QDebug>
 
 int MainWindow::getint(QString inputline,QString cap)
 {
@@ -37,71 +39,33 @@ QString MainWindow::getfloat(QString inputline,QString cap)
     return rx1.cap(0);
 }
 
-void MainWindow::openPTO()
-{
-    //QFile datafile;
-    //QDir::currentPath(),
-     QString filename = QFileDialog::getOpenFileName(
-       this,
-       "Open Document",
-       "C:/Users/jun/Documents/livestitching/script/",
-       "Document files (*.pto);;All files(*.*)");
-    if (!filename.isNull()) { //用户选择了文件
-       // 处理文件
-       QMessageBox::information(this, "Document", "Has document", QMessageBox::Ok | QMessageBox::Cancel);
-       ui->label->setText(filename);
+void MainWindow::openPTO() {
+    QString filename = QFileDialog::getOpenFileName(this, "Open Document", 
+                                                    "C:/Users/jun/Documents/livestitching/script/", 
+                                                    "Document files (*.pto);;All files(*.*)");
+    if (!filename.isNull()) {
+        QMessageBox::information(this, "Document", "Has document", QMessageBox::Ok | QMessageBox::Cancel);
+        ui->label->setText(filename);
     } else {// 用户取消选择
-       QMessageBox::information(this, "Document", "No document", QMessageBox::Ok | QMessageBox::Cancel);
-       return;
+        QMessageBox::information(this, "Document", "No document", QMessageBox::Ok | QMessageBox::Cancel);
+        return;
     }
 
-    QFile readfile(filename);
-        if (!readfile.open(QFile::ReadOnly|QIODevice::Text))
-            {
-                ui->label->setText("open error");
-            }
-        QTextStream readdata(&readfile);
-        QString readline;
-        int linenum=0;
-        while(!readdata.atEnd()) {
-            readline=readdata.readLine();
-            if (!readline.isEmpty())
-                if (readline.at(0) == 'i'){
-                    linenum++;
+    QFile parser_script_file(":/scripts/ptx2json.py");
+    parser_script_file.open(QFile::ReadOnly);
+    QString parser_script = parser_script_file.readAll();
+    parser_script_file.close();
 
-                    //int heightstart=readline.indexOf(QRegExp("\\bh[\\w=]*\\b"));
-                    //int heightend=readline.indexOf(" ",heightstart);
-                    //QString heightnum=readline.mid(heightstart,heightend-heightstart);
-                    cam[linenum-1].type="fullframe_fisheye";
-                    cam[linenum-1].height=getint(readline,"h");
-                    cam[linenum-1].width=getint(readline,"w");
-                    cam[linenum-1].center_dx=getfloat(readline,"d");
-                    cam[linenum-1].center_dy=getfloat(readline,"e");
-                    cam[linenum-1].exposure_value=getfloat(readline,"Eev");
-                    cam[linenum-1].exposure_value_blue=getfloat(readline,"Eb");
-                    cam[linenum-1].exposure_value_red=getfloat(readline,"Er");
-                    cam[linenum-1].radial_1=getfloat(readline,"a");
-                    cam[linenum-1].radial_2=getfloat(readline,"b");
-                    cam[linenum-1].radial_3=getfloat(readline,"c");
-                    cam[linenum-1].hfov=QString::number(getfloat(readline,"v").toDouble()/180*3.1415926,'g',15);
-                    cam[linenum-1].rotate_1=QString::number(getfloat(readline,"r").toDouble()/180*3.1415926,'g',15);
-                    cam[linenum-1].rotate_2=QString::number(-getfloat(readline,"y").toDouble()/180*3.1415926,'g',15);
-                    cam[linenum-1].rotate_3=QString::number(-getfloat(readline,"p").toDouble()/180*3.1415926,'g',15);
+    QProcess parser;
+    parser.start("python3",
+                 QStringList({"-c", parser_script, filename}));
+    parser.waitForFinished();
+    QString parsed_json = parser.readAllStandardOutput();
+    qDebug() << parsed_json;
+    this->json_model.loadJson(parsed_json.toUtf8());
 
-               }
-
-        }
-
-
-        readfile.close();
-
-            inputNum=linenum+1;
-            ui->spinBox->setMinimum(1);
-            ui->spinBox->setMaximum(inputNum-1);
-        for (int i=0;i<linenum;i++)
-            ui->comboBox_cam->addItem("cam"+QString::number(i));
-
-
+    // for (int i=0;i<linenum;i++)
+    //     ui->comboBox_cam->addItem("cam"+QString::number(i));
 }
 
 void MainWindow::changeCamInfo(){
@@ -393,6 +357,9 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    ui->treeView->setModel(&json_model);
+    ui->treeView->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
+
     QRegExp double_rx("([0-9]*[\\.][0-9]+)|[0-9]+");
 
     camera     = NULL;
