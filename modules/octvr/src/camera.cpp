@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-20
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-01-16
+* @Last Modified time: 2016-01-24
 */
 
 #include <iostream>
@@ -44,13 +44,11 @@ std::unique_ptr<Camera> Camera::New(const std::string & type, const json & optio
 
 Camera::Camera(const json & options) {
     this->rotate_vector = std::vector<double>({0, 0, 0});
-    if(options.find("rotate") != options.end())
-        this->rotate_vector = options["rotate"].get<std::vector<double>>();
-    // cv::Rodrigues(rotate_vector, this->rotate_matrix);
-
-    // std::cerr << "Camera rotation: " << rotate_vector[0] << ", "
-    //                                  << rotate_vector[1] << ", "
-    //                                  << rotate_vector[2] << std::endl;
+    if(options.find("rotation") != options.end()) {
+        this->rotate_vector[0] = options["rotation"]["roll"].get<double>();
+        this->rotate_vector[1] = options["rotation"]["yaw"].get<double>();
+        this->rotate_vector[2] = options["rotation"]["pitch"].get<double>();
+    }
 
     cv::Mat rotate_x, rotate_y, rotate_z;
     std::vector<double> v;

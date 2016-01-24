@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-11-09
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-01-21
+* @Last Modified time: 2016-01-24
 */
 
 #include <iostream>
@@ -70,8 +70,8 @@ int main(int argc, char * const argv[]){
         fprintf(stderr, "Input: %s\n", i["type"].get<std::string>().c_str());
         mt.add_input(i["type"], i["options"]);
     }
-    if(options.find("overlay") != options.end()) {
-        for(auto i: options["overlay"]) {
+    if(options.find("overlays") != options.end()) {
+        for(auto i: options["overlays"]) {
             fprintf(stderr, "Overlay input: %s\n", i["type"].get<std::string>().c_str());
             mt.add_input(i["type"], i["options"], true);
         }
