@@ -34,10 +34,11 @@ QJsonModel::QJsonModel(QObject *parent) :
     mHeaders.append("value");
 
     this->setIcon(QJsonValue::Bool, QIcon(":/icons/bullet_black.png"));
-    this->setIcon(QJsonValue::Double, QIcon(":/icons/bullet_red.png"));
+    this->setIcon(QJsonValue::Double, QIcon(":/icons/bullet_blue.png"));
     this->setIcon(QJsonValue::String, QIcon(":/icons/bullet_blue.png"));
     this->setIcon(QJsonValue::Array, QIcon(":/icons/table.png"));
     this->setIcon(QJsonValue::Object, QIcon(":/icons/brick.png"));
+    this->mNonEditableIcon = QIcon(":/icons/bullet_red.png");
 }
 
 void QJsonModel::setEditableFields(const QStringList & s) {
@@ -115,8 +116,9 @@ QVariant QJsonModel::data(const QModelIndex &index, int role) const
 
 
     if ((role == Qt::DecorationRole) && (index.column() == 0)){
-
-        return mTypeIcons.value(item->jsonValue().type());
+        if(item->childCount() > 0 || this->mEditableFields.indexOf(item->key()) != -1)
+            return mTypeIcons.value(item->jsonValue().type());
+        return mNonEditableIcon;
     }
 
 
@@ -125,8 +127,12 @@ QVariant QJsonModel::data(const QModelIndex &index, int role) const
         if (index.column() == 0)
             return QString("%1").arg(item->key());
 
-        if (index.column() == 1)
-            return QString("%1").arg(item->stringValue());
+        if (index.column() == 1) {
+            if(item->childCount() > 0)
+                return QString("[%1 item(s)]").arg(item->childCount());
+            else
+                return QString("%1").arg(item->stringValue());
+        }
     }
 
 

@@ -33,6 +33,7 @@ private:
     QStringList mHeaders;
     QStringList mEditableFields;
     QHash<QJsonValue::Type, QIcon> mTypeIcons;
+    QIcon mNonEditableIcon;
 
 
 };
