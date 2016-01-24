@@ -22,10 +22,6 @@
 #include <utility>
 #include <unistd.h>
 
-#ifdef HAVE_CUDA
-#include <cuda_profiler_api.h>
-#endif
-
 using namespace vr;
 
 std::pair<std::vector<cv::UMat>, std::vector<cv::Size>> readImages(std::vector<std::string> filenames) {
@@ -84,15 +80,12 @@ int main(int argc, char const *argv[]) {
     cv::Mat output2(output_size, CV_8UC3);
     cv::Mat output3(output_size, CV_8UC3);
 
-    cudaProfilerStart();
     async_remapper->push(ms, output);
     async_remapper->push(ms, output2);
     async_remapper->push(ms, output3);
     async_remapper->pop();
     async_remapper->pop();
     async_remapper->pop();
-
-    cudaProfilerStop();
 #else
     cv::UMat output(output_size, CV_8UC3);
     remapper->stitch(imgs, output);

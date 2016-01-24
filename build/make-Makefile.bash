@@ -13,4 +13,5 @@ cmake \
     -D WITH_OPENCL=OFF \
     -D BUILD_TESTS=OFF \
     -D BUILD_PERF_TESTS=OFF \
+    $@ \
     ..
