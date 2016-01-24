@@ -352,6 +352,44 @@ void MainWindow::generatecommand()
     ui->textEdit->setText(Command);
 }
 
+void MainWindow::jsonChanged() {
+    int input_n = json_model.document().object()["inputs"].toArray().size();
+    ui->label_input_number->setText("Inputs: " + QString::number(input_n));
+
+    int overlay_n = json_model.document().object()["overlays"].toArray().size();
+    ui->label_overlay_number->setText("Overlay: " + QString::number(overlay_n));
+}
+
+void MainWindow::jsonAddOverlay() {
+    QJsonDocument doc = json_model.document();
+
+    QFile sample_file(":/data/sample_overlay.json");
+    sample_file.open(QFile::ReadOnly);
+    QString sample = sample_file.readAll();
+    sample_file.close();
+
+    QJsonDocument sample_doc = QJsonDocument::fromJson(sample.toUtf8());
+    QJsonObject doc_obj = doc.object();
+    QJsonArray overlays = doc_obj["overlays"].toArray();
+    overlays.append(sample_doc.object());
+    doc_obj.insert("overlays", overlays);
+
+    doc.setObject(doc_obj);
+    json_model.loadDocument(doc);
+}
+
+void MainWindow::jsonDelOverlay() {
+    QJsonDocument doc = json_model.document();
+
+    QJsonObject doc_obj = doc.object();
+    QJsonArray overlays = doc_obj["overlays"].toArray();
+    overlays.pop_back();
+    doc_obj.insert("overlays", overlays);
+
+    doc.setObject(doc_obj);
+    json_model.loadDocument(doc);
+}
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
@@ -359,6 +397,10 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
     ui->treeView->setModel(&json_model);
     ui->treeView->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
+
+    connect(&this->json_model, &QAbstractItemModel::dataChanged, this, &MainWindow::jsonChanged);
+    connect(ui->pushButton_overlay_add, &QPushButton::clicked, this, &MainWindow::jsonAddOverlay);
+    connect(ui->pushButton_overlay_del, &QPushButton::clicked, this, &MainWindow::jsonDelOverlay);
 
     QRegExp double_rx("([0-9]*[\\.][0-9]+)|[0-9]+");
 
@@ -406,6 +448,7 @@ MainWindow::MainWindow(QWidget *parent) :
     imageCapture=new QCameraImageCapture(camera);
     //viewfinder->show();
     camera->start();
+
 
     connect(ui->openfile, &QPushButton::clicked, this, &MainWindow::openPTO);
     connect(ui->generate, &QPushButton::clicked, this, &MainWindow::generatefile);

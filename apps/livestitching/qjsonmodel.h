@@ -15,6 +15,7 @@ public:
     bool load(const QString& fileName);
     bool load(QIODevice * device);
     bool loadJson(const QByteArray& json);
+    bool loadDocument(const QJsonDocument& d);
     QJsonDocument document() const;
     QVariant data(const QModelIndex &index, int role) const;
     bool setData(const QModelIndex &index, const QVariant & value, int role = Qt::EditRole);

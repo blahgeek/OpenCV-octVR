@@ -84,6 +84,11 @@ public:
    void linkcam();
    void generatecommand();
 
+public:
+    void jsonChanged();
+    void jsonAddOverlay();
+    void jsonDelOverlay();
+
 
 private:
    Ui::MainWindow *ui;

@@ -72,9 +72,12 @@ bool QJsonModel::load(QIODevice *device)
     return loadJson(device->readAll());
 }
 
-bool QJsonModel::loadJson(const QByteArray &json)
-{
-    mDocument = QJsonDocument::fromJson(json);
+bool QJsonModel::loadJson(const QByteArray &json) {
+    return this->loadDocument(QJsonDocument::fromJson(json));
+}
+
+bool QJsonModel::loadDocument(const QJsonDocument & d) {
+    mDocument = d;
 
     if (!mDocument.isNull())
     {
@@ -87,6 +90,7 @@ bool QJsonModel::loadJson(const QByteArray &json)
             mRootItem->setType(QJsonValue::Object);
         }
         endResetModel();
+        emit dataChanged(QModelIndex(), QModelIndex());
         return true;
     }
     return false;
