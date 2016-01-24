@@ -79,13 +79,15 @@ void MainWindow::deviceAddCamera() {
     if(is_overlay) {
         ui->layout_overlays->addWidget(viewfinder);
         overlay_cameras.emplace_back(std::unique_ptr<QCamera>(camera), 
-                                     std::unique_ptr<QCameraViewfinder>(viewfinder));
+                                     std::unique_ptr<QCameraViewfinder>(viewfinder),
+                                     current_cam_info.deviceName());
         this->jsonAddOverlay();
     }
     else {
         ui->layout_inputs->addWidget(viewfinder);
         input_cameras.emplace_back(std::unique_ptr<QCamera>(camera), 
-                                   std::unique_ptr<QCameraViewfinder>(viewfinder));
+                                   std::unique_ptr<QCameraViewfinder>(viewfinder),
+                                   current_cam_info.deviceName());
     }
 }
 
@@ -95,11 +97,63 @@ void MainWindow::deviceDelCamera() {
     if(cameras.empty())
         return;
 
-    cameras.back().first->stop();
+    std::get<0>(cameras.back())->stop();
     cameras.pop_back();
 
     if(is_overlay)
         this->jsonDelOverlay();
+}
+
+void MainWindow::run() {
+    if(json_model.document().object()["inputs"].toArray().size() != input_cameras.size()) {
+        QMessageBox::warning(this, "Bad Template", "Input count does not match");
+        return;
+    }
+    if(json_model.document().object()["overlays"].toArray().size() != overlay_cameras.size()) {
+        QMessageBox::warning(this, "Bad Template", "Overlay count does not match");
+        return;
+    }
+    if(input_cameras.size() + overlay_cameras.size() == 0) {
+        QMessageBox::warning(this, "Bad Template", "No input");
+        return;
+    }
+
+    QString temp_path = QDir::tempPath();
+
+    QString output_json_path = temp_path + "/vr.json";
+    QFile output_json(output_json_path);
+    output_json.open(QIODevice::WriteOnly);
+    output_json.write(json_model.document().toJson());
+    output_json.close();
+
+    QStringList dumper_args;
+    dumper_args << "-w" << QString::number(ui->paranoma_width->value())
+                << "-o" << (temp_path + "/vr.dat")
+                << output_json_path;
+    qDebug() << dumper_args.join(" ");
+
+    QStringList args;
+    for(auto & input: input_cameras)
+        args << "-f" << "v4l2" << "-input_format" << "rgb24"
+             << "-framerate" << "30" << "-i" << std::get<2>(input);
+    for(auto & overlay: overlay_cameras)
+        args << "-f" << "v4l2" << "-input_format" << "rgb24"
+             << "-framerate" << "30" << "-i" << std::get<2>(overlay);
+    args << "-filter_complex" 
+         << QString("vr_map=inputs=%1:outputs=:crop_x=%2:crop_w=%3:blend=%4")
+            .arg(input_cameras.size() + overlay_cameras.size())
+            .arg(ui->paranoma_crop_x->value())
+            .arg(ui->paranoma_crop_w->value())
+            .arg(ui->paranoma_algorithm->currentIndex() == 0 ? 128 : -5);
+    args << "-c:v" << ui->encoding_codec->currentText()
+         << "-b:v" << QString("%1M").arg(ui->encoding_bitrate->value())
+         << "-g" << QString::number(ui->encoding_gopsize->value());
+    args << "-hls_time" << QString::number(ui->hls_segment_time->value())
+         << "-hls_list_size" << QString::number(ui->hls_list_size->value())
+         << "-hls_flags" << "delete_segments"
+         << "-hls_allow_cache" << "0"
+         << "-y" << QString("%1/vr.m3u8").arg(ui->hls_dir->text());
+    qDebug() << args.join(" ");
 }
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -123,6 +177,8 @@ MainWindow::MainWindow(QWidget *parent) :
     }
     connect(ui->pushButton_add_camera, &QPushButton::clicked, this, &MainWindow::deviceAddCamera);
     connect(ui->pushButton_del_camera, &QPushButton::clicked, this, &MainWindow::deviceDelCamera);
+
+    connect(ui->pushButton_run, &QPushButton::clicked, this, &MainWindow::run);
 
 }
 

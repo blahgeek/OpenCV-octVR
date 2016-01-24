@@ -37,6 +37,8 @@ public:
     void deviceAddCamera();
     void deviceDelCamera();
 
+    void run();
+
 
 private:
    Ui::MainWindow *ui;
@@ -44,7 +46,7 @@ private:
    QJsonModel json_model;
    QList<QCameraInfo> camera_infos;
 
-   using CameraAndView = std::pair<std::unique_ptr<QCamera>, std::unique_ptr<QCameraViewfinder>>;
+   using CameraAndView = std::tuple<std::unique_ptr<QCamera>, std::unique_ptr<QCameraViewfinder>, QString>;
    std::vector<CameraAndView> input_cameras, overlay_cameras;
 };
 
