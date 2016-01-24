@@ -87,18 +87,25 @@ class PTXParser:
             if 'dummyimage' in img:
                 continue
             assert img['f'] == '3' or img['f'] == '2', "Currently only support fisheye"
-            img.update({
-                "rotate": [deg_to_rad(img["r"]), -deg_to_rad(img["y"]), -deg_to_rad(img["p"])],
+            options = {
+                "rotation": {
+                    "roll": deg_to_rad(img["r"]),
+                    "yaw": -deg_to_rad(img["y"]),
+                    "pitch": -deg_to_rad(img["p"]),
+                },
                 "width": int(img["w"]),
                 "height": int(img["h"]),
                 "hfov": deg_to_rad(img["v"]) / (img.get('fov_ratio', 0.5) * 2),
                 "center_dx": float(img["d"]),
                 "center_dy": float(img["e"]),
                 "radial": [float(img["a"]), float(img["b"]), float(img["c"])],
-            })
+            }
+            for key in ('circular_crop', 'exclude_masks', ):
+                if key in img:
+                    options[key] = img[key]
             yield {
                 "type": "fullframe_fisheye",
-                "options": img
+                "options": options
             }
 
 if __name__ == '__main__':
@@ -109,7 +116,13 @@ if __name__ == '__main__':
     print(json.dumps({
             "output": {
                 "type": "equirectangular",
-                "options": {}
+                "options": {
+                    "rotation": {
+                        "roll": 0,
+                        "yaw": 0,
+                        "pitch": 0,
+                    }
+                }
             }, 
             "inputs": list(parser.dump()),
           }, indent=4))

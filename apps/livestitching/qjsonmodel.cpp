@@ -38,15 +38,22 @@ QJsonModel::QJsonModel(QObject *parent) :
     this->setIcon(QJsonValue::String, QIcon(":/icons/bullet_blue.png"));
     this->setIcon(QJsonValue::Array, QIcon(":/icons/table.png"));
     this->setIcon(QJsonValue::Object, QIcon(":/icons/brick.png"));
+}
 
+void QJsonModel::setEditableFields(const QStringList & s) {
+    mEditableFields = s;
 }
 
 Qt::ItemFlags QJsonModel::flags(const QModelIndex &index) const {
     if (!index.isValid())
         return 0;
+
+    QJsonTreeItem *item = static_cast<QJsonTreeItem*>(index.internalPointer());
+
     Qt::ItemFlags ret = QAbstractItemModel::flags(index);
-    if(index.column() > 0)
+    if(index.column() == 1 && mEditableFields.indexOf(item->key()) != -1)
         ret |= Qt::ItemIsEditable;
+
     return ret;
 }
 

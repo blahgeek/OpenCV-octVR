@@ -395,6 +395,9 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    this->json_model.setEditableFields(QStringList({
+        "yaw", "roll", "pitch", "aspect_ratio", "cam_opt", 
+    }));
     ui->treeView->setModel(&json_model);
     ui->treeView->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
 

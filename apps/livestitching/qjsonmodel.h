@@ -11,6 +11,7 @@ class QJsonModel : public QAbstractItemModel
     Q_OBJECT
 public:
     explicit QJsonModel(QObject *parent = 0);
+    void setEditableFields(const QStringList & s);
     Qt::ItemFlags flags(const QModelIndex &index) const;
     bool load(const QString& fileName);
     bool load(QIODevice * device);
@@ -30,6 +31,7 @@ private:
     QJsonTreeItem * mRootItem;
     QJsonDocument mDocument;
     QStringList mHeaders;
+    QStringList mEditableFields;
     QHash<QJsonValue::Type, QIcon> mTypeIcons;
 
 
