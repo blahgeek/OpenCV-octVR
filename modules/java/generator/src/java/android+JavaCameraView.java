@@ -33,13 +33,14 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
     private static final String TAG = "JavaCameraView";
 
     private byte mBuffer[];
-    private Mat[] mFrameChain;
+    // private Mat[] mFrameChain;
     private int mChainIdx = 0;
     private Thread mThread;
     private boolean mStopThread;
 
     protected Camera mCamera;
-    protected JavaCameraFrame[] mCameraFrame;
+    protected UMatCameraViewFrame[] mCameraFrameUmat;
+    // protected JavaCameraFrame[] mCameraFrame;
     private SurfaceTexture mSurfaceTexture;
 
     public static class JavaCameraSizeAccessor implements ListItemAccessor {
@@ -180,15 +181,18 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
                     mCamera.addCallbackBuffer(mBuffer);
                     mCamera.setPreviewCallbackWithBuffer(this);
 
-                    mFrameChain = new Mat[2];
-                    mFrameChain[0] = new Mat(mFrameHeight + (mFrameHeight/2), mFrameWidth, CvType.CV_8UC1);
-                    mFrameChain[1] = new Mat(mFrameHeight + (mFrameHeight/2), mFrameWidth, CvType.CV_8UC1);
+                    // mFrameChain = new Mat[2];
+                    // mFrameChain[0] = new Mat(mFrameHeight + (mFrameHeight/2), mFrameWidth, CvType.CV_8UC1);
+                    // mFrameChain[1] = new Mat(mFrameHeight + (mFrameHeight/2), mFrameWidth, CvType.CV_8UC1);
 
                     AllocateCache();
 
-                    mCameraFrame = new JavaCameraFrame[2];
-                    mCameraFrame[0] = new JavaCameraFrame(mFrameChain[0], mFrameWidth, mFrameHeight);
-                    mCameraFrame[1] = new JavaCameraFrame(mFrameChain[1], mFrameWidth, mFrameHeight);
+                    mCameraFrameUmat = new UMatCameraViewFrame[2];
+                    mCameraFrameUmat[0] = new UMatCameraViewFrame(mFrameWidth, mFrameHeight);
+                    mCameraFrameUmat[1] = new UMatCameraViewFrame(mFrameWidth, mFrameHeight);
+                    // mCameraFrame = new JavaCameraFrame[2];
+                    // mCameraFrame[0] = new JavaCameraFrame(mFrameChain[0], mFrameWidth, mFrameHeight);
+                    // mCameraFrame[1] = new JavaCameraFrame(mFrameChain[1], mFrameWidth, mFrameHeight);
 
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
                         mSurfaceTexture = new SurfaceTexture(MAGIC_TEXTURE_ID);
@@ -220,13 +224,13 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
                 mCamera.release();
             }
             mCamera = null;
-            if (mFrameChain != null) {
-                mFrameChain[0].release();
-                mFrameChain[1].release();
-            }
-            if (mCameraFrame != null) {
-                mCameraFrame[0].release();
-                mCameraFrame[1].release();
+            // if (mFrameChain != null) {
+            //     mFrameChain[0].release();
+            //     mFrameChain[1].release();
+            // }
+            if (mCameraFrameUmat != null) {
+                mCameraFrameUmat[0].release();
+                mCameraFrameUmat[1].release();
             }
         }
     }
@@ -286,7 +290,8 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
     public void onPreviewFrame(byte[] frame, Camera arg1) {
         Log.d(TAG, "Preview Frame received. Frame size: " + frame.length);
         synchronized (this) {
-            mFrameChain[mChainIdx].put(0, 0, frame);
+            // mFrameChain[mChainIdx].put(0, 0, frame);
+            mCameraFrameUmat[mChainIdx].update(frame);
             mCameraFrameReady = true;
             this.notify();
         }
@@ -297,8 +302,8 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
     private class JavaCameraFrame implements CvCameraViewFrame {
 
         @Override
-        public Mat raw() {
-            return mYuvFrameData;
+        public long raw() {
+            return mYuvFrameData.getNativeObjAddr();
         }
 
         @Override
@@ -353,8 +358,8 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
                 }
 
                 if (!mStopThread && hasFrame) {
-                    if (!mFrameChain[1 - mChainIdx].empty())
-                        deliverAndDrawFrame(mCameraFrame[1 - mChainIdx]);
+                    // if (!mFrameChain[1 - mChainIdx].empty())
+                        deliverAndDrawFrame(mCameraFrameUmat[1 - mChainIdx]);
                 }
             } while (!mStopThread);
             Log.d(TAG, "Finish processing thread");
