@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2016-01-21
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-01-22
+* @Last Modified time: 2016-01-25
 */
 
 #include "./monkey.hpp"
@@ -31,20 +31,18 @@ void MonkeyVR::onStop(int index) {
     LOGD("onStop(%d)", index);
 }
 
-int MonkeyVR::onFrame(int index, cv::Mat * in, cv::Mat * out) {
+int MonkeyVR::onFrame(int index, cv::UMat * in, cv::Mat * out) {
     LOGD("onFrame(%d)", index);
     CV_Assert(index < 2);
 
     vr::Timer timer("onFrame");
 
-    in->copyTo(this->raw_frame[index]);
-    timer.tick("HtoD");
-    cv::cvtColor(this->raw_frame[index], this->rgba_frame[index], cv::COLOR_YUV2RGBA_NV21, 4);
+    cv::cvtColor(*in, this->rgba_frame[index], cv::COLOR_YUV2RGBA_NV21, 4);
     timer.tick("cvtColor");
     this->rgba_frame[index].copyTo(*out);
     timer.tick("DtoH");
     // cv::cvtColor(*in, *out, cv::COLOR_YUV2RGBA_NV21, 4);
     // timer.tick("cvtColor(mat)");
 
-    return 1;
+    return 0;
 }

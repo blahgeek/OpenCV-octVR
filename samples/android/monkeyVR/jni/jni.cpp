@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2016-01-21
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-01-21
+* @Last Modified time: 2016-01-25
 */
 
 #include "./monkey.hpp"
@@ -29,7 +29,7 @@ JNIEXPORT jint JNICALL Java_loft_monkeyVR_NativeBridge_onFrame(JNIEnv * env,
                                                                jint index,
                                                                jlong pIn,
                                                                jlong pOut) {
-    cv::Mat * in = (cv::Mat *)pIn;
+    cv::UMat * in = (cv::UMat *)pIn;
     cv::Mat * out = (cv::Mat *)pOut;
     return MonkeyVR::getInstance()->onFrame(index, in, out);
 }

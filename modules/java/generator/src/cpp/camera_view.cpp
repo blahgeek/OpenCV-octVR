@@ -9,6 +9,8 @@
 #include "opencv2/core.hpp"
 #include "opencv2/imgproc.hpp"
 
+#include "octvr.hpp"
+
 extern "C"
 JNIEXPORT void JNICALL Java_org_opencv_android_UMatCameraViewFrame_releaseUMat(JNIEnv * env,
                                                                                jclass * cls,
@@ -31,10 +33,12 @@ JNIEXPORT jlong JNICALL Java_org_opencv_android_UMatCameraViewFrame_copyToUMat(J
     if(m == NULL)
         m = new cv::UMat(h, w, t /*, cv::USAGE_ALLOCATE_SHARED_MEMORY */);
     if(data != NULL) {
+        vr::Timer timer("UMatFrame");
         char * native_data = (char *)env->GetPrimitiveArrayCritical(data, 0);
         cv::Mat raw_data_mat(1, len, CV_8U, native_data);
         raw_data_mat.reshape(m->channels(), m->rows).copyTo(*m);
         env->ReleasePrimitiveArrayCritical(data, native_data, 0);
+        timer.tick("HtoD");
     }
     return (jlong)m;
 }
@@ -44,11 +48,13 @@ JNIEXPORT void JNICALL Java_org_opencv_android_UMatCameraViewFrame_convertToRgba
                                                                                  jclass * cls,
                                                                                  jlong src,
                                                                                  jlong dst) {
+    vr::Timer timer("UMatFrame");
     cv::UMat * u = (cv::UMat *) src;
     cv::Mat * m = (cv::Mat *) dst;
     if(u == NULL || m == NULL)
         return;
     cv::cvtColor(*u, *m, cv::COLOR_YUV2RGBA_NV21, 4);
+    timer.tick("cvtColor(rgba)");
 }
 
 extern "C"

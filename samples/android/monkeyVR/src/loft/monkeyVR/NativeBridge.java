@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2016-01-21
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-01-21
+* @Last Modified time: 2016-01-25
 */
 
 package loft.monkeyVR;
@@ -18,7 +18,6 @@ public class NativeBridge implements JavaCameraView.CvCameraViewListener2 {
         System.loadLibrary("MonkeyVRJNI");
     }
 
-    private Mat in;
     private Mat out = new Mat();
     private int camIndex = 0;
     private static final String LOGTAG = "NativeBridge";
@@ -42,8 +41,7 @@ public class NativeBridge implements JavaCameraView.CvCameraViewListener2 {
     }
 
     public Mat onCameraFrame(JavaCameraView.CvCameraViewFrame frame) {
-        in = frame.raw();
-        int modified = onFrame(camIndex, in.getNativeObjAddr(), out.getNativeObjAddr());
+        int modified = onFrame(camIndex, frame.raw(), out.getNativeObjAddr());
         return modified > 0 ? out : null;
     }
 

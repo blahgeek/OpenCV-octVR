@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2016-01-21
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-01-22
+* @Last Modified time: 2016-01-25
 */
 
 #ifndef ANDROID_JNI_MONKEY_H
@@ -36,7 +36,6 @@ public:
     static MonkeyVR * getInstance();
 
 private:
-    cv::UMat raw_frame[2];
     cv::UMat rgba_frame[2];
 
 private:
@@ -44,7 +43,7 @@ private:
 public:
     void onStart(int index, int width, int height);
     void onStop(int index);
-    int onFrame(int index, cv::Mat * in, cv::Mat * out);
+    int onFrame(int index, cv::UMat * in, cv::Mat * out);
 };
 
 #endif

@@ -16,7 +16,7 @@ if(EXISTS ${CMAKE_BINARY_DIR}/gen)
 endif()
 
 set(the_description "The java bindings")
-ocv_add_module(java BINDINGS opencv_core opencv_imgproc)
+ocv_add_module(java BINDINGS opencv_core opencv_imgproc opencv_octvr)
 ocv_module_include_directories("${CMAKE_CURRENT_SOURCE_DIR}/generator/src/cpp")
 ocv_module_include_directories("${OpenCV_SOURCE_DIR}/include")
 
