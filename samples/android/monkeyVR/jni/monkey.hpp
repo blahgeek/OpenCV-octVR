@@ -25,6 +25,7 @@
 #include <opencv2/core/ocl.hpp>
 
 #include <mutex>
+#include <condition_variable>
 
 #include <octvr.hpp>
 
@@ -36,6 +37,9 @@ public:
     static MonkeyVR * getInstance();
 
 private:
+    std::mutex mtx;
+    std::condition_variable cond_empty, cond_full;
+    volatile cv::UMat * waiting_frame = nullptr;
     cv::UMat rgba_frame[2];
 
 private:
@@ -44,6 +48,9 @@ public:
     void onStart(int index, int width, int height);
     void onStop(int index);
     int onFrame(int index, cv::UMat * in, cv::Mat * out);
+
+private:
+    int processTwoFrame(cv::UMat * front, cv::UMat *back, cv::Mat *out);
 };
 
 #endif

@@ -25,6 +25,8 @@ MonkeyVR::MonkeyVR() {
 
 void MonkeyVR::onStart(int index, int width, int height) {
     LOGD("onStart(%d, %d, %d)", index, width, height);
+    this->rgba_frame[0] = cv::UMat(height, width, CV_8UC4, cv::USAGE_ALLOCATE_SHARED_MEMORY);
+    this->rgba_frame[1] = cv::UMat(height, width, CV_8UC4, cv::USAGE_ALLOCATE_SHARED_MEMORY);
 }
 
 void MonkeyVR::onStop(int index) {
@@ -35,14 +37,42 @@ int MonkeyVR::onFrame(int index, cv::UMat * in, cv::Mat * out) {
     LOGD("onFrame(%d)", index);
     CV_Assert(index < 2);
 
-    vr::Timer timer("onFrame");
+    std::unique_lock<std::mutex> lock(mtx);
+    if(index == 0) {
+        this->waiting_frame = in;
+        cond_full.notify_all();
+        cond_empty.wait(lock, [this](){
+            return this->waiting_frame == nullptr;
+        });
+        return 0;
+    } else {
+        cond_full.wait(lock, [this](){
+            return this->waiting_frame != nullptr;
+        });
+        vr::Timer timer("onFrame");
+        int ret = this->processTwoFrame(in, (cv::UMat *)waiting_frame, out);
+        timer.tick("processTwoFrame");
 
-    cv::cvtColor(*in, this->rgba_frame[index], cv::COLOR_YUV2RGBA_NV21, 4);
-    timer.tick("cvtColor");
-    this->rgba_frame[index].copyTo(*out);
-    timer.tick("DtoH");
-    // cv::cvtColor(*in, *out, cv::COLOR_YUV2RGBA_NV21, 4);
-    // timer.tick("cvtColor(mat)");
+        this->waiting_frame = nullptr;
+        cond_empty.notify_all();
+        return ret;
+    }
 
     return 0;
+}
+
+int MonkeyVR::processTwoFrame(cv::UMat * front, cv::UMat * back, cv::Mat * out) {
+    vr::Timer timer("processTwoFrame");
+
+    cv::UMat added;
+    cv::add(*front, *back, added);
+    cv::ocl::finish();
+    timer.tick("add");
+
+    cv::cvtColor(added, this->rgba_frame[0], cv::COLOR_YUV2RGBA_NV21, 4);
+    timer.tick("cvtColor");
+    this->rgba_frame[0].copyTo(*out);
+    timer.tick("copy");
+
+    return 1;
 }
