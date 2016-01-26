@@ -8,8 +8,17 @@
 #include "./codec.hpp"
 #include <assert.h>
 
-// #define MIME_TYPE "video/avc"
-#define MIME_TYPE "video/3gpp"
+uint64_t MonkeyEncoder::getNowPts() {
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    uint64_t now = (uint64_t)tv.tv_sec * 1000000 + tv.tv_usec;
+    if(first_time == 0)
+        first_time = now;
+    return now - first_time;
+}
+
+#define MIME_TYPE "video/avc"
+// #define MIME_TYPE "video/3gpp"
 #define FRAMERATE 30
 #define I_FRAME_INTERVAL 10
 
@@ -61,12 +70,12 @@ void MonkeyEncoder::feed(cv::UMat * frame) {
         frame->copyTo(inputBuffer_m);
         timer.tick("copyTo inputBuffer");
         AMediaCodec_queueInputBuffer(this->codec, inputBufIndex, 
-                                     0, frame->total(), frame_count * 1e6 / FRAMERATE, 
+                                     0, frame->total(), getNowPts(),
                                      0);
         LOGD("queueInputBuffer, frame->total = %d", frame->total());
     } else {
         AMediaCodec_queueInputBuffer(this->codec, inputBufIndex,
-                                     0, 0, frame_count * 1e6 / FRAMERATE,
+                                     0, 0, getNowPts(),
                                      AMEDIACODEC_BUFFER_FLAG_END_OF_STREAM);
     }
 

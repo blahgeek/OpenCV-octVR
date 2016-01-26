@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2016-01-25
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-01-25
+* @Last Modified time: 2016-01-26
 */
 
 #ifndef ANDROID_JNI_CODEC_H
@@ -28,6 +28,10 @@ private:
     int frame_count = 0;
     int mWidth, mHeight;
     FILE * output = nullptr;
+
+private:
+    uint64_t first_time = 0;
+    uint64_t getNowPts();
 
 public:
     MonkeyEncoder(int width, int height, int bitrate, const char * filename);

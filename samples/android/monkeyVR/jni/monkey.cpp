@@ -25,18 +25,29 @@ MonkeyVR::MonkeyVR() {
 
 void MonkeyVR::onStart(int index, int width, int height) {
     LOGD("onStart(%d, %d, %d)", index, width, height);
-    this->rgba_frame[0] = cv::UMat(height, width, CV_8UC4, cv::USAGE_ALLOCATE_SHARED_MEMORY);
-    this->rgba_frame[1] = cv::UMat(height, width, CV_8UC4, cv::USAGE_ALLOCATE_SHARED_MEMORY);
-    if(index == 0)
-        encoder = new MonkeyEncoder(width, height, 5000000, "/sdcard/octvr.mp4");
+    if(index == 0) {
+        LOGD("Loading map file");
+        std::ifstream map_file("/sdcard/map.dat");
+        vr::MapperTemplate map_template(map_file);
+        mapper = new vr::FastMapper(map_template, std::vector<cv::Size>(2, cv::Size(width, height))); // FIXME
+        encoder = new MonkeyEncoder(map_template.out_size.width, 
+                                    map_template.out_size.height, 
+                                    5000000, "/sdcard/octvr.mp4");
+    }
 }
 
 void MonkeyVR::onStop(int index) {
     LOGD("onStop(%d)", index);
-    if(index == 0 && encoder) {
-        encoder->feed(nullptr);
-        delete encoder;
-        encoder = nullptr;
+    if(index == 1) {
+        if(encoder) {
+            encoder->feed(nullptr);
+            delete encoder;
+            encoder = nullptr;
+        }
+        if(mapper) {
+            delete mapper;
+            mapper = nullptr;
+        }
     }
 }
 
@@ -71,22 +82,10 @@ int MonkeyVR::onFrame(int index, cv::UMat * in, cv::Mat * out) {
 int MonkeyVR::processTwoFrame(cv::UMat * front, cv::UMat * back, cv::Mat * out) {
     vr::Timer timer("processTwoFrame");
 
-    cv::UMat added;
-    cv::add(*front, *back, added);
-    cv::ocl::finish();
-    timer.tick("add");
+    mapper->stitch_nv12(std::vector<cv::UMat>({*front, *back}), result);
+    timer.tick("stitch_nv12");
 
-    // cv::cvtColor(added, rgba_frame[0], cv::COLOR_YUV2RGBA_NV21, 4);
-    // cv::ocl::finish();
-    // timer.tick("cvtColor");
-
-    // rgba_frame[0].copyTo(*out);
-    // cv::ocl::finish();
-    // timer.tick("DtoH");
-
-    // return 1;
-
-    encoder->feed(&added);
+    encoder->feed(&result);
     timer.tick("encoder feed");
 
     return 0;

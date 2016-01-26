@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-01-21
+* @Last Modified time: 2016-01-26
 */
 
 #ifndef VR_LIBMAP_BASE_H
@@ -78,19 +78,27 @@ public:
     virtual ~AsyncMultiMapper() {}
 };
 
-class CPUMapper {
+class FastMapper {
 
 private:
+    std::vector<cv::Size> in_sizes;
     cv::Size out_size;
 
-    std::vector<cv::UMat> map1s;
-    std::vector<cv::UMat> map2s;
+    std::vector<cv::UMat> map1s, half_map1s;
+    std::vector<cv::UMat> map2s, half_map2s;
     std::vector<cv::UMat> masks;
-    std::vector<cv::UMat> feather_masks;
+    std::vector<cv::UMat> feather_masks, half_feather_masks;
+
+private:
+    cv::UMat output_f_c0;
+    std::vector<cv::UMat> output_f_c1c2;
+    std::vector<cv::UMat> input_c1c2, remapped_channels;
+    cv::UMat output_c1c2_merge;
 
 public:
-    CPUMapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes);
+    FastMapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes);
     void stitch(const std::vector<cv::UMat> & inputs, cv::UMat & output);
+    void stitch_nv12(const std::vector<cv::UMat> & inputs, cv::UMat & output);
 };
 
 class Timer {
