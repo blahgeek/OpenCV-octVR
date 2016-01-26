@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2016-01-21
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-01-25
+* @Last Modified time: 2016-01-26
 */
 
 #include "./monkey.hpp"
@@ -73,7 +73,18 @@ int MonkeyVR::processTwoFrame(cv::UMat * front, cv::UMat * back, cv::Mat * out) 
 
     cv::UMat added;
     cv::add(*front, *back, added);
+    cv::ocl::finish();
     timer.tick("add");
+
+    // cv::cvtColor(added, rgba_frame[0], cv::COLOR_YUV2RGBA_NV21, 4);
+    // cv::ocl::finish();
+    // timer.tick("cvtColor");
+
+    // rgba_frame[0].copyTo(*out);
+    // cv::ocl::finish();
+    // timer.tick("DtoH");
+
+    // return 1;
 
     encoder->feed(&added);
     timer.tick("encoder feed");

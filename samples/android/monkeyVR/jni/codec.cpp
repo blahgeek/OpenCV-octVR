@@ -2,13 +2,14 @@
 * @Author: BlahGeek
 * @Date:   2016-01-25
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-01-25
+* @Last Modified time: 2016-01-26
 */
 
 #include "./codec.hpp"
 #include <assert.h>
 
-#define MIME_TYPE "video/avc"
+// #define MIME_TYPE "video/avc"
+#define MIME_TYPE "video/3gpp"
 #define FRAMERATE 30
 #define I_FRAME_INTERVAL 10
 
@@ -56,15 +57,16 @@ void MonkeyEncoder::feed(cv::UMat * frame) {
     timer.tick("getInputBuffer");
 
     if(frame != nullptr) {
-        cv::Mat inputBuffer_m(mWidth, mHeight + mHeight / 2, CV_8U, inputBuffer, 0);
+        cv::Mat inputBuffer_m(mHeight + mHeight / 2, mWidth, CV_8U, inputBuffer);
         frame->copyTo(inputBuffer_m);
         timer.tick("copyTo inputBuffer");
         AMediaCodec_queueInputBuffer(this->codec, inputBufIndex, 
-                                     0, frame->total(), frame_count * 1e9 / FRAMERATE, 
+                                     0, frame->total(), frame_count * 1e6 / FRAMERATE, 
                                      0);
+        LOGD("queueInputBuffer, frame->total = %d", frame->total());
     } else {
         AMediaCodec_queueInputBuffer(this->codec, inputBufIndex,
-                                     0, 0, frame_count * 1e9 / FRAMERATE,
+                                     0, 0, frame_count * 1e6 / FRAMERATE,
                                      AMEDIACODEC_BUFFER_FLAG_END_OF_STREAM);
     }
 
@@ -72,15 +74,19 @@ void MonkeyEncoder::feed(cv::UMat * frame) {
     timer.tick("queueInputBuffer");
 
     while(true) {
-        size_t encoderStatus = AMediaCodec_dequeueOutputBuffer(this->codec, &this->bufferinfo, -1);
-        LOGD("dequeueOutputBuffer: %d, bufferinfo: (%d, %d, %d)", 
-             encoderStatus, bufferinfo.offset, bufferinfo.size, bufferinfo.presentationTimeUs);
+        size_t encoderStatus = AMediaCodec_dequeueOutputBuffer(this->codec, &this->bufferinfo, 0);
+        LOGD("dequeueOutputBuffer: %d, bufferinfo: (%d, %d, %d, %d)", 
+             encoderStatus, bufferinfo.offset, bufferinfo.size, bufferinfo.presentationTimeUs, bufferinfo.flags);
         if(encoderStatus == AMEDIACODEC_INFO_TRY_AGAIN_LATER) {
             if(frame != nullptr) {
                 LOGD("try again later");
                 break;
             } else {
-                LOGD("end of stream, spin");
+                LOGD("end of stream");
+                if(bufferinfo.flags & AMEDIACODEC_BUFFER_FLAG_END_OF_STREAM) {
+                    LOGD("Really end, return");
+                    break;
+                }
                 continue;
             }
         }
@@ -109,18 +115,20 @@ void MonkeyEncoder::feed(cv::UMat * frame) {
         timer.tick("writeSampleData");
 
         AMediaCodec_releaseOutputBuffer(this->codec, encoderStatus, false);
-        break;
     }
 }
 
 MonkeyEncoder::~MonkeyEncoder() {
     if(codec) {
+        LOGD("closing encoder");
         AMediaCodec_stop(codec);
         AMediaCodec_delete(codec);
     }
     if(muxer) {
+        LOGD("closing muxer");
         AMediaMuxer_stop(muxer);
         AMediaMuxer_delete(muxer);
     }
+    LOGD("closing output file");
     fclose(output);
 }
