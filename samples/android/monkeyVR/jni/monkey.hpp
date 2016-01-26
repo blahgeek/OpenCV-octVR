@@ -8,26 +8,13 @@
 #ifndef ANDROID_JNI_MONKEY_H
 #define ANDROID_JNI_MONKEY_H value
 
-#define LOG_TAG "MonkeyVR"
-
-#ifdef ANDROID
-    #include <jni.h>
-    #include <android/log.h>
-    #define LOGD(...) ((void)__android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__))
-    #define LOGE(...) ((void)__android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__))
-#else
-    #define LOGD(...)
-    #define LOGE(...)
-#endif
-
-#include <opencv2/core.hpp>
-#include <opencv2/imgproc.hpp>
-#include <opencv2/core/ocl.hpp>
+#include "./common.h"
 
 #include <mutex>
 #include <condition_variable>
 
 #include <octvr.hpp>
+#include "./codec.hpp"
 
 class MonkeyVR {
 private:
@@ -41,6 +28,8 @@ private:
     std::condition_variable cond_empty, cond_full;
     volatile cv::UMat * waiting_frame = nullptr;
     cv::UMat rgba_frame[2];
+
+    MonkeyEncoder * encoder = nullptr;
 
 private:
     MonkeyVR();

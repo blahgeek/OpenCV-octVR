@@ -27,10 +27,17 @@ void MonkeyVR::onStart(int index, int width, int height) {
     LOGD("onStart(%d, %d, %d)", index, width, height);
     this->rgba_frame[0] = cv::UMat(height, width, CV_8UC4, cv::USAGE_ALLOCATE_SHARED_MEMORY);
     this->rgba_frame[1] = cv::UMat(height, width, CV_8UC4, cv::USAGE_ALLOCATE_SHARED_MEMORY);
+    if(index == 0)
+        encoder = new MonkeyEncoder(width, height, 5000000, "/sdcard/octvr.mp4");
 }
 
 void MonkeyVR::onStop(int index) {
     LOGD("onStop(%d)", index);
+    if(index == 0 && encoder) {
+        encoder->feed(nullptr);
+        delete encoder;
+        encoder = nullptr;
+    }
 }
 
 int MonkeyVR::onFrame(int index, cv::UMat * in, cv::Mat * out) {
@@ -66,13 +73,10 @@ int MonkeyVR::processTwoFrame(cv::UMat * front, cv::UMat * back, cv::Mat * out) 
 
     cv::UMat added;
     cv::add(*front, *back, added);
-    cv::ocl::finish();
     timer.tick("add");
 
-    cv::cvtColor(added, this->rgba_frame[0], cv::COLOR_YUV2RGBA_NV21, 4);
-    timer.tick("cvtColor");
-    this->rgba_frame[0].copyTo(*out);
-    timer.tick("copy");
+    encoder->feed(&added);
+    timer.tick("encoder feed");
 
-    return 1;
+    return 0;
 }

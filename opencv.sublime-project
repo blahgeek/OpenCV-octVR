@@ -48,7 +48,8 @@
                     "/Users/BlahGeek/Documents/projects/loft/opencv/modules/videoio/include",
                     "/Users/BlahGeek/Documents/projects/loft/opencv/modules/videostab/include",
                     "/Users/BlahGeek/Documents/projects/loft/opencv/modules/viz/include",
-                    "/Users/BlahGeek/Documents/projects/loft/opencv/modules/world/include"
+                    "/Users/BlahGeek/Documents/projects/loft/opencv/modules/world/include",
+                    "/usr/local/opt/android-ndk/platforms/android-21/arch-arm64/usr/include/",
                 ]
             }
         }
