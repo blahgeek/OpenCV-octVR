@@ -11,10 +11,10 @@
 uint64_t MonkeyEncoder::getNowPts() {
     struct timeval tv;
     gettimeofday(&tv, NULL);
-    uint64_t now = (uint64_t)tv.tv_sec * 1000000 + tv.tv_usec;
+    int64_t now = (int64_t)tv.tv_sec * 1000000 + tv.tv_usec;
     if(first_time == 0)
         first_time = now;
-    return now - first_time;
+    return (uint64_t)(now - first_time);
 }
 
 #define MIME_TYPE "video/avc"
@@ -83,7 +83,7 @@ void MonkeyEncoder::feed(cv::UMat * frame) {
     timer.tick("queueInputBuffer");
 
     while(true) {
-        size_t encoderStatus = AMediaCodec_dequeueOutputBuffer(this->codec, &this->bufferinfo, 0);
+        ssize_t encoderStatus = AMediaCodec_dequeueOutputBuffer(this->codec, &this->bufferinfo, 0);
         LOGD("dequeueOutputBuffer: %d, bufferinfo: (%d, %d, %d, %d)", 
              encoderStatus, bufferinfo.offset, bufferinfo.size, bufferinfo.presentationTimeUs, bufferinfo.flags);
         if(encoderStatus == AMEDIACODEC_INFO_TRY_AGAIN_LATER) {
@@ -112,8 +112,10 @@ void MonkeyEncoder::feed(cv::UMat * frame) {
             this->mTrackIndex = AMediaMuxer_addTrack(muxer, newFormat);
             AMediaMuxer_start(this->muxer);
             this->mMuxerStarted = true;
+
+            continue;
         }
-        assert(encoderStatus >= 0);
+        CV_Assert(encoderStatus >= 0);
 
         size_t outputBufferSize = 0;
         uint8_t * outputBuffer = AMediaCodec_getOutputBuffer(this->codec, encoderStatus, &outputBufferSize);

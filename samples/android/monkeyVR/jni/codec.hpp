@@ -32,7 +32,7 @@ private:
     FILE * output = nullptr;
 
 private:
-    uint64_t first_time = 0;
+    int64_t first_time = 0;
     uint64_t getNowPts();
 
 private:
