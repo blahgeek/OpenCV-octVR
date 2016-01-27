@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-01-26
+* @Last Modified time: 2016-01-27
 */
 
 #ifndef VR_LIBMAP_BASE_H
@@ -86,7 +86,7 @@ private:
 
     std::vector<cv::UMat> map1s, half_map1s;
     std::vector<cv::UMat> map2s, half_map2s;
-    std::vector<cv::UMat> masks;
+    std::vector<cv::UMat> masks, half_masks;
     std::vector<cv::UMat> feather_masks, half_feather_masks;
 
 private:

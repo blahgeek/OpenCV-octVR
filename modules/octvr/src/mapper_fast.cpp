@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-01-26
+* @Last Modified time: 2016-01-27
 */
 
 #include <iostream>
@@ -61,6 +61,10 @@ FastMapper::FastMapper(const MapperTemplate & mt,
                         half_map1, half_map2, CV_16SC2);
         this->half_map1s.push_back(half_map1);
         this->half_map2s.push_back(half_map2);
+
+        cv::UMat mask;
+        cv::resize(in.mask, mask, cv::Size(in.mask.cols / 2, in.mask.rows / 2));
+        this->half_masks.push_back(mask);
     }
 
     timer.tick("Copying maps and masks");
@@ -166,10 +170,10 @@ void FastMapper::stitch_nv12(const std::vector<cv::UMat> & inputs, cv::UMat & ou
         cv::remap(input_c1c2[1], remapped_channels[2], half_map1s[i], half_map2s[i], cv::INTER_LINEAR);
         timer.tick("remap");
 
-        cv::accumulateProduct(remapped_channels[0], feather_masks[i], output_f_c0);
+        cv::accumulateProduct(remapped_channels[0], feather_masks[i], output_f_c0, masks[i]);
         // see below // yes, swap 1 and 2 // WTF // FIXME
-        cv::accumulateProduct(remapped_channels[2], half_feather_masks[i], output_f_c1c2[0]);
-        cv::accumulateProduct(remapped_channels[1], half_feather_masks[i], output_f_c1c2[1]);
+        cv::accumulateProduct(remapped_channels[2], half_feather_masks[i], output_f_c1c2[0], half_masks[i]);
+        cv::accumulateProduct(remapped_channels[1], half_feather_masks[i], output_f_c1c2[1], half_masks[i]);
         timer.tick("accumulateProduct");
     }
 
