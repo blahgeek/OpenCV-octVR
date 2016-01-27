@@ -8,6 +8,8 @@
 #include "./codec.hpp"
 #include <assert.h>
 
+#define ENABLE_SOCKET 1
+
 uint64_t MonkeyEncoder::getNowPts() {
     struct timeval tv;
     gettimeofday(&tv, NULL);
@@ -48,6 +50,7 @@ mWidth(width), mHeight(height) {
 
     this->muxer = AMediaMuxer_new(fileno(this->output), AMEDIAMUXER_OUTPUT_FORMAT_MPEG_4);
 
+#if ENABLE_SOCKET
     sock = socket(AF_INET, SOCK_STREAM, 0);
     CV_Assert(sock >= 0);
     LOGD("Socket created, sock = %d", sock);
@@ -59,6 +62,7 @@ mWidth(width), mHeight(height) {
     int ret = connect(sock, (struct sockaddr *)&server , sizeof(server));
     CV_Assert(ret >= 0);
     LOGD("Socket connected");
+#endif
 
     LOGD("MonkeyEncoder init done.");
 }
@@ -135,8 +139,10 @@ void MonkeyEncoder::feed(cv::UMat * frame) {
         LOGD("getOutputBuffer: size = %d", outputBufferSize);
         timer.tick("getOutputBuffer");
 
+#if ENABLE_SOCKET
         ssize_t send_ret = send(sock, outputBuffer + bufferinfo.offset, bufferinfo.size, 0);
         LOGD("socket send: %d", send_ret);
+#endif
 
         AMediaMuxer_writeSampleData(this->muxer, mTrackIndex, outputBuffer, &bufferinfo);
         timer.tick("writeSampleData");
@@ -176,9 +182,12 @@ MonkeyEncoder::~MonkeyEncoder() {
         AMediaMuxer_stop(muxer);
         AMediaMuxer_delete(muxer);
     }
-    LOGD("closing output file");
-    fclose(output);
-
-    LOGD("closing socket");
-    close(sock);
+    if(output) {
+        LOGD("closing output file");
+        fclose(output);
+    }
+    if(sock >= 0) {
+        LOGD("closing socket");
+        close(sock);
+    }
 }

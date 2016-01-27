@@ -7,6 +7,11 @@
 
 #include "./monkey.hpp"
 
+#define INPUT_FILENAME "/sdcard/map.dat"
+#define OUTPUT_FILENAME "/sdcard/octvr.mp4"
+#define OUTPUT_BITRATE 10000000
+#define NO_STITCH 0
+
 MonkeyVR * MonkeyVR::_instance = nullptr;
 std::mutex MonkeyVR::_instance_mtx;
 
@@ -24,22 +29,46 @@ MonkeyVR::MonkeyVR() {
 }
 
 void MonkeyVR::onStart(int index, int width, int height) {
+    std::lock_guard<std::mutex> lock(mtx);
+
+    CV_Assert(index == 0 || index == 1);
     LOGD("onStart(%d, %d, %d)", index, width, height);
-    if(index == 0) {
-        LOGD("Loading map file");
-        std::ifstream map_file("/sdcard/map.dat");
+    this->in_sizes[index] = cv::Size(width, height);
+
+    if(this->in_sizes[0].area() > 0 && this->in_sizes[1].area() > 0) {
+        LOGD("Both camera started, initing...");
+        #if NO_STITCH
+        CV_Assert(in_sizes[0].width = in_sizes[1].width);
+        encoder = new MonkeyEncoder(in_sizes[0].width,
+                                    in_sizes[0].height + in_sizes[1].height,
+                                    OUTPUT_BITRATE, OUTPUT_FILENAME);
+        #else
+        LOGD("Loading map file %s", INPUT_FILENAME);
+        std::ifstream map_file(INPUT_FILENAME);
         vr::MapperTemplate map_template(map_file);
-        mapper = new vr::FastMapper(map_template, std::vector<cv::Size>(2, cv::Size(width, height))); // FIXME
+        mapper = new vr::FastMapper(map_template, std::vector<cv::Size>(in_sizes, in_sizes+2));
         encoder = new MonkeyEncoder(map_template.out_size.width, 
                                     map_template.out_size.height, 
-                                    5000000, "/sdcard/octvr.mp4");
+                                    OUTPUT_BITRATE, OUTPUT_FILENAME);
+        #endif
+
         encoder->start();
     }
 }
 
 void MonkeyVR::onStop(int index) {
+    std::lock_guard<std::mutex> lock(mtx);
+
+    CV_Assert(index == 0 || index == 1);
     LOGD("onStop(%d)", index);
-    if(index == 1) {
+    this->in_sizes[index] = cv::Size();
+
+    this->stopping = true;
+    this->cond_full.notify_all();
+    this->cond_empty.notify_all();
+
+    if(this->in_sizes[0].area() == 0 && this->in_sizes[0].area() == 0) {
+        LOGD("Both camera stopped, cleaning...");
         if(encoder) {
             encoder->pop();
             encoder->push(nullptr);
@@ -59,19 +88,21 @@ int MonkeyVR::onFrame(int index, cv::UMat * in, cv::Mat * out) {
     CV_Assert(index < 2);
 
     std::unique_lock<std::mutex> lock(mtx);
-    if(index == 0) {
+    if(index == 0) { // back
         this->waiting_frame = in;
         cond_full.notify_all();
         cond_empty.wait(lock, [this](){
-            return this->waiting_frame == nullptr;
+            return this->waiting_frame == nullptr || this->stopping;
         });
         return 0;
-    } else {
+    } else { // front
         cond_full.wait(lock, [this](){
-            return this->waiting_frame != nullptr;
+            return this->waiting_frame != nullptr || this->stopping;
         });
+        if(this->stopping)
+            return 0;
         vr::Timer timer("onFrame");
-        int ret = this->processTwoFrame(in, (cv::UMat *)waiting_frame, out);
+        int ret = this->processTwoFrame((cv::UMat *)waiting_frame, in, out);
         timer.tick("processTwoFrame");
 
         this->waiting_frame = nullptr;
@@ -82,15 +113,32 @@ int MonkeyVR::onFrame(int index, cv::UMat * in, cv::Mat * out) {
     return 0;
 }
 
-int MonkeyVR::processTwoFrame(cv::UMat * front, cv::UMat * back, cv::Mat * out) {
+int MonkeyVR::processTwoFrame(cv::UMat * back, cv::UMat * front, cv::Mat * out) {
     vr::Timer timer("processTwoFrame");
 
     int stitch_target_index = 0;
     if(encoding_result_index >= 0)
         stitch_target_index = 1 - encoding_result_index;
 
-    mapper->stitch_nv12(std::vector<cv::UMat>({*front, *back}), result[stitch_target_index]);
-    cv::ocl::finish();
+#if NO_STITCH
+    result[stitch_target_index].create(front->rows + back->rows, front->cols, CV_8U);
+    cv::UMat ref = result[stitch_target_index].rowRange(0, in_sizes[0].height);
+    back->rowRange(0, in_sizes[0].height).copyTo(ref);
+    ref = result[stitch_target_index].rowRange(in_sizes[0].height, in_sizes[0].height + in_sizes[1].height);
+    front->rowRange(0, in_sizes[1].height).copyTo(ref);
+    ref = result[stitch_target_index].rowRange(in_sizes[0].height + in_sizes[1].height,
+                                               in_sizes[0].height + in_sizes[1].height + in_sizes[0].height / 2);
+    back->rowRange(in_sizes[0].height, in_sizes[0].height + in_sizes[0].height / 2)
+                 .copyTo(ref);
+    ref = result[stitch_target_index].rowRange(in_sizes[0].height + in_sizes[1].height + in_sizes[0].height / 2,
+                                               in_sizes[0].height + in_sizes[1].height + in_sizes[0].height / 2 + in_sizes[1].height / 2);
+    front->rowRange(in_sizes[1].height, in_sizes[1].height + in_sizes[1].height / 2)
+                 .copyTo(ref);
+#else
+    mapper->stitch_nv12(std::vector<cv::UMat>({*back, *front}), result[stitch_target_index]);
+#endif
+
+    // cv::ocl::finish();
     timer.tick("stitch_nv12");
 
     encoder->push(result + stitch_target_index);

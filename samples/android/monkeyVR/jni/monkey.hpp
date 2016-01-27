@@ -27,7 +27,10 @@ private:
     std::mutex mtx;
     std::condition_variable cond_empty, cond_full;
     volatile cv::UMat * waiting_frame = nullptr;
-    // cv::UMat result;
+
+    cv::Size in_sizes[2];
+    bool stopping = false;
+
     cv::UMat result[2];
     int encoding_result_index = -1;
 
@@ -42,7 +45,7 @@ public:
     int onFrame(int index, cv::UMat * in, cv::Mat * out);
 
 private:
-    int processTwoFrame(cv::UMat * front, cv::UMat *back, cv::Mat *out);
+    int processTwoFrame(cv::UMat * back, cv::UMat *front, cv::Mat *out);
 };
 
 #endif
