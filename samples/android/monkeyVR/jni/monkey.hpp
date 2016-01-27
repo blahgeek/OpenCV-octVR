@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2016-01-21
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-01-26
+* @Last Modified time: 2016-01-27
 */
 
 #ifndef ANDROID_JNI_MONKEY_H
@@ -27,7 +27,9 @@ private:
     std::mutex mtx;
     std::condition_variable cond_empty, cond_full;
     volatile cv::UMat * waiting_frame = nullptr;
-    cv::UMat result;
+    // cv::UMat result;
+    cv::UMat result[2];
+    int encoding_result_index = -1;
 
     MonkeyEncoder * encoder = nullptr;
     vr::FastMapper * mapper = nullptr;

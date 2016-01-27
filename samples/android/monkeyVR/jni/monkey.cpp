@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2016-01-21
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-01-26
+* @Last Modified time: 2016-01-27
 */
 
 #include "./monkey.hpp"
@@ -33,6 +33,7 @@ void MonkeyVR::onStart(int index, int width, int height) {
         encoder = new MonkeyEncoder(map_template.out_size.width, 
                                     map_template.out_size.height, 
                                     5000000, "/sdcard/octvr.mp4");
+        encoder->start();
     }
 }
 
@@ -40,7 +41,9 @@ void MonkeyVR::onStop(int index) {
     LOGD("onStop(%d)", index);
     if(index == 1) {
         if(encoder) {
-            encoder->feed(nullptr);
+            encoder->pop();
+            encoder->push(nullptr);
+            encoder->pop();
             delete encoder;
             encoder = nullptr;
         }
@@ -82,10 +85,20 @@ int MonkeyVR::onFrame(int index, cv::UMat * in, cv::Mat * out) {
 int MonkeyVR::processTwoFrame(cv::UMat * front, cv::UMat * back, cv::Mat * out) {
     vr::Timer timer("processTwoFrame");
 
-    mapper->stitch_nv12(std::vector<cv::UMat>({*front, *back}), result);
+    int stitch_target_index = 0;
+    if(encoding_result_index >= 0)
+        stitch_target_index = 1 - encoding_result_index;
+
+    mapper->stitch_nv12(std::vector<cv::UMat>({*front, *back}), result[stitch_target_index]);
+    cv::ocl::finish();
     timer.tick("stitch_nv12");
 
-    encoder->feed(&result);
+    encoder->push(result + stitch_target_index);
+    if(encoding_result_index >= 0) {
+        cv::UMat * pop_ret = encoder->pop();
+        CV_Assert(pop_ret == &result[encoding_result_index]);
+    }
+    encoding_result_index = stitch_target_index;
     timer.tick("encoder feed");
 
     return 0;

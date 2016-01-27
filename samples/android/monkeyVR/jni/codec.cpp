@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2016-01-25
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-01-26
+* @Last Modified time: 2016-01-27
 */
 
 #include "./codec.hpp"
@@ -125,6 +125,26 @@ void MonkeyEncoder::feed(cv::UMat * frame) {
 
         AMediaCodec_releaseOutputBuffer(this->codec, encoderStatus, false);
     }
+}
+
+void MonkeyEncoder::run() {
+    LOGD("MonkeyEncoder running");
+    while(true) {
+        cv::UMat * frame = this->full_q.pop();
+        this->feed(frame);
+        this->empty_q.push(frame);
+        if(frame == nullptr)
+            break;
+    }
+    LOGD("MonkeyEncoder stopped");
+}
+
+void MonkeyEncoder::push(cv::UMat * frame) {
+    this->full_q.push(frame);
+}
+
+cv::UMat * MonkeyEncoder::pop() {
+    return this->empty_q.pop();
 }
 
 MonkeyEncoder::~MonkeyEncoder() {

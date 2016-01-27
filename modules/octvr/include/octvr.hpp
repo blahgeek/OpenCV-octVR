@@ -14,11 +14,14 @@
 #include <cassert>
 #include <exception>
 #include <vector>
+#include <queue>
 #include <string>
 #include <tuple>
 #include <fstream>
 #include <stdint.h>
 #include <iostream>
+#include <mutex>
+#include <condition_variable>
 #include <sys/time.h>
 
 #include "opencv2/core.hpp"
@@ -110,6 +113,29 @@ public:
     explicit Timer(std::string name);
     Timer();
     void tick(std::string msg);
+};
+
+template <class T>
+class Queue {
+private:
+    std::queue<T> q;
+    std::mutex mtx;
+    std::condition_variable cond_empty;
+public:
+    bool empty() { return q.empty() ;}
+    void push(T&& val) {
+        std::lock_guard<std::mutex> guard(mtx);
+        q.push(std::forward<T>(val));
+        cond_empty.notify_one();
+    }
+    void push(const T & val) { this->push(T(val)); }
+    T pop() {
+        std::unique_lock<std::mutex> lock(mtx);
+        cond_empty.wait(lock, [this](){ return !this->empty(); });
+        T ret = q.front();
+        q.pop();
+        return ret;
+    }
 };
 
 }
