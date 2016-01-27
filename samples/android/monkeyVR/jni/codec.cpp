@@ -47,6 +47,19 @@ mWidth(width), mHeight(height) {
     assert(this->output);
 
     this->muxer = AMediaMuxer_new(fileno(this->output), AMEDIAMUXER_OUTPUT_FORMAT_MPEG_4);
+
+    sock = socket(AF_INET, SOCK_STREAM, 0);
+    CV_Assert(sock >= 0);
+    LOGD("Socket created, sock = %d", sock);
+
+    struct sockaddr_in server;
+    server.sin_addr.s_addr = inet_addr("192.168.0.103");
+    server.sin_family = AF_INET;
+    server.sin_port = htons(23456);
+    int ret = connect(sock, (struct sockaddr *)&server , sizeof(server));
+    CV_Assert(ret >= 0);
+    LOGD("Socket connected");
+
     LOGD("MonkeyEncoder init done.");
 }
 
@@ -122,6 +135,9 @@ void MonkeyEncoder::feed(cv::UMat * frame) {
         LOGD("getOutputBuffer: size = %d", outputBufferSize);
         timer.tick("getOutputBuffer");
 
+        ssize_t send_ret = send(sock, outputBuffer + bufferinfo.offset, bufferinfo.size, 0);
+        LOGD("socket send: %d", send_ret);
+
         AMediaMuxer_writeSampleData(this->muxer, mTrackIndex, outputBuffer, &bufferinfo);
         timer.tick("writeSampleData");
 
@@ -162,4 +178,7 @@ MonkeyEncoder::~MonkeyEncoder() {
     }
     LOGD("closing output file");
     fclose(output);
+
+    LOGD("closing socket");
+    close(sock);
 }

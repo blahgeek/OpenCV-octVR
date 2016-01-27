@@ -14,6 +14,12 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/core/ocl.hpp>
 
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+
 #include <thread>
 
 #include <octvr.hpp>
@@ -30,6 +36,8 @@ private:
     int frame_count = 0;
     int mWidth, mHeight;
     FILE * output = nullptr;
+
+    int sock = -1;
 
 private:
     int64_t first_time = 0;
