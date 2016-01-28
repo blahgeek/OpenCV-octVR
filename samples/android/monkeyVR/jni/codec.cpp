@@ -2,13 +2,15 @@
 * @Author: BlahGeek
 * @Date:   2016-01-25
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-01-27
+* @Last Modified time: 2016-01-28
 */
 
 #include "./codec.hpp"
 #include <assert.h>
 
 #define ENABLE_SOCKET 1
+#define SOCKET_REMOTE_ADDR "192.168.1.103"
+#define SOCKET_REMOTE_PORT 23456
 
 uint64_t MonkeyEncoder::getNowPts() {
     struct timeval tv;
@@ -56,9 +58,9 @@ mWidth(width), mHeight(height) {
     LOGD("Socket created, sock = %d", sock);
 
     struct sockaddr_in server;
-    server.sin_addr.s_addr = inet_addr("192.168.0.103");
+    server.sin_addr.s_addr = inet_addr(SOCKET_REMOTE_ADDR);
     server.sin_family = AF_INET;
-    server.sin_port = htons(23456);
+    server.sin_port = htons(SOCKET_REMOTE_PORT);
     int ret = connect(sock, (struct sockaddr *)&server , sizeof(server));
     CV_Assert(ret >= 0);
     LOGD("Socket connected");

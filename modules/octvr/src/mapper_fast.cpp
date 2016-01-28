@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-01-27
+* @Last Modified time: 2016-01-28
 */
 
 #include <iostream>
@@ -69,6 +69,28 @@ FastMapper::FastMapper(const MapperTemplate & mt,
 
     timer.tick("Copying maps and masks");
 
+    std::vector<cv::UMat> weight_maps;
+    cv::UMat dst_weight_map(out_size, CV_32F);
+    dst_weight_map.setTo(1e-5f);
+    for(int i = 0 ; i < mt.inputs.size() ; i += 1) {
+        cv::UMat weight_map, tmp;
+        cv::distanceTransform(masks[i], weight_map, cv::DIST_L2, 3);
+        cv::subtract(weight_map, 5, tmp);
+        cv::threshold(tmp, weight_map, 0.f, 0.f, cv::THRESH_TOZERO);
+        cv::add(weight_map, dst_weight_map, dst_weight_map);
+        weight_maps.push_back(weight_map);
+    }
+
+    this->feather_masks.resize(weight_maps.size());
+    this->half_feather_masks.resize(weight_maps.size());
+    for(int i = 0 ; i < mt.inputs.size() ; i += 1) {
+        cv::divide(weight_maps[i], dst_weight_map, weight_maps[i]);
+        weight_maps[i].convertTo(feather_masks[i], CV_8U, 255.0);
+        cv::resize(feather_masks[i], half_feather_masks[i],
+                   cv::Size(feather_masks[i].cols / 2, feather_masks[i].rows / 2));
+    }
+
+#if 0
     std::vector<cv::Point> corners(mt.inputs.size(), cv::Point(0, 0));
     std::vector<cv::UMat> weight_maps;
     cv::detail::FeatherBlender blender;
@@ -82,6 +104,7 @@ FastMapper::FastMapper(const MapperTemplate & mt,
         cv::resize(feather_masks[i], half_feather_masks[i],
                    cv::Size(feather_masks[i].cols / 2, feather_masks[i].rows / 2));
     }
+#endif
 
     timer.tick("Prepare feather masks");
 
