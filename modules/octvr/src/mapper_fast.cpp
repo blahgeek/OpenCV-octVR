@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-01-28
+* @Last Modified time: 2016-02-01
 */
 
 #include <iostream>
@@ -90,42 +90,23 @@ FastMapper::FastMapper(const MapperTemplate & mt,
                    cv::Size(feather_masks[i].cols / 2, feather_masks[i].rows / 2));
     }
 
-#if 0
-    std::vector<cv::Point> corners(mt.inputs.size(), cv::Point(0, 0));
-    std::vector<cv::UMat> weight_maps;
-    cv::detail::FeatherBlender blender;
-    blender.createWeightMaps(this->masks,
-                             corners,
-                             weight_maps);
-    this->feather_masks.resize(weight_maps.size());
-    this->half_feather_masks.resize(weight_maps.size());
-    for(int i = 0 ; i < weight_maps.size() ; i += 1) {
-        weight_maps[i].convertTo(this->feather_masks[i], CV_8U, 255.0);
-        cv::resize(feather_masks[i], half_feather_masks[i],
-                   cv::Size(feather_masks[i].cols / 2, feather_masks[i].rows / 2));
-    }
-#endif
-
     timer.tick("Prepare feather masks");
 
-    output_f_c0.create(this->out_size, CV_32F);
-    output_f_c1c2.emplace_back(this->out_size.height / 2,
+    output_s_c0.create(this->out_size, CV_16U);
+    output_s_c1c2.emplace_back(this->out_size.height / 2,
                                this->out_size.width / 2,
-                               CV_32F);
-    output_f_c1c2.emplace_back(this->out_size.height / 2,
+                               CV_16U);
+    output_s_c1c2.emplace_back(this->out_size.height / 2,
                                this->out_size.width / 2,
-                               CV_32F);
+                               CV_16U);
     input_c1c2.emplace_back(in_sizes[0].height / 2, in_sizes[0].width / 2, CV_8U);
     input_c1c2.emplace_back(in_sizes[0].height / 2, in_sizes[0].width / 2, CV_8U);
 
-    remapped_channels.emplace_back(this->out_size, CV_8U);
-    remapped_channels.emplace_back(this->out_size.height / 2, this->out_size.width / 2, CV_8U);
-    remapped_channels.emplace_back(this->out_size.height / 2, this->out_size.width / 2, CV_8U);
-
-    output_c1c2_merge.create(this->out_size.height / 2, this->out_size.width / 2, CV_8UC2);
+    output_c1c2_merge.create(this->out_size.height / 2, this->out_size.width / 2, CV_16UC2);
 }
 
 void FastMapper::stitch(const std::vector<UMat> & inputs, UMat & output) {
+    #if 0
     Timer timer("stitch");
 
     output.create(this->out_size, CV_8UC3);
@@ -160,6 +141,9 @@ void FastMapper::stitch(const std::vector<UMat> & inputs, UMat & output) {
     UMat output_f;
     cv::merge(output_channels, output_f);
     output_f.convertTo(output, CV_8UC3, 1.0/255.0);
+    #endif
+
+    throw "not supported yet";
 
 }
 
@@ -176,35 +160,29 @@ void FastMapper::stitch_nv12(const std::vector<cv::UMat> & inputs, cv::UMat & ou
                   this->out_size.width,
                   CV_8U);
 
-    output_f_c0.setTo(0);
-    output_f_c1c2[0].setTo(128);
-    output_f_c1c2[1].setTo(128);
+    output_s_c0.setTo(0);
+    output_s_c1c2[0].setTo(0);
+    output_s_c1c2[1].setTo(0);
     timer.tick("Prepare output");
 
     for(int i = 0 ; i < inputs.size() ; i += 1) {
         cv::UMat input_c0 = inputs[i].rowRange(0, in_sizes[i].height);
-        cv::split(inputs[i].rowRange(in_sizes[i].height, 
-                                     in_sizes[i].height + in_sizes[i].height / 2)
-                  .reshape(2), input_c1c2);
+        cv::UMat input_c1c2_orig = inputs[i].rowRange(in_sizes[i].height, 
+                                                      in_sizes[i].height + in_sizes[i].height / 2);
+        cv::split(input_c1c2_orig.reshape(2), input_c1c2);
         timer.tick("split input");
 
-        cv::remap(input_c0, remapped_channels[0], map1s[i], map2s[i], cv::INTER_LINEAR);
-        cv::remap(input_c1c2[0], remapped_channels[1], half_map1s[i], half_map2s[i], cv::INTER_LINEAR);
-        cv::remap(input_c1c2[1], remapped_channels[2], half_map1s[i], half_map2s[i], cv::INTER_LINEAR);
+        cv::remap_weighted(input_c0, output_s_c0, map1s[i], map2s[i], feather_masks[i], cv::INTER_LINEAR);
+        cv::remap_weighted(input_c1c2[0], output_s_c1c2[0], half_map1s[i], half_map2s[i], half_feather_masks[i], cv::INTER_LINEAR);
+        cv::remap_weighted(input_c1c2[1], output_s_c1c2[1], half_map1s[i], half_map2s[i], half_feather_masks[i], cv::INTER_LINEAR);
         timer.tick("remap");
-
-        cv::accumulateProduct(remapped_channels[0], feather_masks[i], output_f_c0, masks[i]);
-        // see below // yes, swap 1 and 2 // WTF // FIXME
-        cv::accumulateProduct(remapped_channels[2], half_feather_masks[i], output_f_c1c2[0], half_masks[i]);
-        cv::accumulateProduct(remapped_channels[1], half_feather_masks[i], output_f_c1c2[1], half_masks[i]);
-        timer.tick("accumulateProduct");
     }
 
     cv::UMat output_c0 = output.rowRange(0, out_size.height);
-    output_f_c0.convertTo(output_c0, CV_8U, 1.0/255.0);
+    output_s_c0.convertTo(output_c0, CV_8U, 1.0/255.0);
     timer.tick("convertTo c0");
 
-    cv::merge(output_f_c1c2, output_c1c2_merge);
+    cv::merge(output_s_c1c2, output_c1c2_merge);
 
     cv::UMat output_c1c2 = output.rowRange(out_size.height, 
                                            out_size.height + out_size.height / 2)

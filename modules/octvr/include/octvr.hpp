@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-01-27
+* @Last Modified time: 2016-02-01
 */
 
 #ifndef VR_LIBMAP_BASE_H
@@ -93,9 +93,9 @@ private:
     std::vector<cv::UMat> feather_masks, half_feather_masks;
 
 private:
-    cv::UMat output_f_c0;
-    std::vector<cv::UMat> output_f_c1c2;
-    std::vector<cv::UMat> input_c1c2, remapped_channels;
+    cv::UMat output_s_c0;
+    std::vector<cv::UMat> output_s_c1c2;
+    std::vector<cv::UMat> input_c1c2;
     cv::UMat output_c1c2_merge;
 
 public:

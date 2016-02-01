@@ -2085,6 +2085,11 @@ CV_EXPORTS_W void remap( InputArray src, OutputArray dst,
                          int interpolation, int borderMode = BORDER_CONSTANT,
                          const Scalar& borderValue = Scalar());
 
+CV_EXPORTS_W void remap_weighted( InputArray src, InputOutputArray dst,
+                                  InputArray map1, InputArray map2,
+                                  InputArray weight_map,
+                                  int interpolation);
+
 /** @brief Converts image transformation maps from one representation to another.
 
 The function converts a pair of maps for remap from one representation to another. The following
