@@ -391,6 +391,8 @@ public abstract class CameraBridgeViewBase extends SurfaceView implements Surfac
      */
     protected void deliverAndDrawFrame(CvCameraViewFrame frame) {
         Mat modified;
+        if (mFpsMeter != null)
+            mFpsMeter.measure();
 
         if (mListener != null) {
             modified = mListener.onCameraFrame(frame);
@@ -410,7 +412,7 @@ public abstract class CameraBridgeViewBase extends SurfaceView implements Surfac
             }
         }
 
-        if (bmpValid && mCacheBitmap != null) {
+        if (bmpValid && mCacheBitmap != null && modified != null) {
             Canvas canvas = getHolder().lockCanvas();
             if (canvas != null) {
                 canvas.drawColor(0, android.graphics.PorterDuff.Mode.CLEAR);
@@ -431,10 +433,8 @@ public abstract class CameraBridgeViewBase extends SurfaceView implements Surfac
                     }
                 }
 
-                if (mFpsMeter != null) {
-                    mFpsMeter.measure();
+                if (mFpsMeter != null)
                     mFpsMeter.draw(canvas, 20, 30);
-                }
                 getHolder().unlockCanvasAndPost(canvas);
             }
         }

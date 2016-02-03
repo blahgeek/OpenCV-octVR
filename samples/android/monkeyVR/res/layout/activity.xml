@@ -25,7 +25,7 @@
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="5"
-                opencv:show_fps="true"
+                opencv:show_fps="false"
                 opencv:camera_id="0"
                 android:id="@+id/back_cam_gl_surface_view" />
         </TableRow>

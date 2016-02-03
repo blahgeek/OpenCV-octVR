@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2016-01-21
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-01-27
+* @Last Modified time: 2016-02-03
 */
 
 #ifndef ANDROID_JNI_MONKEY_H
@@ -44,6 +44,8 @@ private:
     int remote_port = 23456;
     bool ifStitch = true;
     bool ifSocket = true;
+
+    uint64_t frameCount = 0;
 
 private:
     MonkeyVR();

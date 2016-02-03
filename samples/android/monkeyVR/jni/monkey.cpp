@@ -8,9 +8,6 @@
 #include "./monkey.hpp"
 
 #define INPUT_FILENAME "/sdcard/map.dat"
-#define OUTPUT_FILENAME "/sdcard/octvr.mp4"
-#define OUTPUT_BITRATE 10000000
-#define NO_STITCH 0
 
 MonkeyVR * MonkeyVR::_instance = nullptr;
 std::mutex MonkeyVR::_instance_mtx;
@@ -175,6 +172,14 @@ int MonkeyVR::processTwoFrame(cv::UMat * back, cv::UMat * front, cv::Mat * out) 
     }
     encoding_result_index = stitch_target_index;
     timer.tick("encoder feed");
+
+    if((frameCount++) % 5 == 0) {
+        cv::UMat rgba, resized_rgba;
+        cv::cvtColor(result[stitch_target_index], rgba, cv::COLOR_YUV2RGBA_NV21, 4);
+        cv::resize(rgba, resized_rgba, this->in_sizes[1]);
+        resized_rgba.copyTo(*out);
+        return 1;
+    }
 
     return 0;
 }

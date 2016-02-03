@@ -8,10 +8,6 @@
 #include "./codec.hpp"
 #include <assert.h>
 
-#define ENABLE_SOCKET 0
-#define SOCKET_REMOTE_ADDR "192.168.1.103"
-#define SOCKET_REMOTE_PORT 23456
-
 uint64_t MonkeyEncoder::getNowPts() {
     struct timeval tv;
     gettimeofday(&tv, NULL);
