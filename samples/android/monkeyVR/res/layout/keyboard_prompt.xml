@@ -62,6 +62,27 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
+<!--         <CheckBox
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/settings_stitch"
+            android:id="@+id/stitchCheckBox"
+            android:layout_column="0"
+            android:textAlignment="center"
+            android:gravity="center" />
+ -->
+        <CheckBox
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/settings_socket"
+            android:id="@+id/socketCheckBox"
+            android:gravity="center" />
+    </TableRow>
+
+    <TableRow
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
         <TextView android:id="@+id/dstAddrTextView"
             android:layout_height="wrap_content"
             android:layout_width="wrap_content"
@@ -100,28 +121,6 @@
             android:scrollHorizontally="true"
             android:gravity="fill_horizontal"
             android:layout_column="1" />
-    </TableRow>
-
-    <TableRow
-        android:layout_width="match_parent"
-        android:layout_height="match_parent">
-
-        <CheckBox
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/settings_stitch"
-            android:id="@+id/stitchCheckBox"
-            android:layout_column="0"
-            android:textAlignment="center"
-            android:gravity="center" />
-
-        <CheckBox
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/settings_socket"
-            android:id="@+id/socketCheckBox"
-            android:layout_column="1"
-            android:gravity="center" />
     </TableRow>
 
 </TableLayout>

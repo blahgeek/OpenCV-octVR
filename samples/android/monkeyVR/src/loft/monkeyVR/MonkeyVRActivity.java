@@ -45,7 +45,7 @@ public class MonkeyVRActivity extends Activity implements DialogInterface.OnClic
     private int remote_port = 23456;
     private int bitrate = 10000000;
     private boolean ifStitch = true;
-    private boolean ifSocket = true;
+    private boolean ifSocket = false;
 
     private NativeBridge frontBridge;
     private NativeBridge backBridge;
@@ -142,8 +142,8 @@ public class MonkeyVRActivity extends Activity implements DialogInterface.OnClic
         dstAddrEditText.setText(remote_addr, TextView.BufferType.EDITABLE);
         EditText dstPortEditText = (EditText) view.findViewById(R.id.dstPortEditText);
         dstPortEditText.setText(Integer.toString(remote_port), TextView.BufferType.EDITABLE);
-        CheckBox stitchCheckBox = (CheckBox) view.findViewById(R.id.stitchCheckBox);
-        stitchCheckBox.setChecked(ifStitch);
+        // CheckBox stitchCheckBox = (CheckBox) view.findViewById(R.id.stitchCheckBox);
+        // stitchCheckBox.setChecked(ifStitch);
         CheckBox socketCheckBox = (CheckBox) view.findViewById(R.id.socketCheckBox);
         socketCheckBox.setChecked(ifSocket);
 
@@ -166,9 +166,9 @@ public class MonkeyVRActivity extends Activity implements DialogInterface.OnClic
             t = (EditText) ad.findViewById(R.id.dstPortEditText);
             remote_port = Integer.parseInt(t.getText().toString());
 
-            CheckBox c = (CheckBox) ad.findViewById(R.id.stitchCheckBox);
-            ifStitch = c.isChecked();
-            c = (CheckBox) ad.findViewById(R.id.socketCheckBox);
+            // CheckBox c = (CheckBox) ad.findViewById(R.id.stitchCheckBox);
+            // ifStitch = c.isChecked();
+            CheckBox c = (CheckBox) ad.findViewById(R.id.socketCheckBox);
             ifSocket = c.isChecked();
 
             CharSequence text = "Settings set.";

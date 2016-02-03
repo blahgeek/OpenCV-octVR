@@ -5,11 +5,11 @@
     <string name="action_start">Start</string>
     <string name="action_stop">Stop</string>
     <string name="action_settings">Settings</string>
-    <string name="settings_bitrate">Bitrate</string>
+    <string name="settings_bitrate">Bitrate (bps)</string>
     <string name="settings_output">Output Location</string>
     <string name="settings_addr">Remote Address</string>
     <string name="settings_port">Remote Port</string>
     <string name="settings_stitch">Stitch</string>
-    <string name="settings_socket">Socket</string>
+    <string name="settings_socket">Send to TCP (Run server first)</string>
 
 </resources>

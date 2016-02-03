@@ -37,7 +37,7 @@ void MonkeyVR::onStart(int index, int width, int height) {
 
     if(this->in_sizes[0].area() > 0 && this->in_sizes[1].area() > 0) {
         LOGD("Both camera started, initing...");
-        if (this->ifStitch) {
+        if (!this->ifStitch) {
             CV_Assert(in_sizes[0].width = in_sizes[1].width);
             encoder = new MonkeyEncoder(in_sizes[0].width,
                                         in_sizes[0].height + in_sizes[1].height,
@@ -133,8 +133,8 @@ void MonkeyVR::setParams(int _bitrate, const char * _outfile_path,
 
 std::string MonkeyVR::printParams() {
     char intOut[200];
-    sprintf(intOut, "\nBitrate: %d\nRemote port: %d\nStitch: %c\nSocket: %c",
-            this->bitrate, this->remote_port, (this->ifStitch ? 'Y' : 'N'), (this->ifSocket ? 'Y' : 'N'));
+    sprintf(intOut, "\nBitrate: %d\nRemote port: %d\nSocket: %c",
+            this->bitrate, this->remote_port, (this->ifSocket ? 'Y' : 'N'));
     return std::string("Output path: " ) + this->outfile_path +
            std::string("\nRemote address: ") + this->remote_addr +
            std::string(intOut);
@@ -147,7 +147,7 @@ int MonkeyVR::processTwoFrame(cv::UMat * back, cv::UMat * front, cv::Mat * out) 
     if(encoding_result_index >= 0)
         stitch_target_index = 1 - encoding_result_index;
 
-    if (this->ifStitch) {
+    if (!this->ifStitch) {
         result[stitch_target_index].create(front->rows + back->rows, front->cols, CV_8U);
         cv::UMat ref = result[stitch_target_index].rowRange(0, in_sizes[0].height);
         back->rowRange(0, in_sizes[0].height).copyTo(ref);
