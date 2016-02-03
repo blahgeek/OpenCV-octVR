@@ -57,7 +57,15 @@ foreach(cl ${cl_list})
   get_filename_component(cl_filename "${cl}" NAME_WE)
   #message("${cl_filename}")
 
-  file(READ "${cl}" lines)
+  execute_process(COMMAND "python2" "-c" "
+import sys;
+import base64;
+SALT = '85W MagSage 2 Power Adapter';
+xor_salt = lambda s: ''.join([chr(ord(c) ^ ord(SALT[i % len(SALT)])) for i,c in enumerate(s)]);
+print(base64.b64encode(xor_salt(sys.stdin.read())));"
+                  OUTPUT_VARIABLE lines
+                  INPUT_FILE "${cl}")
+  # file(READ "${cl}" lines)
 
   string(REPLACE "\r" "" lines "${lines}\n")
   string(REPLACE "\t" "  " lines "${lines}")
