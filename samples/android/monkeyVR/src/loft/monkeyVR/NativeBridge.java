@@ -1,4 +1,4 @@
-/* 
+/*
 * @Author: BlahGeek
 * @Date:   2016-01-21
 * @Last Modified by:   BlahGeek
@@ -27,6 +27,9 @@ public class NativeBridge implements JavaCameraView.CvCameraViewListener2 {
     public static native void onStop(int index);
     // return: 1 for modified
     public static native int onFrame(int index, long pIn, long pOut);
+    public static native String setParams(int bitrate, String outfile_path,
+                                        String remote_addr, int remote_port,
+                                        boolean ifStitch, boolean ifSocket);
 
     public NativeBridge(boolean _isFrontCam) {
         camIndex = _isFrontCam ? 1 : 0;
@@ -41,6 +44,7 @@ public class NativeBridge implements JavaCameraView.CvCameraViewListener2 {
     }
 
     public Mat onCameraFrame(JavaCameraView.CvCameraViewFrame frame) {
+        //return null;
         int modified = onFrame(camIndex, frame.raw(), out.getNativeObjAddr());
         return modified > 0 ? out : null;
     }
