@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2016-01-21
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-01-27
+* @Last Modified time: 2016-02-03
 */
 
 #include "./monkey.hpp"
@@ -57,6 +57,8 @@ void MonkeyVR::onStart(int index, int width, int height) {
                                         this->remote_port);
         }
 
+        this->encoding_result_index = -1;
+        this->stopping = false;
         encoder->start();
     }
 }
