@@ -37,14 +37,16 @@ JNIEXPORT jint JNICALL Java_loft_monkeyVR_NativeBridge_onFrame(JNIEnv * env,
 extern "C"
 JNIEXPORT jstring JNICALL Java_loft_monkeyVR_NativeBridge_setParams(JNIEnv * env,
                                                                  jclass cls,
-                                                                 jint bitrate,
-                                                                 jstring outfile_path,
-                                                                 jstring remote_addr,
-                                                                 jint remote_port,
-                                                                 jboolean ifStitch,
-                                                                 jboolean ifSocket) {
-    const char * out;
-    //sprintf(out, "Hello from JNI!");
-    out = (env)->GetStringUTFChars(outfile_path, nullptr);
-    return (env)->NewStringUTF(out);
+                                                                 jint _bitrate,
+                                                                 jstring _outfile_path,
+                                                                 jstring _remote_addr,
+                                                                 jint _remote_port,
+                                                                 jboolean _ifStitch,
+                                                                 jboolean _ifSocket) {
+    const char * outfile_path;
+    const char * remote_addr;
+    outfile_path = (env)->GetStringUTFChars(_outfile_path, nullptr);
+    remote_addr = (env)->GetStringUTFChars(_remote_addr, nullptr);
+    MonkeyVR::getInstance()->setParams(_bitrate, outfile_path, remote_addr, _remote_port, _ifStitch, _ifSocket);
+    return (env)->NewStringUTF(MonkeyVR::getInstance()->printParams().c_str());
 }

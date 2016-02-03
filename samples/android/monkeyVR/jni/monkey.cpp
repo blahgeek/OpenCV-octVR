@@ -113,6 +113,23 @@ int MonkeyVR::onFrame(int index, cv::UMat * in, cv::Mat * out) {
     return 0;
 }
 
+void MonkeyVR::setParams(int _bitrate, const char * _outfile_path,
+               const char * _remote_addr, int _remote_port,
+               bool _ifStitch, bool _ifSocket) {
+    this->bitrate = _bitrate;
+    this->outfile_path = std::string(_outfile_path);
+    this->remote_addr = std::string(_remote_addr);
+    this->remote_port = _remote_port;
+    this->ifStitch = _ifStitch;
+    this->ifSocket = _ifSocket;
+}
+
+std::string MonkeyVR::printParams() {
+    char intOut[200];
+    sprintf(intOut, " %d %d %d %d", this->bitrate, this->remote_port, int(this->ifStitch), int(this->ifSocket));
+    return this->outfile_path + this->remote_addr + std::string(intOut);
+}
+
 int MonkeyVR::processTwoFrame(cv::UMat * back, cv::UMat * front, cv::Mat * out) {
     vr::Timer timer("processTwoFrame");
 
