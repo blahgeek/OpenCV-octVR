@@ -1,4 +1,4 @@
-/* 
+/*
 * @Author: BlahGeek
 * @Date:   2016-01-25
 * @Last Modified by:   BlahGeek
@@ -8,7 +8,7 @@
 #include "./codec.hpp"
 #include <assert.h>
 
-#define ENABLE_SOCKET 1
+#define ENABLE_SOCKET 0
 #define SOCKET_REMOTE_ADDR "192.168.1.103"
 #define SOCKET_REMOTE_PORT 23456
 
@@ -29,7 +29,7 @@ uint64_t MonkeyEncoder::getNowPts() {
 #define COLOR_FormatYUV420SemiPlanar 21
 #define COLOR_FormatYUV420Planar 19
 
-MonkeyEncoder::MonkeyEncoder(int width, int height, int bitrate, const char * filename): 
+MonkeyEncoder::MonkeyEncoder(int width, int height, int bitrate, const char * filename):
 mWidth(width), mHeight(height) {
     AMediaFormat * format = AMediaFormat_new();
     AMediaFormat_setString(format, AMEDIAFORMAT_KEY_MIME, MIME_TYPE);
@@ -88,7 +88,7 @@ void MonkeyEncoder::feed(cv::UMat * frame) {
         cv::Mat inputBuffer_m(mHeight + mHeight / 2, mWidth, CV_8U, inputBuffer);
         frame->copyTo(inputBuffer_m);
         timer.tick("copyTo inputBuffer");
-        AMediaCodec_queueInputBuffer(this->codec, inputBufIndex, 
+        AMediaCodec_queueInputBuffer(this->codec, inputBufIndex,
                                      0, frame->total(), getNowPts(),
                                      0);
         LOGD("queueInputBuffer, frame->total = %d", frame->total());
@@ -103,7 +103,7 @@ void MonkeyEncoder::feed(cv::UMat * frame) {
 
     while(true) {
         ssize_t encoderStatus = AMediaCodec_dequeueOutputBuffer(this->codec, &this->bufferinfo, 0);
-        LOGD("dequeueOutputBuffer: %d, bufferinfo: (%d, %d, %d, %d)", 
+        LOGD("dequeueOutputBuffer: %d, bufferinfo: (%d, %d, %d, %d)",
              encoderStatus, bufferinfo.offset, bufferinfo.size, bufferinfo.presentationTimeUs, bufferinfo.flags);
         if(encoderStatus == AMEDIACODEC_INFO_TRY_AGAIN_LATER) {
             if(frame != nullptr) {

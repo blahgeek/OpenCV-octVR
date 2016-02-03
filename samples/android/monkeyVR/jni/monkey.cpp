@@ -1,4 +1,4 @@
-/* 
+/*
 * @Author: BlahGeek
 * @Date:   2016-01-21
 * @Last Modified by:   BlahGeek
@@ -7,7 +7,7 @@
 
 #include "./monkey.hpp"
 
-#define INPUT_FILENAME "/sdcard/map.dat"
+#define INPUT_FILENAME "/sdcard/octvr.dat"
 #define OUTPUT_FILENAME "/sdcard/octvr.mp4"
 #define OUTPUT_BITRATE 10000000
 #define NO_STITCH 0
@@ -47,8 +47,8 @@ void MonkeyVR::onStart(int index, int width, int height) {
         std::ifstream map_file(INPUT_FILENAME);
         vr::MapperTemplate map_template(map_file);
         mapper = new vr::FastMapper(map_template, std::vector<cv::Size>(in_sizes, in_sizes+2));
-        encoder = new MonkeyEncoder(map_template.out_size.width, 
-                                    map_template.out_size.height, 
+        encoder = new MonkeyEncoder(map_template.out_size.width,
+                                    map_template.out_size.height,
                                     OUTPUT_BITRATE, OUTPUT_FILENAME);
         #endif
 
