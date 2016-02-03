@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2016-01-25
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-01-28
+* @Last Modified time: 2016-02-03
 */
 
 #include "./codec.hpp"
@@ -189,6 +189,10 @@ MonkeyEncoder::~MonkeyEncoder() {
     if(output) {
         LOGD("closing output file");
         fclose(output);
+    }
+    if(th.joinable()) {
+        LOGD("joining thread");
+        th.join();
     }
     if(sock >= 0) {
         LOGD("closing socket");
