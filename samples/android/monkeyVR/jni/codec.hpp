@@ -1,4 +1,4 @@
-/* 
+/*
 * @Author: BlahGeek
 * @Date:   2016-01-25
 * @Last Modified by:   BlahGeek
@@ -21,6 +21,7 @@
 #include <unistd.h>
 
 #include <thread>
+#include <string>
 
 #include <octvr.hpp>
 
@@ -38,6 +39,9 @@ private:
     FILE * output = nullptr;
 
     int sock = -1;
+    bool ifSocket = true;
+    std::string remote_addr = std::string("192.168.1.103");
+    int remote_port = 23456;
 
 private:
     int64_t first_time = 0;
@@ -51,7 +55,7 @@ private:
     std::thread th;
 
 public:
-    MonkeyEncoder(int width, int height, int bitrate, const char * filename);
+    MonkeyEncoder(int width, int height, int bitrate, const char * filename, bool ifSocket, const char * remote_addr, int remote_port);
     ~MonkeyEncoder();
 
     void push(cv::UMat * frame);

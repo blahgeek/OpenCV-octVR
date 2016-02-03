@@ -36,17 +36,17 @@ public class NativeBridge implements JavaCameraView.CvCameraViewListener2 {
     }
 
     public void onCameraViewStarted(int width, int height) {
-        //onStart(camIndex, width, height);
+        onStart(camIndex, width, height);
     }
 
     public void onCameraViewStopped() {
-        //onStop(camIndex);
+        onStop(camIndex);
     }
 
     public Mat onCameraFrame(JavaCameraView.CvCameraViewFrame frame) {
-        return null;
-        //int modified = onFrame(camIndex, frame.raw(), out.getNativeObjAddr());
-        //return modified > 0 ? out : null;
+        //return null;
+        int modified = onFrame(camIndex, frame.raw(), out.getNativeObjAddr());
+        return modified > 0 ? out : null;
     }
 
 }

@@ -71,12 +71,10 @@ public class MonkeyVRActivity extends Activity implements DialogInterface.OnClic
                 String out = frontBridge.setParams(bitrate, outfile_path,
                                       remote_addr, remote_port,
                                       ifStitch, ifSocket);
-                //backCamView.enableView();
-                //frontCamView.enableView();
+                backCamView.enableView();
+                frontCamView.enableView();
 
                 Context ctx = getApplicationContext();
-                //CharSequence text = "Started!";
-
                 Toast toast = Toast.makeText(ctx, out, Toast.LENGTH_SHORT);
                 toast.show();
             }
@@ -84,12 +82,11 @@ public class MonkeyVRActivity extends Activity implements DialogInterface.OnClic
         stopButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
 
-                //frontCamView.disableView();
-                //backCamView.disableView();
+                frontCamView.disableView();
+                backCamView.disableView();
 
                 CharSequence text = "Stopped!";
                 Context ctx = getApplicationContext();
-
                 Toast toast = Toast.makeText(ctx, text, Toast.LENGTH_SHORT);
                 toast.show();
             }

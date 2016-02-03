@@ -37,20 +37,25 @@ void MonkeyVR::onStart(int index, int width, int height) {
 
     if(this->in_sizes[0].area() > 0 && this->in_sizes[1].area() > 0) {
         LOGD("Both camera started, initing...");
-        #if NO_STITCH
-        CV_Assert(in_sizes[0].width = in_sizes[1].width);
-        encoder = new MonkeyEncoder(in_sizes[0].width,
-                                    in_sizes[0].height + in_sizes[1].height,
-                                    OUTPUT_BITRATE, OUTPUT_FILENAME);
-        #else
-        LOGD("Loading map file %s", INPUT_FILENAME);
-        std::ifstream map_file(INPUT_FILENAME);
-        vr::MapperTemplate map_template(map_file);
-        mapper = new vr::FastMapper(map_template, std::vector<cv::Size>(in_sizes, in_sizes+2));
-        encoder = new MonkeyEncoder(map_template.out_size.width,
-                                    map_template.out_size.height,
-                                    OUTPUT_BITRATE, OUTPUT_FILENAME);
-        #endif
+        if (this->ifStitch) {
+            CV_Assert(in_sizes[0].width = in_sizes[1].width);
+            encoder = new MonkeyEncoder(in_sizes[0].width,
+                                        in_sizes[0].height + in_sizes[1].height,
+                                        this->bitrate, this->outfile_path.c_str(),
+                                        this->ifSocket, this->remote_addr.c_str(),
+                                        this->remote_port);
+        }
+        else {
+            LOGD("Loading map file %s", INPUT_FILENAME);
+            std::ifstream map_file(INPUT_FILENAME);
+            vr::MapperTemplate map_template(map_file);
+            mapper = new vr::FastMapper(map_template, std::vector<cv::Size>(in_sizes, in_sizes+2));
+            encoder = new MonkeyEncoder(map_template.out_size.width,
+                                        map_template.out_size.height,
+                                        this->bitrate, this->outfile_path.c_str(),
+                                        this->ifSocket, this->remote_addr.c_str(),
+                                        this->remote_port);
+        }
 
         encoder->start();
     }
@@ -126,8 +131,11 @@ void MonkeyVR::setParams(int _bitrate, const char * _outfile_path,
 
 std::string MonkeyVR::printParams() {
     char intOut[200];
-    sprintf(intOut, " %d %d %d %d", this->bitrate, this->remote_port, int(this->ifStitch), int(this->ifSocket));
-    return this->outfile_path + this->remote_addr + std::string(intOut);
+    sprintf(intOut, "\nBitrate: %d\nRemote port: %d\nStitch: %c\nSocket: %c",
+            this->bitrate, this->remote_port, (this->ifStitch ? 'Y' : 'N'), (this->ifSocket ? 'Y' : 'N'));
+    return std::string("Output path: " ) + this->outfile_path +
+           std::string("\nRemote address: ") + this->remote_addr +
+           std::string(intOut);
 }
 
 int MonkeyVR::processTwoFrame(cv::UMat * back, cv::UMat * front, cv::Mat * out) {
@@ -137,23 +145,23 @@ int MonkeyVR::processTwoFrame(cv::UMat * back, cv::UMat * front, cv::Mat * out) 
     if(encoding_result_index >= 0)
         stitch_target_index = 1 - encoding_result_index;
 
-#if NO_STITCH
-    result[stitch_target_index].create(front->rows + back->rows, front->cols, CV_8U);
-    cv::UMat ref = result[stitch_target_index].rowRange(0, in_sizes[0].height);
-    back->rowRange(0, in_sizes[0].height).copyTo(ref);
-    ref = result[stitch_target_index].rowRange(in_sizes[0].height, in_sizes[0].height + in_sizes[1].height);
-    front->rowRange(0, in_sizes[1].height).copyTo(ref);
-    ref = result[stitch_target_index].rowRange(in_sizes[0].height + in_sizes[1].height,
-                                               in_sizes[0].height + in_sizes[1].height + in_sizes[0].height / 2);
-    back->rowRange(in_sizes[0].height, in_sizes[0].height + in_sizes[0].height / 2)
-                 .copyTo(ref);
-    ref = result[stitch_target_index].rowRange(in_sizes[0].height + in_sizes[1].height + in_sizes[0].height / 2,
-                                               in_sizes[0].height + in_sizes[1].height + in_sizes[0].height / 2 + in_sizes[1].height / 2);
-    front->rowRange(in_sizes[1].height, in_sizes[1].height + in_sizes[1].height / 2)
-                 .copyTo(ref);
-#else
-    mapper->stitch_nv12(std::vector<cv::UMat>({*back, *front}), result[stitch_target_index]);
-#endif
+    if (this->ifStitch) {
+        result[stitch_target_index].create(front->rows + back->rows, front->cols, CV_8U);
+        cv::UMat ref = result[stitch_target_index].rowRange(0, in_sizes[0].height);
+        back->rowRange(0, in_sizes[0].height).copyTo(ref);
+        ref = result[stitch_target_index].rowRange(in_sizes[0].height, in_sizes[0].height + in_sizes[1].height);
+        front->rowRange(0, in_sizes[1].height).copyTo(ref);
+        ref = result[stitch_target_index].rowRange(in_sizes[0].height + in_sizes[1].height,
+                                                   in_sizes[0].height + in_sizes[1].height + in_sizes[0].height / 2);
+        back->rowRange(in_sizes[0].height, in_sizes[0].height + in_sizes[0].height / 2)
+                     .copyTo(ref);
+        ref = result[stitch_target_index].rowRange(in_sizes[0].height + in_sizes[1].height + in_sizes[0].height / 2,
+                                                   in_sizes[0].height + in_sizes[1].height + in_sizes[0].height / 2 + in_sizes[1].height / 2);
+        front->rowRange(in_sizes[1].height, in_sizes[1].height + in_sizes[1].height / 2)
+                     .copyTo(ref);
+    } else {
+        mapper->stitch_nv12(std::vector<cv::UMat>({*back, *front}), result[stitch_target_index]);
+    }
 
     // cv::ocl::finish();
     timer.tick("stitch_nv12");
