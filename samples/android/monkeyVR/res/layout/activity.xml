@@ -44,6 +44,7 @@
             android:layout_height="wrap_content"
             android:text="@string/action_stop"
             android:id="@+id/stopButton"
+            android:enabled="false"
             android:layout_gravity="center_horizontal" />
         <Button
             android:layout_width="wrap_content"

@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2016-01-21
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-01-26
+* @Last Modified time: 2016-02-03
 */
 
 package loft.monkeyVR;
@@ -62,8 +62,8 @@ public class MonkeyVRActivity extends Activity implements DialogInterface.OnClic
 
         setContentView(R.layout.activity);
 
-        Button startButton = (Button) findViewById(R.id.startButton);
-        Button stopButton = (Button) findViewById(R.id.stopButton);
+        final Button startButton = (Button) findViewById(R.id.startButton);
+        final Button stopButton = (Button) findViewById(R.id.stopButton);
         startButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
 
@@ -77,6 +77,9 @@ public class MonkeyVRActivity extends Activity implements DialogInterface.OnClic
                 Context ctx = getApplicationContext();
                 Toast toast = Toast.makeText(ctx, out, Toast.LENGTH_SHORT);
                 toast.show();
+
+                stopButton.setEnabled(true);
+                startButton.setEnabled(false);
             }
         });
         stopButton.setOnClickListener(new View.OnClickListener() {
@@ -89,6 +92,9 @@ public class MonkeyVRActivity extends Activity implements DialogInterface.OnClic
                 Context ctx = getApplicationContext();
                 Toast toast = Toast.makeText(ctx, text, Toast.LENGTH_SHORT);
                 toast.show();
+
+                stopButton.setEnabled(false);
+                startButton.setEnabled(true);
             }
         });
 
@@ -175,6 +181,12 @@ public class MonkeyVRActivity extends Activity implements DialogInterface.OnClic
     protected void onPause() {
         frontCamView.disableView();
         backCamView.disableView();
+
+        Button startButton = (Button) findViewById(R.id.startButton);
+        Button stopButton = (Button) findViewById(R.id.stopButton);
+        stopButton.setEnabled(false);
+        startButton.setEnabled(true);
+
         super.onPause();
     }
 
