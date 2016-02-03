@@ -7,7 +7,7 @@
 
 #include "./monkey.hpp"
 
-#define INPUT_FILENAME "/sdcard/octvr.dat"
+#define INPUT_FILENAME "/sdcard/map.dat"
 #define OUTPUT_FILENAME "/sdcard/octvr.mp4"
 #define OUTPUT_BITRATE 10000000
 #define NO_STITCH 0
