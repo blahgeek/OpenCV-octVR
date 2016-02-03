@@ -31,7 +31,7 @@ uint64_t MonkeyEncoder::getNowPts() {
 
 MonkeyEncoder::MonkeyEncoder(int width, int height, int bitrate, const char * filename,
                              bool _ifSocket, const char * _remote_addr, int _remote_port):
-mWidth(width), mHeight(height), ifSocket(_ifSocket), remote_port(_remote_port) {
+mWidth(width), mHeight(height), mIfSocket(_ifSocket), mRemotePort(_remote_port) {
     AMediaFormat * format = AMediaFormat_new();
     AMediaFormat_setString(format, AMEDIAFORMAT_KEY_MIME, MIME_TYPE);
     AMediaFormat_setInt32(format, AMEDIAFORMAT_KEY_WIDTH, width);
@@ -52,17 +52,17 @@ mWidth(width), mHeight(height), ifSocket(_ifSocket), remote_port(_remote_port) {
     assert(this->output);
 
     this->muxer = AMediaMuxer_new(fileno(this->output), AMEDIAMUXER_OUTPUT_FORMAT_MPEG_4);
-    this->remote_addr = std::string(_remote_addr);
+    this->mRemoteAddr = std::string(_remote_addr);
 
-    if (this->ifSocket) {
+    if (this->mIfSocket) {
         sock = socket(AF_INET, SOCK_STREAM, 0);
         CV_Assert(sock >= 0);
         LOGD("Socket created, sock = %d", sock);
 
         struct sockaddr_in server;
-        server.sin_addr.s_addr = inet_addr(this->remote_addr.c_str());
+        server.sin_addr.s_addr = inet_addr(this->mRemoteAddr.c_str());
         server.sin_family = AF_INET;
-        server.sin_port = htons(this->remote_port);
+        server.sin_port = htons(this->mRemotePort);
         int ret = connect(sock, (struct sockaddr *)&server , sizeof(server));
         CV_Assert(ret >= 0);
         LOGD("Socket connected");
@@ -143,7 +143,7 @@ void MonkeyEncoder::feed(cv::UMat * frame) {
         LOGD("getOutputBuffer: size = %d", outputBufferSize);
         timer.tick("getOutputBuffer");
 
-        if (this->ifSocket) {
+        if (this->mIfSocket) {
             ssize_t send_ret = send(sock, outputBuffer + bufferinfo.offset, bufferinfo.size, 0);
             LOGD("socket send: %d", send_ret);
         }

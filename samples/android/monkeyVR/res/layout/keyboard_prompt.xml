@@ -11,7 +11,7 @@
             android:layout_width="wrap_content"
             android:layout_marginLeft="20dip"
             android:layout_marginRight="20dip"
-            android:text="Bitrate："
+            android:text="@string/settings_bitrate"
             android:gravity="left" />
 
         <TextView android:id="@+id/outputTextView"
@@ -19,7 +19,7 @@
             android:layout_width="wrap_content"
             android:layout_marginLeft="20dip"
             android:layout_marginRight="20dip"
-            android:text="Output location："
+            android:text="@string/settings_output"
             android:gravity="left"
             android:layout_column="1" />
     </TableRow>
@@ -67,7 +67,7 @@
             android:layout_width="wrap_content"
             android:layout_marginLeft="20dip"
             android:layout_marginRight="20dip"
-            android:text="Remote Address"
+            android:text="@string/settings_addr"
             android:gravity="left" />
 
         <TextView android:id="@+id/dstPortTextView"
@@ -75,7 +75,7 @@
             android:layout_width="wrap_content"
             android:layout_marginLeft="20dip"
             android:layout_marginRight="20dip"
-            android:text="Remote Port"
+            android:text="@string/settings_port"
             android:gravity="left"
             android:layout_column="1" />
     </TableRow>
@@ -109,7 +109,7 @@
         <CheckBox
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Stitch"
+            android:text="@string/settings_stitch"
             android:id="@+id/stitchCheckBox"
             android:layout_column="0"
             android:textAlignment="center"
@@ -118,7 +118,7 @@
         <CheckBox
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Socket"
+            android:text="@string/settings_socket"
             android:id="@+id/socketCheckBox"
             android:layout_column="1"
             android:gravity="center" />
