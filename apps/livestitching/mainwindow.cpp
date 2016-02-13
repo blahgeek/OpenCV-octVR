@@ -295,6 +295,36 @@ void MainWindow::run() {
     return;
 }
 
+void MainWindow::initPreview() {
+    videoWidget = new QVideoWidget;
+    ui->preview_vlayout->addWidget(videoWidget);
+
+    videoPreviewer = new QMediaPlayer;
+    videoPreviewer->setVideoOutput(videoWidget);
+    videoWidget->show();
+
+    connect(ui->pushButton_preview, &QPushButton::clicked, this, &MainWindow::startPreview);
+
+    return;
+}
+
+void MainWindow::startPreview() {
+    videoPreviewer->setMedia(QUrl::fromUserInput(ui->preview_url->text()));
+    videoPreviewer->play();
+    ui->pushButton_preview->setText("Stop");
+
+    connect(ui->pushButton_preview, &QPushButton::clicked, this, &MainWindow::stopPreview);
+    return;
+}
+
+void MainWindow::stopPreview() {
+    videoPreviewer->stop();
+    ui->pushButton_preview->setText("Play");
+
+    connect(ui->pushButton_preview, &QPushButton::clicked, this, &MainWindow::startPreview);
+    return;
+}
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)

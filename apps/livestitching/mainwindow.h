@@ -10,6 +10,8 @@
 #include <QCameraViewfinder>
 #include <QCameraImageCapture>
 
+#include <QMediaPlayer>
+
 #include <vector>
 #include <list>
 #include <memory>
@@ -44,6 +46,10 @@ public:
 
     void run();
 
+    void initPreview();
+    void startPreview();
+    void stopPreview();
+
 public slots:
     void removeImageCapture(int id, const QString & fileName);
 
@@ -58,6 +64,9 @@ private:
     std::map<int, QCameraImageCapture *> image_captures;
 
     QProcess ffmpeg_proc;
+
+    QVideoWidget * videoWidget;
+    QMediaPlayer * videoPreviewer;
 };
 
 #endif // MAINWINDOW_H
