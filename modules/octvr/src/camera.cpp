@@ -5,11 +5,11 @@
 * @Last Modified time: 2016-01-24
 */
 
+#include "./camera.hpp"
 #include <iostream>
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
-#include "./camera.hpp"
 #include "./cameras/equirectangular.hpp"
 #include "./cameras/normal.hpp"
 #include "./cameras/pinhole_cam.hpp"

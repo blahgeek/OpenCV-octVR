@@ -8,9 +8,10 @@
 #ifndef VR_LIBMAP_CAMERA_H
 #define VR_LIBMAP_CAMERA_H value
 
+#define _USE_MATH_DEFINES
+#include <cmath>
 #include "json.hpp"
 #include <utility>
-#include <cmath>
 #include <cassert>
 #include <exception>
 #include <vector>

@@ -68,6 +68,9 @@ Class @ref nlohmann::basic_json is a good entry point for the documentation.
 #ifdef _MSC_VER
     #include <basetsd.h>
     using ssize_t = SSIZE_T;
+	#if (_MSC_VER < 1900) // noexcept is not supported before MSVC 2015
+		#define noexcept
+	#endif
 #endif
 
 /*!
@@ -1650,12 +1653,16 @@ class basic_json
     copy of `a` (which is the null value after the swap) is
     destroyed.,basic_json__copyassignment}
     */
+#if defined(_MSC_VER) && (_MSC_VER < 1900)
+    reference& operator=(basic_json other)
+#else
     reference& operator=(basic_json other) noexcept (
         std::is_nothrow_move_constructible<value_t>::value and
         std::is_nothrow_move_assignable<value_t>::value and
         std::is_nothrow_move_constructible<json_value>::value and
         std::is_nothrow_move_assignable<json_value>::value
     )
+#endif
     {
         using std::swap;
         std::swap(m_type, other.m_type);
@@ -3953,12 +3960,16 @@ class basic_json
     @liveexample{The example below shows how JSON arrays can be
     swapped.,swap__reference}
     */
+#if defined(_MSC_VER) && (_MSC_VER < 1900)
+    void swap(reference other)
+#else
     void swap(reference other) noexcept (
         std::is_nothrow_move_constructible<value_t>::value and
         std::is_nothrow_move_assignable<value_t>::value and
         std::is_nothrow_move_constructible<json_value>::value and
         std::is_nothrow_move_assignable<json_value>::value
     )
+#endif
     {
         std::swap(m_type, other.m_type);
         std::swap(m_value, other.m_value);
@@ -4916,9 +4927,12 @@ class basic_json
         }
 
       private:
+#if defined(_MSC_VER) && (_MSC_VER < 1900)
+#define constexpr const
         static constexpr difference_type begin_value = 0;
         static constexpr difference_type end_value = begin_value + 1;
-
+#undef constexpr
+#endif
         /// iterator as signed integer type
         difference_type m_it = std::numeric_limits<std::ptrdiff_t>::min();
     };
@@ -5031,12 +5045,16 @@ class basic_json
         {}
 
         /// copy assignment
+#if defined(_MSC_VER) && (_MSC_VER < 1900)
+        const_iterator& operator=(const_iterator other)
+#else
         const_iterator& operator=(const_iterator other) noexcept(
             std::is_nothrow_move_constructible<pointer>::value and
             std::is_nothrow_move_assignable<pointer>::value and
             std::is_nothrow_move_constructible<internal_iterator>::value and
             std::is_nothrow_move_assignable<internal_iterator>::value
         )
+#endif
         {
             std::swap(m_object, other.m_object);
             std::swap(m_it, other.m_it);
@@ -5481,12 +5499,16 @@ class basic_json
         {}
 
         /// copy assignment
+#if defined(_MSC_VER) && (_MSC_VER < 1900)
+        iterator& operator=(iterator other)
+#else
         iterator& operator=(iterator other) noexcept(
             std::is_nothrow_move_constructible<pointer>::value and
             std::is_nothrow_move_assignable<pointer>::value and
             std::is_nothrow_move_constructible<internal_iterator>::value and
             std::is_nothrow_move_assignable<internal_iterator>::value
         )
+#endif
         {
             base_iterator::operator=(other);
             return *this;
@@ -7156,11 +7178,16 @@ namespace std
 @brief exchanges the values of two JSON objects
 */
 template <>
+#if defined(_MSC_VER) && (_MSC_VER < 1900)
+inline void swap(nlohmann::json& j1,
+                 nlohmann::json& j2)
+#else
 inline void swap(nlohmann::json& j1,
                  nlohmann::json& j2) noexcept(
                      is_nothrow_move_constructible<nlohmann::json>::value and
                      is_nothrow_move_assignable<nlohmann::json>::value
                  )
+#endif
 {
     j1.swap(j2);
 }
@@ -7189,10 +7216,12 @@ no parse error occurred.
 @param[in] s  a string representation of a JSON object
 @return a JSON object
 */
+#if defined(_MSC_VER) && (_MSC_VER < 1900)
+#else
 inline nlohmann::json operator "" _json(const char* s, std::size_t)
 {
     return nlohmann::json::parse(reinterpret_cast<nlohmann::json::string_t::value_type*>
                                  (const_cast<char*>(s)));
 }
-
+#endif
 #endif

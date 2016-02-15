@@ -19,7 +19,12 @@
 #include <fstream>
 #include <stdint.h>
 #include <iostream>
+#if defined(__linux__)|| defined(__APPLE__)
 #include <sys/time.h>
+#elif defined(_WIN32)
+#include <windows.h>
+#include <time.h>
+#endif
 
 #include "opencv2/core.hpp"
 
@@ -97,6 +102,10 @@ class Timer {
 protected:
     int64_t t;
     std::string name;
+
+#if defined(_WIN32)
+	int64_t frequency;
+#endif
 
 public:
     explicit Timer(std::string name);
