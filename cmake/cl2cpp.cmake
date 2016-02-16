@@ -53,11 +53,20 @@ ${nested_namespace_start}
 
 ")
 
+set (Python_ADDITIONAL_VERSIONS 2.6 2.7)
+find_package(PythonInterp)
+
+if (NOT PYTHONINTERP_FOUND)
+    message(FATAL_ERROR "Python Interpreter Not Found.")
+else()
+    message("Python Interpreter Found. Version: ${PYTHON_VERSION_STRING}")
+endif()
+
 foreach(cl ${cl_list})
   get_filename_component(cl_filename "${cl}" NAME_WE)
   #message("${cl_filename}")
 
-  execute_process(COMMAND "python2" "-c" "
+  execute_process(COMMAND ${PYTHON_EXECUTABLE} "-c" "
 import sys;
 import base64;
 SALT = '85W MagSage 2 Power Adapter';
