@@ -1,0 +1,12 @@
+{
+    "type": "normal",
+    "options": {
+        "rotation": {
+            "roll": 0,
+            "yaw": 0,
+            "pitch": 0
+        },
+        "cam_opt": 0.5,
+        "aspect_ratio": 1.333
+    }
+}

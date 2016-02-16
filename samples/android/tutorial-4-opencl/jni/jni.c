@@ -1,20 +1,22 @@
 #include <jni.h>
 
 int initCL();
-void closeCL();
-void processFrame(int tex1, int tex2, int w, int h, int mode);
+int processFrontFrame(long in, long out);
+int processBackFrame(long in, long out);
 
-JNIEXPORT jint JNICALL Java_org_opencv_samples_tutorial4_NativePart_initCL(JNIEnv * env, jclass cls)
-{
+JNIEXPORT jint JNICALL Java_org_opencv_samples_tutorial4_NativePart_processFrontFrame(JNIEnv * env,
+                                                                                      jclass cls,
+                                                                                      jlong pIn, jlong pOut) {
+    return processFrontFrame(pIn, pOut);
+}
+
+JNIEXPORT jint JNICALL Java_org_opencv_samples_tutorial4_NativePart_processBackFrame(JNIEnv * env,
+                                                                                     jclass cls,
+                                                                                     jlong pIn, jlong pOut) {
+    return processBackFrame(pIn, pOut);
+}
+
+JNIEXPORT jint JNICALL Java_org_opencv_samples_tutorial4_NativePart_initCL(JNIEnv * env,
+                                                                           jclass cls) {
     return initCL();
-}
-
-JNIEXPORT void JNICALL Java_org_opencv_samples_tutorial4_NativePart_closeCL(JNIEnv * env, jclass cls)
-{
-    closeCL();
-}
-
-JNIEXPORT void JNICALL Java_org_opencv_samples_tutorial4_NativePart_processFrame(JNIEnv * env, jclass cls, jint tex1, jint tex2, jint w, jint h, jint mode)
-{
-    processFrame(tex1, tex2, w, h, mode);
 }

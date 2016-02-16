@@ -4,12 +4,12 @@ cmake \
     -D CMAKE_BUILD_TYPE=Release \
     -D CMAKE_INSTALL_PREFIX=`pwd`/../.. \
     -D WITH_FFMPEG=OFF \
-    -D CMAKE_CXX_FLAGS="-DCV_OPENCL_RUN_VERBOSE" \
-    -D CUDA_NVCC_FLAGS="-std c++11 --expt-relaxed-constexpr" \
-    -D WITH_CUDA=ON \
+    -D CMAKE_CXX_FLAGS="-std=c++11 -DCV_OPENCL_RUN_VERBOSE" \
+    -D WITH_CUDA=OFF \
     -D BUILD_SHARED_LIBS=OFF \
-    -D CUDA_ARCH_BIN="3.0" \
-    -D CUDA_ARCH_PTX="3.0" \
-    -D WITH_OPENCL=OFF \
+    -D WITH_OPENCL=ON \
     -D WITH_OPENEXR=OFF \
+    -D BUILD_TESTS=OFF \
+    -D BUILD_PERF_TESTS=OFF \
+    $@ \
     ..

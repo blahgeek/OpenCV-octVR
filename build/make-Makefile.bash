@@ -11,4 +11,7 @@ cmake \
     -D CUDA_ARCH_BIN="5.2" \
     -D CUDA_ARCH_PTX="5.2" \
     -D WITH_OPENCL=OFF \
+    -D BUILD_TESTS=OFF \
+    -D BUILD_PERF_TESTS=OFF \
+    $@ \
     ..
