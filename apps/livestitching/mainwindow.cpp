@@ -16,7 +16,16 @@
 void MainWindow::loadPTO(const QString & filename) {
     if(filename.isNull())
         return;
-    ui->label_filename->setText(filename);
+
+    const QString pto_dest_filename = temp_path + "/template.pto";
+    // Copy template file to temporary dir.
+    if (QFile::exists(pto_dest_filename)) {
+        if (QFile::remove(pto_dest_filename)) {
+            QMessageBox::critical(this, "Error", "No permission to " + pto_dest_filename);
+            return;
+        }
+    }
+    QFile::copy(filename, pto_dest_filename);
 
     QFile parser_script_file(":/scripts/ptx2json.py");
     parser_script_file.open(QFile::ReadOnly);
@@ -25,7 +34,7 @@ void MainWindow::loadPTO(const QString & filename) {
 
     QProcess parser;
     parser.start("python3",
-                 QStringList({"-c", parser_script, filename}));
+                 QStringList({"-c", parser_script, pto_dest_filename}));
     parser.waitForFinished();
     QString parsed_json = parser.readAllStandardOutput();
     this->json_model.loadJson(parsed_json.toUtf8());
@@ -42,15 +51,37 @@ void MainWindow::openPTO() {
     loadPTO(filename);
 }
 
+void MainWindow::locateHugin() {
+    QString filename = QFileDialog::getOpenFileName(this, "Locate Hugin",
+                                                    "C:/Users/jun/Documents/livestitching/script/",
+                                                    "Hugin executable file (*.*);;All files(*.*)");
+    hugin_path = filename;
+    ui->path_hugin->setText(filename);
+}
+
 void MainWindow::reEditPTO() {
-    QFileInfo hugin = QFileInfo(ui->path_hugin->text());
+    QFileInfo hugin = QFileInfo(hugin_path);
     if (!hugin.exists()) {
         QMessageBox::warning(this, "File not exist", "Cannot find hugin");
     }
     QProcess hugin_proc;
-    hugin_proc.start(hugin.absoluteFilePath(), QStringList{ ui->label_filename->text() });
+    hugin_proc.start(hugin.absoluteFilePath(), QStringList{ temp_path + "/template.pto" });
     hugin_proc.waitForFinished();
 
+    return;
+}
+
+void MainWindow::saveAsPTO() {
+    QString filename = QFileDialog::getSaveFileName(this, "Save Template",
+                                                    "C:/Users/jun/Documents/livestitching/script/",
+                                                    "Document files (*.pto);;All files(*.*)");
+    if (QFile::exists(filename)) {
+        if (QFile::remove(filename)) {
+            QMessageBox::critical(this, "Error", "No permission to" + filename);
+            return;
+        }
+    }
+    QFile::copy(temp_path + "/template.pto", filename);
     return;
 }
 
@@ -123,14 +154,11 @@ void MainWindow::deviceDelCamera() {
 
 void MainWindow::gotoStitch() {
     // Make sure the dir exists.
-    QString stitch_dir_txt = QString("%1").arg(ui->stitch_dir->text());
-    qDebug() << "stitch dir: " << stitch_dir_txt;
-    QDir stitch_dir(stitch_dir_txt);
+    QDir stitch_dir(temp_path);
     if (!stitch_dir.mkpath(".")){
-        QMessageBox::critical(this, "Error", "Cannot create dir for stitching");
+        QMessageBox::critical(this, "Error", "Cannot create temporary dir");
         return;
     }
-    stitch_dir_txt = stitch_dir.absolutePath();
 
     QImageEncoderSettings image_setting;
     image_setting.setCodec("image/jpeg");
@@ -160,7 +188,7 @@ void MainWindow::gotoStitch() {
         QCameraImageCapture * image_capture = new QCameraImageCapture(camera.get());
         image_capture->setEncodingSettings(image_setting);
         if (image_capture->isReadyForCapture()){
-            QString image_file_name = QString("%1/%2.jpg").arg(stitch_dir_txt).arg(i);
+            QString image_file_name = QString("%1/%2.jpg").arg(temp_path).arg(i);
             int capture_id = image_capture->capture(image_file_name);
             image_captures.insert(std::make_pair(capture_id, image_capture));
             image_list << image_file_name;
@@ -175,7 +203,7 @@ void MainWindow::gotoStitch() {
         QMessageBox::warning(this, "File not exist", "Cannot find ffmpeg");
         return;
     }
-    ffmpeg_crop_proc.setWorkingDirectory(stitch_dir_txt);
+    ffmpeg_crop_proc.setWorkingDirectory(temp_path);
     QStringList crop_args;
     crop_args << crop_in_args << crop_out_args << "-y";
     qDebug() << crop_args;
@@ -192,24 +220,16 @@ void MainWindow::gotoStitch() {
     }
     QProcess pto_gen_proc;
     QStringList pto_gen_args;
-    pto_gen_proc.setWorkingDirectory(stitch_dir_txt);
+    pto_gen_proc.setWorkingDirectory(temp_path);
     // TODO: The parameters should not be fixed.
     pto_gen_args << "-o" << "template.pto" << "-p" << "3" << "-f" << "120" << image_list;
     pto_gen_proc.start(pto_gen.absoluteFilePath(), pto_gen_args);
     pto_gen_proc.waitForFinished();
 
     // Run hugin.
-    QFileInfo hugin = QFileInfo(ui->path_hugin->text());
-    if (!hugin.exists()) {
-        QMessageBox::warning(this, "File not exist", "Cannot find hugin");
-        return;
-    }
-    QProcess hugin_proc;
-    hugin_proc.setWorkingDirectory(stitch_dir_txt);
-    hugin_proc.start(hugin.absoluteFilePath(), QStringList{"template.pto"});
-    hugin_proc.waitForFinished();
+    reEditPTO();
 
-    loadPTO(stitch_dir_txt.append("/template.pto"));
+    loadPTO(temp_path.append("/template.pto"));
 
     return;
 }
@@ -236,8 +256,6 @@ void MainWindow::run() {
         QMessageBox::warning(this, "Bad Template", "No input");
         return;
     }
-
-    QString temp_path = QDir::tempPath();
 
     QString output_json_path = temp_path + "/vr.json";
     QFile output_json(output_json_path);
@@ -347,10 +365,15 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->pushButton_add_camera, &QPushButton::clicked, this, &MainWindow::deviceAddCamera);
     connect(ui->pushButton_del_camera, &QPushButton::clicked, this, &MainWindow::deviceDelCamera);
 
-    connect(ui->pushButton_stitch, &QPushButton::clicked, this, &MainWindow::gotoStitch);
+    connect(ui->pushButton_new_pto, &QPushButton::clicked, this, &MainWindow::gotoStitch);
     connect(ui->pushButton_edit_pto, &QPushButton::clicked, this, &MainWindow::reEditPTO);
+    connect(ui->pushButton_saveas_pto, &QPushButton::clicked, this, &MainWindow::saveAsPTO);
+    connect(ui->pushButton_locate_hugin, &QPushButton::clicked, this, &MainWindow::locateHugin);
 
     connect(ui->pushButton_run, &QPushButton::clicked, this, &MainWindow::run);
+
+    temp_path = QDir::tempPath() + "/vrlive";
+    qDebug() << "temporary dir: " << temp_path;
 
 }
 

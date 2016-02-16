@@ -40,9 +40,11 @@ public:
     void deviceDelCamera();
 
     void loadPTO(const QString & filename);
+    void locateHugin(); 
     void gotoStitch();
 
     void reEditPTO();
+    void saveAsPTO();
 
     void run();
 
@@ -64,6 +66,8 @@ private:
     std::map<int, QCameraImageCapture *> image_captures;
 
     QProcess ffmpeg_proc;
+    QString temp_path;
+    QString hugin_path;
 
     QVideoWidget * videoWidget;
     QMediaPlayer * videoPreviewer;
