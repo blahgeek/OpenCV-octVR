@@ -4637,6 +4637,8 @@ void cv::remap_weighted( InputArray _src, InputOutputArray _dst,
                          InputArray _weight_map, 
                          int interpolation)
 {
+    bool ret = false;
+#ifdef HAVE_OPENCL
     CV_Assert( _map1.size().area() > 0 );
     CV_Assert( _map2.empty() || (_map2.size() == _map1.size()));
     CV_Assert( _map1.size() == _weight_map.size() && _weight_map.type() == CV_8U);
@@ -4679,7 +4681,8 @@ void cv::remap_weighted( InputArray _src, InputOutputArray _dst,
            ocl::KernelArg::ReadOnlyNoSize(weight_map));
 
     size_t globalThreads[2] = { (size_t)dst.cols, ((size_t)dst.rows + rowsPerWI - 1) / rowsPerWI };
-    bool ret = k.run(2, globalThreads, NULL, false);
+    ret = k.run(2, globalThreads, NULL, false);
+#endif
     CV_Assert(ret);
 }
 
