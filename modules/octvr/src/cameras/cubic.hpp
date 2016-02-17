@@ -37,7 +37,8 @@ private:
     }
 
 public:
-    using Camera::Camera;
+    //using Camera::Camera;
+    Cubic(const json & options) :Camera(options){}
 
     double get_aspect_ratio() override {
         return 3.0 / 2.0;

@@ -5,13 +5,13 @@
 * @Last Modified time: 2016-01-21
 */
 
+#include "octvr.hpp"
+#include "./camera.hpp"
 #include <iostream>
 #include <stdio.h>
 #include "opencv2/imgproc.hpp"
 #include "opencv2/stitching/detail/seam_finders.hpp"
 
-#include "octvr.hpp"
-#include "./camera.hpp"
 
 using namespace vr;
 

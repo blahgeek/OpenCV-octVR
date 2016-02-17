@@ -15,7 +15,8 @@ namespace vr {
 
 class StupidOval: public Camera {
 public:
-    using Camera::Camera;
+    //using Camera::Camera;
+    StupidOval(const json & options) :Camera(options){}
 
     virtual double get_aspect_ratio() override {
         return 2.0;
