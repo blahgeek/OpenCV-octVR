@@ -8,8 +8,13 @@
 #include <iostream>
 #include <iostream>
 #include <fstream>
+#if defined(__linux__) || defined(__APPLE__)
 #include <unistd.h>
 #include <getopt.h>
+#elif defined(_WIN32)
+#include "getopt.h"
+#define snprintf _snprintf
+#endif
 #include "opencv2/core.hpp"
 #include "opencv2/imgproc.hpp"
 #include "opencv2/imgcodecs.hpp"

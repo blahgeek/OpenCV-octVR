@@ -20,7 +20,11 @@
 #include "./octvr.hpp"
 
 #include <utility>
+#if defined(__linux__) || defined(__APPLE__)
 #include <unistd.h>
+#elif defined(_WIN32)
+#include "getopt.h"
+#endif
 
 using namespace vr;
 

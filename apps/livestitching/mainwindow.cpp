@@ -1,4 +1,6 @@
-
+#if defined(_WIN32)
+#define Q_COMPILER_INITIALIZER_LISTS value
+#endif
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include <QFileDialog>
