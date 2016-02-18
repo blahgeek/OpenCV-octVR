@@ -2225,9 +2225,11 @@ void cv::cuda::splitUYVY(InputArray _uyvy, OutputArray _y, OutputArray _u, Outpu
     cudaStream_t stream = StreamAccessor::getStream(_stream);
     NppStreamHandler h(stream);
 
+    Npp8u * dsts [] = {y.ptr<Npp8u>(), u.ptr<Npp8u>(), v.ptr<Npp8u>()};
+    int dst_steps [] = {static_cast<int>(y.step), static_cast<int>(u.step), static_cast<int>(v.step)};
+
     nppSafeCall(nppiYCbCr422_8u_C2P3R(uyvy.ptr<Npp8u>(), static_cast<int>(uyvy.step), 
-                                      {y.ptr<Npp8u>(), u.ptr<Npp8u>(), v.ptr<Npp8u>()},
-                                      {static_cast<int>(y.step), static_cast<int>(u.step), static_cast<int>(v.step)},
+                                      dsts, dst_steps,
                                       sz));
 
     if (stream == 0)
@@ -2254,8 +2256,10 @@ void cv::cuda::mergeUYVY(InputArray _y, InputArray _u, InputArray _v, OutputArra
     cudaStream_t stream = StreamAccessor::getStream(_stream);
     NppStreamHandler h(stream);
 
-    nppSafeCall(nppiYCbCr422_8u_P3C2R({y.ptr<Npp8u>(), u.ptr<Npp8u>(), v.ptr<Npp8u>()},
-                                      {static_cast<int>(y.step), static_cast<int>(u.step), static_cast<int>(v.step)},
+    Npp8u * srcs [] = {y.ptr<Npp8u>(), u.ptr<Npp8u>(), v.ptr<Npp8u>()};
+    int src_steps [] = {static_cast<int>(y.step), static_cast<int>(u.step), static_cast<int>(v.step)};
+
+    nppSafeCall(nppiYCbCr422_8u_P3C2R(srcs, src_steps,
                                       uyvy.ptr<Npp8u>(), static_cast<int>(uyvy.step), 
                                       sz));
 
