@@ -2210,9 +2210,9 @@ void cv::cuda::splitUYVY(InputArray _uyvy, OutputArray _y, OutputArray _u, Outpu
     GpuMat uyvy = _uyvy.getGpuMat();
     CV_Assert(uyvy.type() == CV_8UC2);
 
-    _y.create(uyvy.rows, uyvy.cols * 2, CV_8U);
-    _u.create(uyvy.rows, uyvy.cols, CV_8U);
-    _v.create(uyvy.rows, uyvy.cols, CV_8U);
+    _y.create(uyvy.rows, uyvy.cols, CV_8U);
+    _u.create(uyvy.rows, uyvy.cols / 2, CV_8U);
+    _v.create(uyvy.rows, uyvy.cols / 2, CV_8U);
 
     GpuMat y = _y.getGpuMat();
     GpuMat u = _u.getGpuMat();
@@ -2228,6 +2228,35 @@ void cv::cuda::splitUYVY(InputArray _uyvy, OutputArray _y, OutputArray _u, Outpu
     nppSafeCall(nppiYCbCr422_8u_C2P3R(uyvy.ptr<Npp8u>(), static_cast<int>(uyvy.step), 
                                       {y.ptr<Npp8u>(), u.ptr<Npp8u>(), v.ptr<Npp8u>()},
                                       {static_cast<int>(y.step), static_cast<int>(u.step), static_cast<int>(v.step)},
+                                      sz));
+
+    if (stream == 0)
+        cudaSafeCall( cudaDeviceSynchronize() );
+}
+
+void cv::cuda::mergeUYVY(InputArray _y, InputArray _u, InputArray _v, OutputArray _uyvy, Stream & _stream) {
+    GpuMat y = _y.getGpuMat();
+    GpuMat u = _u.getGpuMat();
+    GpuMat v = _v.getGpuMat();
+
+    CV_Assert(y.type() == CV_8U && u.type() == CV_8U && v.type() == CV_8U);
+    CV_Assert(y.rows == u.rows && y.rows == v.rows);
+    CV_Assert(y.cols == u.cols * 2);
+    CV_Assert(y.cols == v.cols * 2);
+
+    _uyvy.create(y.rows, y.cols, CV_8UC2);
+    GpuMat uyvy = _uyvy.getGpuMat();
+
+    NppiSize sz;
+    sz.width = y.cols;
+    sz.height = y.rows;
+
+    cudaStream_t stream = StreamAccessor::getStream(_stream);
+    NppStreamHandler h(stream);
+
+    nppSafeCall(nppiYCbCr422_8u_P3C2R({y.ptr<Npp8u>(), u.ptr<Npp8u>(), v.ptr<Npp8u>()},
+                                      {static_cast<int>(y.step), static_cast<int>(u.step), static_cast<int>(v.step)},
+                                      uyvy.ptr<Npp8u>(), static_cast<int>(uyvy.step), 
                                       sz));
 
     if (stream == 0)
