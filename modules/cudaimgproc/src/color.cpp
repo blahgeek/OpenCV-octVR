@@ -57,6 +57,9 @@ void cv::cuda::gammaCorrection(InputArray, OutputArray, bool, Stream&) { throw_n
 
 void cv::cuda::alphaComp(InputArray, InputArray, OutputArray, int, Stream&) { throw_no_cuda(); }
 
+void cv::cuda::splitUYVY(InputArray, OutputArray, OutputArray, OutputArray, Stream & ) { throw_no_cuda(); }
+void cv::cuda::mergeUYVY(InputArray, InputArray , InputArray , OutputArray, Stream & ) { throw_no_cuda(); }
+
 
 #else /* !defined (HAVE_CUDA) */
 
@@ -2206,65 +2209,30 @@ void cv::cuda::swapChannels(InputOutputArray _image, const int dstOrder[4], Stre
         cudaSafeCall( cudaDeviceSynchronize() );
 }
 
+namespace cv { namespace cuda {
+    namespace device
+    {
+        void splitUYVYCaller(const GpuMat & _uyvy,
+                             GpuMat & y, GpuMat & u, GpuMat & v, 
+                             cudaStream_t stream);
+        void mergeUYVYCaller(const GpuMat & _y, GpuMat & _u, GpuMat & _v,
+                             GpuMat & uyvy,
+                             cudaStream_t stream);
+    }
+}}
+
+using namespace cv::cuda::device;
+
 void cv::cuda::splitUYVY(InputArray _uyvy, OutputArray _y, OutputArray _u, OutputArray _v, Stream & _stream) {
-    GpuMat uyvy = _uyvy.getGpuMat();
-    CV_Assert(uyvy.type() == CV_8UC2);
-
-    _y.create(uyvy.rows, uyvy.cols, CV_8U);
-    _u.create(uyvy.rows, uyvy.cols / 2, CV_8U);
-    _v.create(uyvy.rows, uyvy.cols / 2, CV_8U);
-
-    GpuMat y = _y.getGpuMat();
-    GpuMat u = _u.getGpuMat();
-    GpuMat v = _v.getGpuMat();
-
-    NppiSize sz;
-    sz.width = uyvy.cols;
-    sz.height = uyvy.rows;
-
-    cudaStream_t stream = StreamAccessor::getStream(_stream);
-    NppStreamHandler h(stream);
-
-    Npp8u * dsts [] = {y.ptr<Npp8u>(), u.ptr<Npp8u>(), v.ptr<Npp8u>()};
-    int dst_steps [] = {static_cast<int>(y.step), static_cast<int>(u.step), static_cast<int>(v.step)};
-
-    nppSafeCall(nppiYCbCr422_8u_C2P3R(uyvy.ptr<Npp8u>(), static_cast<int>(uyvy.step), 
-                                      dsts, dst_steps,
-                                      sz));
-
-    if (stream == 0)
-        cudaSafeCall( cudaDeviceSynchronize() );
+    splitUYVYCaller(_uyvy.getGpuMat(),
+                    _y.getGpuMat(), _u.getGpuMat(), _v.getGpuMat(),
+                    StreamAccessor::getStream(_stream));
 }
 
 void cv::cuda::mergeUYVY(InputArray _y, InputArray _u, InputArray _v, OutputArray _uyvy, Stream & _stream) {
-    GpuMat y = _y.getGpuMat();
-    GpuMat u = _u.getGpuMat();
-    GpuMat v = _v.getGpuMat();
-
-    CV_Assert(y.type() == CV_8U && u.type() == CV_8U && v.type() == CV_8U);
-    CV_Assert(y.rows == u.rows && y.rows == v.rows);
-    CV_Assert(y.cols == u.cols * 2);
-    CV_Assert(y.cols == v.cols * 2);
-
-    _uyvy.create(y.rows, y.cols, CV_8UC2);
-    GpuMat uyvy = _uyvy.getGpuMat();
-
-    NppiSize sz;
-    sz.width = y.cols;
-    sz.height = y.rows;
-
-    cudaStream_t stream = StreamAccessor::getStream(_stream);
-    NppStreamHandler h(stream);
-
-    Npp8u * srcs [] = {y.ptr<Npp8u>(), u.ptr<Npp8u>(), v.ptr<Npp8u>()};
-    int src_steps [] = {static_cast<int>(y.step), static_cast<int>(u.step), static_cast<int>(v.step)};
-
-    nppSafeCall(nppiYCbCr422_8u_P3C2R(srcs, src_steps,
-                                      uyvy.ptr<Npp8u>(), static_cast<int>(uyvy.step), 
-                                      sz));
-
-    if (stream == 0)
-        cudaSafeCall( cudaDeviceSynchronize() );
+    mergeUYVYCaller(_y.getGpuMat(), _u.getGpuMat(), _v.getGpuMat(),
+                    _uyvy.getGpuMat(),
+                    StreamAccessor::getStream(_stream));
 }
 
 ////////////////////////////////////////////////////////////////////////
