@@ -21,23 +21,17 @@ namespace cv { namespace cuda { namespace device
         int y = blockIdx.y * blockDim.y + threadIdx.y;
 
         if(y < u_rows && x < u_cols) {
-            const T * src_p = uyvy.ptr(y) + x * 4;
-            _u.ptr(y)[x]         = src_p[0];
-            _y.ptr(y)[x * 2]     = src_p[1];
-            _v.ptr(y)[x]         = src_p[2];
-            _y.ptr(y)[x * 2 + 1] = src_p[3];
+            const T * src_p = uyvy.row(y) + x * 4;
+            _u.row(y)[x]         = src_p[0];
+            _y.row(y)[x * 2]     = src_p[1];
+            _v.row(y)[x]         = src_p[2];
+            _y.row(y)[x * 2 + 1] = src_p[3];
         }
     }
 
-    __host__ void splitUYVYCaller(const GpuMat & _uyvy,
+    __host__ void splitUYVYCaller(const GpuMat & uyvy,
                                   GpuMat & y, GpuMat & u, GpuMat & v, 
                                   cudaStream_t stream) {
-        GpuMat uyvy = _uyvy.reshape(1);
-        CV_Assert(uyvy.type() == CV_8U);
-
-        y.create(uyvy.rows, uyvy.cols / 2, CV_8U);
-        u.create(uyvy.rows, uyvy.cols / 4, CV_8U);
-        v.create(uyvy.rows, uyvy.cols / 4, CV_8U);
 
         const dim3 block(DefaultTransformPolicy::block_size_x, DefaultTransformPolicy::block_size_y);
         const dim3 grid(divUp(u.cols, block.x), divUp(u.rows, block.y));
@@ -59,30 +53,17 @@ namespace cv { namespace cuda { namespace device
         int y = blockIdx.y * blockDim.y + threadIdx.y;
 
         if(y < u_rows && x < u_cols) {
-            T * dst_p = uyvy.ptr(y) + x * 4;
-            dst_p[0] = _u.ptr(y)[x];
-            dst_p[1] = _y.ptr(y)[x * 2];
-            dst_p[2] = _v.ptr(y)[x];
-            dst_p[3] = _y.ptr(y)[x * 2 + 1];
+            T * dst_p = uyvy.row(y) + x * 4;
+            dst_p[0] = _u.row(y)[x];
+            dst_p[1] = _y.row(y)[x * 2];
+            dst_p[2] = _v.row(y)[x];
+            dst_p[3] = _y.row(y)[x * 2 + 1];
         }
     }
 
-    __host__ void mergeUYVYCaller(const GpuMat & _y, GpuMat & _u, GpuMat & _v,
+    __host__ void mergeUYVYCaller(const GpuMat & y, const GpuMat & u, const GpuMat & v,
                                   GpuMat & uyvy,
                                   cudaStream_t stream) {
-        GpuMat y = _y.reshape(1);
-        CV_Assert(y.type() == CV_8U);
-
-        GpuMat u = _u.reshape(1);
-        CV_Assert(u.type() == CV_8U);
-        CV_Assert(u.rows == y.rows && u.cols * 2 == y.cols);
-
-        GpuMat v = _v.reshape(1);
-        CV_Assert(v.type() == CV_8U);
-        CV_Assert(v.rows == y.rows && v.cols * 2 == y.cols);
-
-        uyvy.create(u.rows, u.cols * 4, CV_8U);
-
         const dim3 block(DefaultTransformPolicy::block_size_x, DefaultTransformPolicy::block_size_y);
         const dim3 grid(divUp(u.cols, block.x), divUp(u.rows, block.y));
 
