@@ -2206,6 +2206,34 @@ void cv::cuda::swapChannels(InputOutputArray _image, const int dstOrder[4], Stre
         cudaSafeCall( cudaDeviceSynchronize() );
 }
 
+void cv::cuda::splitUYVY(InputArray _uyvy, OutputArray _y, OutputArray _u, OutputArray _v, Stream & _stream) {
+    GpuMat uyvy = _uyvy.getGpuMat();
+    CV_Assert(uyvy.type() == CV_8UC2);
+
+    _y.create(uyvy.rows, uyvy.cols * 2, CV_8U);
+    _u.create(uyvy.rows, uyvy.cols, CV_8U);
+    _v.create(uyvy.rows, uyvy.cols, CV_8U);
+
+    GpuMat y = _y.getGpuMat();
+    GpuMat u = _u.getGpuMat();
+    GpuMat v = _v.getGpuMat();
+
+    NppiSize sz;
+    sz.width = uyvy.cols;
+    sz.height = uyvy.rows;
+
+    cudaStream_t stream = StreamAccessor::getStream(_stream);
+    NppStreamHandler h(stream);
+
+    nppSafeCall(nppiYCbCr422_8u_C2P3R(uyvy.ptr<Npp8u>(), static_cast<int>(uyvy.step), 
+                                      {y.ptr<Npp8u>(), u.ptr<Npp8u>(), v.ptr<Npp8u>()},
+                                      {static_cast<int>(y.step), static_cast<int>(u.step), static_cast<int>(v.step)},
+                                      sz));
+
+    if (stream == 0)
+        cudaSafeCall( cudaDeviceSynchronize() );
+}
+
 ////////////////////////////////////////////////////////////////////////
 // gammaCorrection
 
