@@ -348,6 +348,15 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+
+    {
+        QFile f(":qdarkstyle/style.qss");
+        Q_ASSERT(f.exists());
+        f.open(QFile::ReadOnly | QFile::Text);
+        QTextStream ts(&f);
+        qApp->setStyleSheet(ts.readAll());
+    }
+
     this->json_model.setEditableFields(QStringList({
         "yaw", "roll", "pitch", "aspect_ratio", "cam_opt",
     }));
