@@ -38,7 +38,7 @@
 
 using namespace vr;
 
-Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes, int blend) {
+Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes, int blend, bool enable_gain_compensator) {
 #ifdef WITH_DONGLE_LICENSE
     lic_runtime_init(&(this->lic_t), 601);
     this->lic_cnt = 0;
@@ -66,8 +66,9 @@ Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes, int bl
         map2s[i].upload(mt.inputs[i].map2);
         masks[i].upload(mt.inputs[i].mask);
         seam_masks[i].upload(mt.seam_masks[i]);
-        cv::cuda::resize(masks[i], scaled_masks[i],
-                         cv::Size(), working_scale, working_scale);
+        if(enable_gain_compensator)
+            cv::cuda::resize(masks[i], scaled_masks[i],
+                             cv::Size(), working_scale, working_scale);
     }
     for(int i = 0 ; i < mt.overlay_inputs.size() ; i += 1) {
         map1s[i + nonoverlay_num].upload(mt.overlay_inputs[i].map1);
@@ -87,9 +88,10 @@ Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes, int bl
         rgb_inputs[i].create(in_sizes[i], CV_8UC3);
         rgba_inputs[i].create(in_sizes[i], CV_8UC4);
         warped_imgs[i].create(out_size, CV_8UC4);
-        cv::cuda::resize(warped_imgs[i], warped_imgs_scale[i],
-                         cv::Size(), working_scale, working_scale,
-                         cv::INTER_NEAREST);
+        if(enable_gain_compensator)
+            cv::cuda::resize(warped_imgs[i], warped_imgs_scale[i],
+                             cv::Size(), working_scale, working_scale,
+                             cv::INTER_NEAREST);
     }
 
     for(int i = mt.inputs.size() ; i < mt.inputs.size() + mt.overlay_inputs.size() ; i += 1) {
@@ -101,25 +103,30 @@ Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes, int bl
 
     this->result.create(out_size, CV_8UC3);
 
-    if(blend == 0)
-        return;
-
     timer.tick("Allocating internal mats");
 
     if(blend > 0) {
         int blend_bands = int(ceil(log(blend)/log(2.)) - 1.);
         std::cerr << "Using MultiBandBlender with band number = " << blend_bands << std::endl;
-        this->blender = cv::makePtr<cv::detail::MultiBandGPUBlender>(seam_masks, blend_bands);
-    } else {
+        this->blender.reset(new cv::detail::MultiBandGPUBlender(seam_masks, blend_bands));
+    } else if(blend < 0) {
         //float sharpness = 1.0 / float(-blend);
         std::cerr << "Using FeatherBlender with border = " << -blend << std::endl;
-        this->blender = cv::makePtr<cv::detail::FeatherGPUBlender>(std::vector<GpuMat>(masks.begin(), masks.begin() + nonoverlay_num), 
-                                                                   -blend);
+        this->blender.reset(new cv::detail::FeatherGPUBlender(std::vector<GpuMat>(masks.begin(), masks.begin() + nonoverlay_num), 
+                                                              -blend));
+    } else {
+        std::cerr << "Do not use blender" << std::endl;
+        this->blender = nullptr;
     }
 
     timer.tick("Blender initialize");
 
-    this->compensator = cv::makePtr<cv::detail::GainCompensatorGPU>(scaled_masks);
+    if(enable_gain_compensator)
+        this->compensator.reset(new cv::detail::GainCompensatorGPU(scaled_masks));
+    else {
+        std::cerr << "Do not enable gain compensator" << std::endl;
+        this->compensator = nullptr;
+    }
     timer.tick("Gain Compensator initialize");
 #else
     assert(false);
@@ -144,16 +151,14 @@ void Mapper::stitch(const std::vector<GpuMat> & inputs,
         assert(inputs[i].type() == CV_8UC2); // UYVY422
     assert(output.type() == CV_8UC2 && output.size() == this->out_size);
     
-    std::vector<cv::Point2i> corners;
-
     for(int i = 0 ; i < nonoverlay_num ; i += 1) {
         cv::cuda::cvtUYVY422toRGB24(inputs[i], rgb_inputs[i], streams[i]);
         cv::cuda::cvtColor(rgb_inputs[i], rgba_inputs[i], cv::COLOR_RGB2RGBA, 4, streams[i]);
         cv::cuda::fastRemap(rgba_inputs[i], warped_imgs[i], map1s[i], map2s[i], true, streams[i]);
-        cv::cuda::resize(warped_imgs[i], warped_imgs_scale[i],
-                         cv::Size(), working_scale, working_scale,
-                         cv::INTER_NEAREST, streams[i]);
-        corners.emplace_back(0, 0);
+        if(this->compensator)
+            cv::cuda::resize(warped_imgs[i], warped_imgs_scale[i],
+                             cv::Size(), working_scale, working_scale,
+                             cv::INTER_NEAREST, streams[i]);
     }
 
     for(int i = nonoverlay_num ; i < inputs.size() ; i += 1) {
@@ -170,19 +175,27 @@ void Mapper::stitch(const std::vector<GpuMat> & inputs,
         streams[i].waitForCompletion();
     timer.tick("Uploading and remapping and resizing images");
 
-    std::vector<GpuMat> partial_warped_imgs_scale(warped_imgs_scale.begin(),
-                                                  warped_imgs_scale.begin() + nonoverlay_num);
-    compensator->feed(partial_warped_imgs_scale);
-    timer.tick("Compensator");
-
     std::vector<GpuMat> partial_warped_imgs(warped_imgs.begin(), warped_imgs.begin() + nonoverlay_num);
     std::vector<GpuMat> partial_masks(masks.begin(), masks.begin() + nonoverlay_num);
 
-    compensator->apply(partial_warped_imgs, partial_masks);
-    timer.tick("Compensator apply");
+    if(this->compensator) {
+        std::vector<GpuMat> partial_warped_imgs_scale(warped_imgs_scale.begin(),
+                                                      warped_imgs_scale.begin() + nonoverlay_num);
+        compensator->feed(partial_warped_imgs_scale);
+        timer.tick("Compensator");
 
-    blender->blend(partial_warped_imgs, result);
-    timer.tick("Blender blend");
+        compensator->apply(partial_warped_imgs, partial_masks);
+        timer.tick("Compensator apply");
+    }
+
+    if(this->blender) {
+        blender->blend(partial_warped_imgs, result);
+        timer.tick("Blender blend");
+    } else {
+        for(int i = 0 ; i < nonoverlay_num ; i += 1)
+            warped_imgs[i].copyTo(result, masks[i], streams[inputs.size()]);
+        timer.tick("No blend copy");
+    }
 
     for(int i = nonoverlay_num ; i < inputs.size() ; i += 1) {
         streams[i].waitForCompletion();
@@ -198,36 +211,4 @@ void Mapper::stitch(const std::vector<GpuMat> & inputs,
 #else
     assert(false);
 #endif
-}
-
-void Mapper::remap(const std::vector<GpuMat> & inputs,
-                       GpuMat & output) {
-    Timer timer("Remap");
-
-#ifdef HAVE_CUDA
-    assert(inputs.size() == masks.size());
-    for(int i = 0 ; i < inputs.size() ; i += 1)
-        assert(inputs[i].type() == CV_8UC3); // RGB
-
-    assert(output.type() == CV_8UC3);
-    assert(output.size() == this->out_size);
-    
-    for(int i = 0 ; i < inputs.size() ; i += 1) {
-        cv::cuda::cvtColor(inputs[i], gpu_inputs[i], cv::COLOR_RGB2RGBA, 4, streams[i]);
-        cv::cuda::fastRemap(gpu_inputs[i], warped_imgs[0], map1s[i], map2s[i], false, streams[i]);
-    }
-
-    for(auto & s: streams)
-        s.waitForCompletion();
-    timer.tick("Remapping images");
-
-    cv::cuda::cvtColor(warped_imgs[0], output, cv::COLOR_RGBA2RGB, 3, streams[0]);
-    streams[0].waitForCompletion();
-
-    timer.tick("Convert");
-
-#else 
-    assert(false);
-#endif
-
 }

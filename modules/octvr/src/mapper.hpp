@@ -44,8 +44,8 @@ private:
     std::vector<GpuMat> seam_masks;
 
 private:
-    cv::Ptr<cv::detail::GainCompensatorGPU> compensator;
-    cv::Ptr<cv::detail::GPUStaticBlender> blender;
+    std::unique_ptr<cv::detail::GainCompensatorGPU> compensator;
+    std::unique_ptr<cv::detail::GPUStaticBlender> blender;
 
     double working_scale;
 
@@ -61,9 +61,9 @@ public:
     // blend: 0  : Do not blend
     //        > 0: Multi-band blend width
     //        < 0: Feather blend width
-    Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes, int blend=128);
+    Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes, 
+           int blend=128, bool enable_gain_compensator=true);
     void stitch(const std::vector<GpuMat> & inputs, GpuMat & output);
-    void remap(const std::vector<GpuMat> & inputs, GpuMat & output);
 };
 
 }
