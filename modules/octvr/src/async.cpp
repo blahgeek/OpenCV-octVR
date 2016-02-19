@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-12-01
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-01-21
+* @Last Modified time: 2016-02-19
 */
 
 
@@ -113,8 +113,8 @@ AsyncMultiMapperImpl::AsyncMultiMapperImpl(const std::vector<MapperTemplate> & m
         std::vector<cv::cuda::HostMem> inputs_hostmem;
         std::vector<cv::cuda::GpuMat> inputs_gpumat;
         for(auto & s: in_sizes) {
-            inputs_hostmem.push_back(cv::cuda::HostMem(s, CV_8UC3));
-            inputs_gpumat.push_back(cv::cuda::GpuMat(s, CV_8UC3));
+            inputs_hostmem.push_back(cv::cuda::HostMem(s, CV_8UC2));
+            inputs_gpumat.push_back(cv::cuda::GpuMat(s, CV_8UC2));
         }
         free_inputs_hostmem_q.push(std::move(inputs_hostmem));
         free_inputs_gpumat_q.push(std::move(inputs_gpumat));
@@ -122,8 +122,8 @@ AsyncMultiMapperImpl::AsyncMultiMapperImpl(const std::vector<MapperTemplate> & m
         std::vector<cv::cuda::GpuMat> outputs_gpumat;
         std::vector<cv::cuda::HostMem> outputs_hostmem;
         for(int i = 0 ; i < mts.size() ; i += 1) {
-            outputs_gpumat.push_back(cv::cuda::GpuMat(out_sizes[i], CV_8UC3));
-            outputs_hostmem.push_back(cv::cuda::HostMem(out_sizes[i], CV_8UC3));
+            outputs_gpumat.push_back(cv::cuda::GpuMat(out_sizes[i], CV_8UC2));
+            outputs_hostmem.push_back(cv::cuda::HostMem(out_sizes[i], CV_8UC2));
         }
         free_outputs_gpumat_q.push(std::move(outputs_gpumat));
         free_outputs_hostmem_q.push(std::move(outputs_hostmem));

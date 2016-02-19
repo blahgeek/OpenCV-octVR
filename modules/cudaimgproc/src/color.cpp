@@ -57,6 +57,9 @@ void cv::cuda::gammaCorrection(InputArray, OutputArray, bool, Stream&) { throw_n
 
 void cv::cuda::alphaComp(InputArray, InputArray, OutputArray, int, Stream&) { throw_no_cuda(); }
 
+void cv::cuda::cvtUYVY422toRGB24(InputArray , OutputArray , Stream& stream ) {throw_no_cuda(); }
+void cv::cuda::cvtRGB24toUYVY422(InputArray , OutputArray , Stream& stream ) {throw_no_cuda(); }
+
 
 #else /* !defined (HAVE_CUDA) */
 
@@ -2182,6 +2185,48 @@ void cv::cuda::demosaicing(InputArray _src, OutputArray _dst, int code, int dcn,
     default:
         CV_Error(Error::StsBadFlag, "Unknown / unsupported color conversion code");
     }
+}
+
+void cv::cuda::cvtUYVY422toRGB24(InputArray _src, OutputArray _dst, Stream& _stream) {
+    GpuMat src = _src.getGpuMat();
+    CV_Assert(src.type() == CV_8UC2);
+
+    _dst.create(src.size(), CV_8UC3);
+    GpuMat dst = _dst.getGpuMat();
+
+    cudaStream_t stream = StreamAccessor::getStream(_stream);
+    NppStreamHandler h(stream);
+
+    NppiSize sz;
+    sz.width  = src.cols;
+    sz.height = src.rows;
+
+    nppSafeCall( nppiYUV422ToRGB_8u_C2C3R(src.ptr<Npp8u>(), static_cast<int>(src.step),
+                                          dst.ptr<Npp8u>(), static_cast<int>(dst.step), sz) );
+    if (stream == 0)
+        cudaSafeCall( cudaDeviceSynchronize() );
+
+}
+
+void cv::cuda::cvtRGB24toUYVY422(InputArray _src, OutputArray _dst, Stream& _stream) {
+    GpuMat src = _src.getGpuMat();
+    CV_Assert(src.type() == CV_8UC3);
+
+    _dst.create(src.size(), CV_8UC2);
+    GpuMat dst = _dst.getGpuMat();
+
+    cudaStream_t stream = StreamAccessor::getStream(_stream);
+    NppStreamHandler h(stream);
+
+    NppiSize sz;
+    sz.width  = src.cols;
+    sz.height = src.rows;
+
+    nppSafeCall( nppiRGBToYUV422_8u_C3C2R(src.ptr<Npp8u>(), static_cast<int>(src.step),
+                                          dst.ptr<Npp8u>(), static_cast<int>(dst.step), sz) );
+    if (stream == 0)
+        cudaSafeCall( cudaDeviceSynchronize() );
+
 }
 
 ////////////////////////////////////////////////////////////////////////

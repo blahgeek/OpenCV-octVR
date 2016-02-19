@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-20
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-01-24
+* @Last Modified time: 2016-02-19
 */
 
 #ifndef VR_LIBMAP_IMPL_H
@@ -51,7 +51,8 @@ private:
 
 private:
     std::vector<cv::cuda::Stream> streams;
-    std::vector<GpuMat> gpu_inputs;
+    std::vector<GpuMat> rgb_inputs;
+    std::vector<GpuMat> rgba_inputs;
     std::vector<GpuMat> warped_imgs;
     std::vector<GpuMat> warped_imgs_scale;
     GpuMat result;
