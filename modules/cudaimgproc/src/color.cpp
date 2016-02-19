@@ -59,6 +59,8 @@ void cv::cuda::alphaComp(InputArray, InputArray, OutputArray, int, Stream&) { th
 
 void cv::cuda::cvtUYVY422toRGB24(InputArray , OutputArray , Stream& stream ) {throw_no_cuda(); }
 void cv::cuda::cvtRGB24toUYVY422(InputArray , OutputArray , Stream& stream ) {throw_no_cuda(); }
+void cv::cuda::splitUYVY(InputArray, OutputArray, OutputArray, OutputArray, Stream & ) { throw_no_cuda(); }
+void cv::cuda::mergeUYVY(InputArray, InputArray , InputArray , OutputArray, Stream & ) { throw_no_cuda(); }
 
 
 #else /* !defined (HAVE_CUDA) */
@@ -2249,6 +2251,55 @@ void cv::cuda::swapChannels(InputOutputArray _image, const int dstOrder[4], Stre
 
     if (stream == 0)
         cudaSafeCall( cudaDeviceSynchronize() );
+}
+
+namespace cv { namespace cuda {
+    namespace device
+    {
+        void splitUYVYCaller(const GpuMat & _uyvy,
+                             GpuMat & y, GpuMat & u, GpuMat & v, 
+                             cudaStream_t stream);
+        void mergeUYVYCaller(const GpuMat & _y, const GpuMat & _u, const GpuMat & _v,
+                             GpuMat & uyvy,
+                             cudaStream_t stream);
+    }
+}}
+
+using namespace cv::cuda::device;
+
+void cv::cuda::splitUYVY(InputArray _uyvy, OutputArray _y, OutputArray _u, OutputArray _v, Stream & _stream) {
+
+    GpuMat uyvy = _uyvy.getGpuMat().reshape(1);
+    CV_Assert(uyvy.type() == CV_8U);
+
+    _y.create(uyvy.rows, uyvy.cols / 2, CV_8U);
+    _u.create(uyvy.rows, uyvy.cols / 4, CV_8U);
+    _v.create(uyvy.rows, uyvy.cols / 4, CV_8U);
+
+    GpuMat y = _y.getGpuMat();
+    GpuMat u = _u.getGpuMat();
+    GpuMat v = _v.getGpuMat();
+    splitUYVYCaller(uyvy, y, u, v,
+                    StreamAccessor::getStream(_stream));
+}
+
+void cv::cuda::mergeUYVY(InputArray _y, InputArray _u, InputArray _v, OutputArray _uyvy, Stream & _stream) {
+    GpuMat y = _y.getGpuMat().reshape(1);
+    CV_Assert(y.type() == CV_8U);
+
+    GpuMat u = _u.getGpuMat().reshape(1);
+    CV_Assert(u.type() == CV_8U);
+    CV_Assert(u.rows == y.rows && u.cols * 2 == y.cols);
+
+    GpuMat v = _v.getGpuMat().reshape(1);
+    CV_Assert(v.type() == CV_8U);
+    CV_Assert(v.rows == y.rows && v.cols * 2 == y.cols);
+
+    _uyvy.create(u.rows, u.cols * 4, CV_8U);
+    GpuMat uyvy = _uyvy.getGpuMat();
+
+    mergeUYVYCaller(y, u, v, uyvy,
+                    StreamAccessor::getStream(_stream));
 }
 
 ////////////////////////////////////////////////////////////////////////
