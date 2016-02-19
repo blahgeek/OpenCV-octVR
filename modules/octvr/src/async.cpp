@@ -40,12 +40,8 @@ void AsyncMultiMapperImpl::run_do_mapping() {
     auto gpumats = this->inputs_gpumat_q.pop();
     auto outputs = this->free_outputs_gpumat_q.pop();
 
-    for(int i = 0 ; i < outputs.size() ; i += 1) {
-        if(this->do_blend)
-            this->mappers[i]->stitch(gpumats, outputs[i]);
-        else
-            this->mappers[i]->remap(gpumats, outputs[i]);
-    }
+    for(int i = 0 ; i < outputs.size() ; i += 1)
+        this->mappers[i]->stitch(gpumats, outputs[i]);
 
     this->outputs_gpumat_q.push(std::move(outputs));
     this->free_inputs_gpumat_q.push(std::move(gpumats));
