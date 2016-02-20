@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-02-19
+* @Last Modified time: 2016-02-20
 */
 
 #include <iostream>
@@ -38,7 +38,9 @@
 
 using namespace vr;
 
-Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes, int blend, bool enable_gain_compensator) {
+Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes, 
+               int blend, bool enable_gain_compensator,
+               cv::Size scale_output) {
 #ifdef WITH_DONGLE_LICENSE
     lic_runtime_init(&(this->lic_t), 601);
     this->lic_cnt = 0;
@@ -51,7 +53,9 @@ Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes, int bl
 
     this->nonoverlay_num = mt.inputs.size();
 
-    this->out_size = mt.out_size;
+    this->stitch_size = mt.out_size;
+    this->scaled_output_size = scale_output.area() == 0 ? mt.out_size : scale_output;
+
     this->map1s.resize(mt.inputs.size() + mt.overlay_inputs.size());
     this->map2s.resize(mt.inputs.size() + mt.overlay_inputs.size());
     this->masks.resize(mt.inputs.size() + mt.overlay_inputs.size());
@@ -59,7 +63,7 @@ Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes, int bl
     this->seam_masks.resize(mt.inputs.size());
     scaled_masks.resize(mt.inputs.size());
 
-    this->working_scale = std::min(1.0, sqrt(WORKING_MEGAPIX * 1e6 / out_size.area()));
+    this->working_scale = std::min(1.0, sqrt(WORKING_MEGAPIX * 1e6 / stitch_size.area()));
 
     for(int i = 0 ; i < nonoverlay_num ; i += 1) {
         map1s[i].upload(mt.inputs[i].map1);
@@ -87,7 +91,7 @@ Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes, int bl
     for(int i = 0 ; i < mt.inputs.size() ; i += 1) {
         rgb_inputs[i].create(in_sizes[i], CV_8UC3);
         rgba_inputs[i].create(in_sizes[i], CV_8UC4);
-        warped_imgs[i].create(out_size, CV_8UC4);
+        warped_imgs[i].create(stitch_size, CV_8UC4);
         if(enable_gain_compensator)
             cv::cuda::resize(warped_imgs[i], warped_imgs_scale[i],
                              cv::Size(), working_scale, working_scale,
@@ -97,11 +101,13 @@ Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes, int bl
     for(int i = mt.inputs.size() ; i < mt.inputs.size() + mt.overlay_inputs.size() ; i += 1) {
         rgb_inputs[i].create(in_sizes[i], CV_8UC3);
         rgba_inputs[i].create(in_sizes[i], CV_8UC4);
-        warped_imgs[i].create(out_size, CV_8UC4);
-        warped_imgs_scale[i].create(out_size, CV_8UC3);  // NOTICE
+        warped_imgs[i].create(stitch_size, CV_8UC4);
+        warped_imgs_scale[i].create(stitch_size, CV_8UC3);  // NOTICE
     }
 
-    this->result.create(out_size, CV_8UC3);
+    this->result.create(stitch_size, CV_8UC3);
+    if(this->stitch_size != this->scaled_output_size)
+        this->result_scaled.create(this->scaled_output_size, CV_8UC3);
 
     timer.tick("Allocating internal mats");
 
@@ -149,7 +155,7 @@ void Mapper::stitch(std::vector<GpuMat> & inputs,
     assert(inputs.size() == masks.size());
     for(int i = 0 ; i < inputs.size() ; i += 1)
         assert(inputs[i].type() == CV_8UC2); // UYVY422
-    assert(output.type() == CV_8UC2 && output.size() == this->out_size);
+    assert(output.type() == CV_8UC2 && output.size() == this->scaled_output_size);
 
     int swap_orders[] = {3, 2, 1, 0};
     
@@ -206,7 +212,13 @@ void Mapper::stitch(std::vector<GpuMat> & inputs,
         warped_imgs_scale[i].copyTo(result, masks[i], streams[inputs.size()]);
     }
     CV_Assert(result.type() == CV_8UC3);
-    cv::cuda::cvtRGB24toUYVY422(result, output, streams[inputs.size()]);
+
+    if(this->stitch_size != this->scaled_output_size)
+        cv::cuda::resize(result, result_scaled, this->scaled_output_size);
+    else
+        result_scaled = result;
+
+    cv::cuda::cvtRGB24toUYVY422(result_scaled, output, streams[inputs.size()]);
     cv::cuda::GpuMat output_c4 = output.reshape(4);
     cv::cuda::swapChannels(output_c4, swap_orders, streams[inputs.size()]);
 

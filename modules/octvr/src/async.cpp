@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-12-01
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-02-19
+* @Last Modified time: 2016-02-20
 */
 
 
@@ -89,19 +89,29 @@ void AsyncMultiMapperImpl::pop() {
     this->outputs_mat_q.pop();
 }
 
-AsyncMultiMapper * AsyncMultiMapper::New(const MapperTemplate & m, std::vector<cv::Size> in_sizes, int blend) {
-    return AsyncMultiMapper::New(std::vector<MapperTemplate>({m}), in_sizes, blend);
+AsyncMultiMapper * AsyncMultiMapper::New(const MapperTemplate & m, std::vector<cv::Size> in_sizes, 
+                                         int blend, bool enable_gain_compensator, cv::Size scale_output) {
+    return AsyncMultiMapper::New(std::vector<MapperTemplate>({m}), in_sizes, 
+                                 blend, enable_gain_compensator,
+                                 std::vector<cv::Size>({scale_output}));
 }
-AsyncMultiMapper * AsyncMultiMapper::New(const std::vector<MapperTemplate> & m, std::vector<cv::Size> in_sizes, int blend) {
-    return static_cast<AsyncMultiMapper *>(new AsyncMultiMapperImpl(m, in_sizes, blend));
+AsyncMultiMapper * AsyncMultiMapper::New(const std::vector<MapperTemplate> & m, std::vector<cv::Size> in_sizes, 
+                                         int blend, bool enable_gain_compensator,
+                                         std::vector<cv::Size> scale_outputs) {
+    return static_cast<AsyncMultiMapper *>(new AsyncMultiMapperImpl(m, in_sizes, blend, enable_gain_compensator, scale_outputs));
 }
 
-AsyncMultiMapperImpl::AsyncMultiMapperImpl(const std::vector<MapperTemplate> & mts, std::vector<cv::Size> in_sizes, int blend) {
+AsyncMultiMapperImpl::AsyncMultiMapperImpl(const std::vector<MapperTemplate> & mts, std::vector<cv::Size> in_sizes, 
+                                           int blend, bool enable_gain_compensator, 
+                                           std::vector<cv::Size> scale_outputs) {
     this->in_sizes = in_sizes;
     this->do_blend = (blend != 0);
     for(int i = 0 ; i < mts.size() ; i += 1) {
-        this->mappers.emplace_back(new Mapper(mts[i], in_sizes, blend));
-        this->out_sizes.push_back(mts[i].out_size);
+        cv::Size scale_output = i < scale_outputs.size() ? scale_outputs[i] : cv::Size(0, 0);
+        this->mappers.emplace_back(new Mapper(mts[i], in_sizes, 
+                                              blend, enable_gain_compensator,
+                                              scale_output));
+        this->out_sizes.push_back(scale_output.area() == 0 ? mts[i].out_size : scale_output);
     }
 
 #define BUF_SIZE 3

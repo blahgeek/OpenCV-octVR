@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-02-01
+* @Last Modified time: 2016-02-20
 */
 
 #ifndef VR_LIBMAP_BASE_H
@@ -64,13 +64,17 @@ public:
 
 class AsyncMultiMapper {
 public:
-    static AsyncMultiMapper * New(const std::vector<MapperTemplate> & mts, std::vector<cv::Size> in_sizes, int blend=128);
-    static AsyncMultiMapper * New(const MapperTemplate & mt, std::vector<cv::Size> in_sizes, int blend=128);
+    static AsyncMultiMapper * New(const std::vector<MapperTemplate> & mts, std::vector<cv::Size> in_sizes, 
+                                  int blend=128, bool enable_gain_compensator=true,
+                                  std::vector<cv::Size> scale_outputs=std::vector<cv::Size>());
+    static AsyncMultiMapper * New(const MapperTemplate & mt, std::vector<cv::Size> in_sizes, 
+                                  int blend=128, bool enable_gain_compensator=true,
+                                  cv::Size scale_output=cv::Size(0, 0));
 
     /**
      * Push one frame
-     * @param inputs Input images, in RGB
-     * @param output Output images, in RGB
+     * @param inputs Input images, in UYVY422
+     * @param output Output images, in UYVY422
      */
     virtual void push(std::vector<cv::Mat> & inputs,
                       std::vector<cv::Mat> & outputs) = 0;
