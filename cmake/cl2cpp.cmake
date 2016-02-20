@@ -53,7 +53,7 @@ ${nested_namespace_start}
 
 ")
 
-set (Python_ADDITIONAL_VERSIONS 2.6 2.7)
+# set (Python_ADDITIONAL_VERSIONS 2.6 2.7)
 find_package(PythonInterp)
 
 if (NOT PYTHONINTERP_FOUND)
@@ -71,7 +71,8 @@ import sys;
 import base64;
 SALT = '85W MagSage 2 Power Adapter';
 xor_salt = lambda s: ''.join([chr(ord(c) ^ ord(SALT[i % len(SALT)])) for i,c in enumerate(s)]);
-print(base64.b64encode(xor_salt(sys.stdin.read())));"
+ret = base64.b64encode(xor_salt(sys.stdin.read()).encode('ascii')).decode('ascii');
+print('\\n'.join([ret[i:i+128] for i in range(0, len(ret), 128)]));"
                   OUTPUT_VARIABLE lines
                   INPUT_FILE "${cl}")
   # file(READ "${cl}" lines)
@@ -87,7 +88,8 @@ print(base64.b64encode(xor_salt(sys.stdin.read())));"
 
   string(REPLACE "\\" "\\\\" lines "${lines}")
   string(REPLACE "\"" "\\\"" lines "${lines}")
-  string(REPLACE "\n" "\\n\"\n\"" lines "${lines}")
+  # string(REPLACE "\n" "\\n\"\n\"" lines "${lines}")
+  string(REPLACE "\n" "\"\n\"" lines "${lines}")
 
   string(REGEX REPLACE "\"$" "" lines "${lines}") # unneeded " at the eof
 
