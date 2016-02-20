@@ -134,7 +134,7 @@ Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes, int bl
 
 }
 
-void Mapper::stitch(const std::vector<GpuMat> & inputs,
+void Mapper::stitch(std::vector<GpuMat> & inputs,
                     GpuMat & output) {
 #ifdef WITH_DONGLE_LICENSE
     this->lic_cnt += 1;
@@ -150,8 +150,12 @@ void Mapper::stitch(const std::vector<GpuMat> & inputs,
     for(int i = 0 ; i < inputs.size() ; i += 1)
         assert(inputs[i].type() == CV_8UC2); // UYVY422
     assert(output.type() == CV_8UC2 && output.size() == this->out_size);
+
+    int swap_orders[] = {3, 2, 1, 0};
     
     for(int i = 0 ; i < nonoverlay_num ; i += 1) {
+        cv::cuda::GpuMat input_c4 = inputs[i].reshape(4);
+        cv::cuda::swapChannels(input_c4, swap_orders, streams[i]);
         cv::cuda::cvtUYVY422toRGB24(inputs[i], rgb_inputs[i], streams[i]);
         cv::cuda::cvtColor(rgb_inputs[i], rgba_inputs[i], cv::COLOR_RGB2RGBA, 4, streams[i]);
         cv::cuda::fastRemap(rgba_inputs[i], warped_imgs[i], map1s[i], map2s[i], true, streams[i]);
@@ -203,8 +207,11 @@ void Mapper::stitch(const std::vector<GpuMat> & inputs,
     }
     CV_Assert(result.type() == CV_8UC3);
     cv::cuda::cvtRGB24toUYVY422(result, output, streams[inputs.size()]);
+    cv::cuda::GpuMat output_c4 = output.reshape(4);
+    cv::cuda::swapChannels(output_c4, swap_orders, streams[inputs.size()]);
 
     streams[inputs.size()].waitForCompletion();
+    timer.tick("Convert output");
 
     CV_Assert(output.type() == CV_8UC2);
 

@@ -63,7 +63,7 @@ public:
     //        < 0: Feather blend width
     Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes, 
            int blend=128, bool enable_gain_compensator=true);
-    void stitch(const std::vector<GpuMat> & inputs, GpuMat & output);
+    void stitch(std::vector<GpuMat> & inputs, GpuMat & output);
 };
 
 }
