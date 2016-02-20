@@ -10,6 +10,8 @@
 #include <QCameraViewfinder>
 #include <QCameraImageCapture>
 
+#include <QMediaPlayer>
+
 #include <vector>
 #include <list>
 #include <memory>
@@ -37,17 +39,38 @@ public:
     void deviceAddCamera();
     void deviceDelCamera();
 
+    void loadPTO(const QString & filename);
+    void locateHugin(); 
+    void gotoStitch();
+
+    void reEditPTO();
+    void saveAsPTO();
+
     void run();
 
+    void initPreview();
+    void startPreview();
+    void stopPreview();
+
+public slots:
+    void removeImageCapture(int id, const QString & fileName);
 
 private:
-   Ui::MainWindow *ui;
+    Ui::MainWindow *ui;
 
-   QJsonModel json_model;
-   QList<QCameraInfo> camera_infos;
+    QJsonModel json_model;
+    QList<QCameraInfo> camera_infos;
 
-   using CameraAndView = std::tuple<std::unique_ptr<QCamera>, std::unique_ptr<QCameraViewfinder>, QString>;
-   std::vector<CameraAndView> input_cameras, overlay_cameras;
+    using CameraAndView = std::tuple<std::unique_ptr<QCamera>, std::unique_ptr<QCameraViewfinder>, QString>;
+    std::vector<CameraAndView> input_cameras, overlay_cameras;
+    std::map<int, QCameraImageCapture *> image_captures;
+
+    QProcess ffmpeg_proc;
+    QString temp_path;
+    QString hugin_path;
+
+    QVideoWidget * videoWidget;
+    QMediaPlayer * videoPreviewer;
 };
 
 #endif // MAINWINDOW_H

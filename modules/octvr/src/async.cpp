@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-12-01
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-01-21
+* @Last Modified time: 2016-02-20
 */
 
 
@@ -40,12 +40,8 @@ void AsyncMultiMapperImpl::run_do_mapping() {
     auto gpumats = this->inputs_gpumat_q.pop();
     auto outputs = this->free_outputs_gpumat_q.pop();
 
-    for(int i = 0 ; i < outputs.size() ; i += 1) {
-        if(this->do_blend)
-            this->mappers[i]->stitch(gpumats, outputs[i]);
-        else
-            this->mappers[i]->remap(gpumats, outputs[i]);
-    }
+    for(int i = 0 ; i < outputs.size() ; i += 1)
+        this->mappers[i]->stitch(gpumats, outputs[i]);
 
     this->outputs_gpumat_q.push(std::move(outputs));
     this->free_inputs_gpumat_q.push(std::move(gpumats));
@@ -93,19 +89,29 @@ void AsyncMultiMapperImpl::pop() {
     this->outputs_mat_q.pop();
 }
 
-AsyncMultiMapper * AsyncMultiMapper::New(const MapperTemplate & m, std::vector<cv::Size> in_sizes, int blend) {
-    return AsyncMultiMapper::New(std::vector<MapperTemplate>({m}), in_sizes, blend);
+AsyncMultiMapper * AsyncMultiMapper::New(const MapperTemplate & m, std::vector<cv::Size> in_sizes, 
+                                         int blend, bool enable_gain_compensator, cv::Size scale_output) {
+    return AsyncMultiMapper::New(std::vector<MapperTemplate>({m}), in_sizes, 
+                                 blend, enable_gain_compensator,
+                                 std::vector<cv::Size>({scale_output}));
 }
-AsyncMultiMapper * AsyncMultiMapper::New(const std::vector<MapperTemplate> & m, std::vector<cv::Size> in_sizes, int blend) {
-    return static_cast<AsyncMultiMapper *>(new AsyncMultiMapperImpl(m, in_sizes, blend));
+AsyncMultiMapper * AsyncMultiMapper::New(const std::vector<MapperTemplate> & m, std::vector<cv::Size> in_sizes, 
+                                         int blend, bool enable_gain_compensator,
+                                         std::vector<cv::Size> scale_outputs) {
+    return static_cast<AsyncMultiMapper *>(new AsyncMultiMapperImpl(m, in_sizes, blend, enable_gain_compensator, scale_outputs));
 }
 
-AsyncMultiMapperImpl::AsyncMultiMapperImpl(const std::vector<MapperTemplate> & mts, std::vector<cv::Size> in_sizes, int blend) {
+AsyncMultiMapperImpl::AsyncMultiMapperImpl(const std::vector<MapperTemplate> & mts, std::vector<cv::Size> in_sizes, 
+                                           int blend, bool enable_gain_compensator, 
+                                           std::vector<cv::Size> scale_outputs) {
     this->in_sizes = in_sizes;
     this->do_blend = (blend != 0);
     for(int i = 0 ; i < mts.size() ; i += 1) {
-        this->mappers.emplace_back(new Mapper(mts[i], in_sizes, blend));
-        this->out_sizes.push_back(mts[i].out_size);
+        cv::Size scale_output = i < scale_outputs.size() ? scale_outputs[i] : cv::Size(0, 0);
+        this->mappers.emplace_back(new Mapper(mts[i], in_sizes, 
+                                              blend, enable_gain_compensator,
+                                              scale_output));
+        this->out_sizes.push_back(scale_output.area() == 0 ? mts[i].out_size : scale_output);
     }
 
 #define BUF_SIZE 3
@@ -113,8 +119,8 @@ AsyncMultiMapperImpl::AsyncMultiMapperImpl(const std::vector<MapperTemplate> & m
         std::vector<cv::cuda::HostMem> inputs_hostmem;
         std::vector<cv::cuda::GpuMat> inputs_gpumat;
         for(auto & s: in_sizes) {
-            inputs_hostmem.push_back(cv::cuda::HostMem(s, CV_8UC3));
-            inputs_gpumat.push_back(cv::cuda::GpuMat(s, CV_8UC3));
+            inputs_hostmem.push_back(cv::cuda::HostMem(s, CV_8UC2));
+            inputs_gpumat.push_back(cv::cuda::GpuMat(s, CV_8UC2));
         }
         free_inputs_hostmem_q.push(std::move(inputs_hostmem));
         free_inputs_gpumat_q.push(std::move(inputs_gpumat));
@@ -122,8 +128,8 @@ AsyncMultiMapperImpl::AsyncMultiMapperImpl(const std::vector<MapperTemplate> & m
         std::vector<cv::cuda::GpuMat> outputs_gpumat;
         std::vector<cv::cuda::HostMem> outputs_hostmem;
         for(int i = 0 ; i < mts.size() ; i += 1) {
-            outputs_gpumat.push_back(cv::cuda::GpuMat(out_sizes[i], CV_8UC3));
-            outputs_hostmem.push_back(cv::cuda::HostMem(out_sizes[i], CV_8UC3));
+            outputs_gpumat.push_back(cv::cuda::GpuMat(out_sizes[i], CV_8UC2));
+            outputs_hostmem.push_back(cv::cuda::HostMem(out_sizes[i], CV_8UC2));
         }
         free_outputs_gpumat_q.push(std::move(outputs_gpumat));
         free_outputs_hostmem_q.push(std::move(outputs_hostmem));

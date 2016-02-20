@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-12-01
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-01-21
+* @Last Modified time: 2016-02-20
 */
 
 #ifndef LIBMAP_ASYNC_H_
@@ -23,29 +23,6 @@
 #include <condition_variable>
 
 namespace vr {
-
-template <class T>
-class Queue {
-private:
-    std::queue<T> q;
-    std::mutex mtx;
-    std::condition_variable cond_empty;
-public:
-    bool empty() { return q.empty() ;}
-    void push(T&& val) {
-        std::lock_guard<std::mutex> guard(mtx);
-        q.push(std::forward<T>(val));
-        cond_empty.notify_one();
-    }
-    void push(const T & val) { this->push(T(val)); }
-    T pop() {
-        std::unique_lock<std::mutex> lock(mtx);
-        cond_empty.wait(lock, [this](){ return !this->empty(); });
-        T ret = q.front();
-        q.pop();
-        return ret;
-    }
-};
 
 class AsyncMultiMapperImpl: public AsyncMultiMapper {
 private:
@@ -76,7 +53,9 @@ private:
     void run_copy_outputs_hostmem_to_mat();
 
 public:
-    AsyncMultiMapperImpl(const std::vector<MapperTemplate> & mt, std::vector<cv::Size> in_sizes, int blend=128);
+    AsyncMultiMapperImpl(const std::vector<MapperTemplate> & mt, std::vector<cv::Size> in_sizes, 
+                         int blend=128, bool enable_gain_compensator=true,
+                         std::vector<cv::Size> scale_outputs=std::vector<cv::Size>());
 
     void push(std::vector<cv::Mat> & inputs, 
               std::vector<cv::Mat> & outputs) override;

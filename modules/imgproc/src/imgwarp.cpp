@@ -4632,6 +4632,60 @@ private:
 
 }
 
+void cv::remap_weighted( InputArray _src, InputOutputArray _dst,
+                         InputArray _map1, InputArray _map2,
+                         InputArray _weight_map, 
+                         int interpolation)
+{
+    bool ret = false;
+#ifdef HAVE_OPENCL
+    CV_Assert( _map1.size().area() > 0 );
+    CV_Assert( _map2.empty() || (_map2.size() == _map1.size()));
+    CV_Assert( _map1.size() == _weight_map.size() && _weight_map.type() == CV_8U);
+    CV_Assert( _dst.size() == _map1.size());
+
+    CV_Assert(_src.channels() == 1);
+    CV_Assert(_map1.type() == CV_16SC2 && _map2.type() == CV_16UC1);
+    CV_Assert(interpolation == INTER_LINEAR);
+
+    const ocl::Device & dev = ocl::Device::getDefault();
+    int src_type = _src.type();
+    int dst_type = _dst.type();
+    int rowsPerWI = dev.isIntel() ? 4 : 1;
+
+    UMat src = _src.getUMat(), map1 = _map1.getUMat(), map2 = _map2.getUMat();
+    UMat weight_map = _weight_map.getUMat();
+    UMat dst = _dst.getUMat();
+
+    String kernelName = "remap_weighted";
+    String buildOptions = format("-D rowsPerWI=%d -D SRC_T=%s -D DST_T=%s",
+                                 rowsPerWI, ocl::typeToStr(src_type), ocl::typeToStr(dst_type));
+
+
+    char cvt[3][40];
+    int wtype = CV_32F;
+    buildOptions += format(" -D WT=%s -D WT2=%s -D convertToWT=%s" // no comma
+                           " -D convertToSrcT=%s -D convertToDstT=%s",
+                           ocl::typeToStr(wtype),
+                           ocl::typeToStr(CV_MAKE_TYPE(wtype, 2)),
+                           ocl::convertTypeStr(src_type, wtype, 1, cvt[0]),
+                           ocl::convertTypeStr(wtype, src_type, 1, cvt[1]),
+                           ocl::convertTypeStr(wtype, dst_type, 1, cvt[2]));
+
+    ocl::Kernel k(kernelName.c_str(), ocl::imgproc::remap_weighted_oclsrc, buildOptions);
+
+    k.args(ocl::KernelArg::ReadOnly(src),
+           ocl::KernelArg::ReadWrite(dst),
+           ocl::KernelArg::ReadOnlyNoSize(map1),
+           ocl::KernelArg::ReadOnlyNoSize(map2),
+           ocl::KernelArg::ReadOnlyNoSize(weight_map));
+
+    size_t globalThreads[2] = { (size_t)dst.cols, ((size_t)dst.rows + rowsPerWI - 1) / rowsPerWI };
+    ret = k.run(2, globalThreads, NULL, false);
+#endif
+    CV_Assert(ret);
+}
+
 void cv::remap( InputArray _src, OutputArray _dst,
                 InputArray _map1, InputArray _map2,
                 int interpolation, int borderType, const Scalar& borderValue )

@@ -522,9 +522,6 @@ void FeatherGPUBlender::do_blend(std::vector<cuda::GpuMat> &, cuda::GpuMat & ) {
 
 FeatherGPUBlender::FeatherGPUBlender(const std::vector<cuda::GpuMat> & masks,
                                      int border): GPUStaticBlender(masks) {
-    this->sharpness = sharpness;
-    std::cerr << "Initing FeatherGPUBlender with sharpness = " << sharpness << std::endl;
-
     cuda::GpuMat dst_weight_map(masks[0].size(), CV_32F);
     dst_weight_map.setTo(1e-5f);
 

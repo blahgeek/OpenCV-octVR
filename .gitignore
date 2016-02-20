@@ -23,6 +23,8 @@ CMakeCache.txt
 *.log
 *.tlog
 
+*.class
+
 build
 build-android
 

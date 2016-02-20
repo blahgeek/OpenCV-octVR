@@ -13,12 +13,11 @@ import android.view.SurfaceHolder;
 import android.widget.TextView;
 import android.widget.Toast;
 
-/*
 public class MyGLSurfaceView extends CameraGLSurfaceView implements CameraGLSurfaceView.CameraTextureListener {
 
     static final String LOGTAG = "MyGLSurfaceView";
     protected int procMode = NativePart.PROCESSING_MODE_NO_PROCESSING;
-    static final String[] procModeName = new String[] {"No Processing", "CPU", "OpenCL via OpenCV"};
+    static final String[] procModeName = new String[] {"No Processing", "CPU", "OpenCL Direct", "OpenCL via OpenCV"};
     protected int  frameCounter;
     protected long lastNanoTime;
     TextView mFpsText = null;
@@ -111,4 +110,3 @@ public class MyGLSurfaceView extends CameraGLSurfaceView implements CameraGLSurf
         return true;
     }
 }
-*/

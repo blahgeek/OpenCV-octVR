@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-20
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-01-24
+* @Last Modified time: 2016-02-20
 */
 
 #ifndef VR_LIBMAP_IMPL_H
@@ -35,7 +35,7 @@ private:
 #endif
 
 private:
-    cv::Size out_size;
+    cv::Size stitch_size, scaled_output_size;
 
     int nonoverlay_num;
     std::vector<GpuMat> map1s; // CV_32FC1
@@ -44,25 +44,27 @@ private:
     std::vector<GpuMat> seam_masks;
 
 private:
-    cv::Ptr<cv::detail::GainCompensatorGPU> compensator;
-    cv::Ptr<cv::detail::GPUStaticBlender> blender;
+    std::unique_ptr<cv::detail::GainCompensatorGPU> compensator;
+    std::unique_ptr<cv::detail::GPUStaticBlender> blender;
 
     double working_scale;
 
 private:
     std::vector<cv::cuda::Stream> streams;
-    std::vector<GpuMat> gpu_inputs;
+    std::vector<GpuMat> rgb_inputs;
+    std::vector<GpuMat> rgba_inputs;
     std::vector<GpuMat> warped_imgs;
     std::vector<GpuMat> warped_imgs_scale;
-    GpuMat result;
+    GpuMat result, result_scaled;
 
 public:
     // blend: 0  : Do not blend
     //        > 0: Multi-band blend width
     //        < 0: Feather blend width
-    Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes, int blend=128);
-    void stitch(const std::vector<GpuMat> & inputs, GpuMat & output);
-    void remap(const std::vector<GpuMat> & inputs, GpuMat & output);
+    Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes, 
+           int blend=128, bool enable_gain_compensator=true, 
+           cv::Size scale_output=cv::Size(0, 0));
+    void stitch(std::vector<GpuMat> & inputs, GpuMat & output);
 };
 
 }

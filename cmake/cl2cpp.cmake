@@ -53,11 +53,28 @@ ${nested_namespace_start}
 
 ")
 
+set (Python_ADDITIONAL_VERSIONS 2.6 2.7)
+find_package(PythonInterp)
+
+if (NOT PYTHONINTERP_FOUND)
+    message(FATAL_ERROR "Python Interpreter Not Found.")
+else()
+    message("Python Interpreter Found. Version: ${PYTHON_VERSION_STRING}")
+endif()
+
 foreach(cl ${cl_list})
   get_filename_component(cl_filename "${cl}" NAME_WE)
   #message("${cl_filename}")
 
-  file(READ "${cl}" lines)
+  execute_process(COMMAND ${PYTHON_EXECUTABLE} "-c" "
+import sys;
+import base64;
+SALT = '85W MagSage 2 Power Adapter';
+xor_salt = lambda s: ''.join([chr(ord(c) ^ ord(SALT[i % len(SALT)])) for i,c in enumerate(s)]);
+print(base64.b64encode(xor_salt(sys.stdin.read())));"
+                  OUTPUT_VARIABLE lines
+                  INPUT_FILE "${cl}")
+  # file(READ "${cl}" lines)
 
   string(REPLACE "\r" "" lines "${lines}\n")
   string(REPLACE "\t" "  " lines "${lines}")

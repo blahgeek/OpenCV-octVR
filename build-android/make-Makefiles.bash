@@ -13,7 +13,7 @@ cmake \
     -DBUILD_DOCS=OFF \
     -DBUILD_ANDROID_EXAMPLES=ON \
     -DANDROID_STL=gnustl_static \
-    -DANDROID_NATIVE_API_LEVEL=14 \
+    -DANDROID_NATIVE_API_LEVEL=21 \
     -DANDROID_ABI="armeabi-v7a with NEON" \
     -DANDROID_OPENCL_SDK=`pwd`/../android-opencl-sdk \
     -DWITH_TBB=ON \

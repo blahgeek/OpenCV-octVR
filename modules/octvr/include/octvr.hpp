@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-01-21
+* @Last Modified time: 2016-02-20
 */
 
 #ifndef VR_LIBMAP_BASE_H
@@ -14,13 +14,18 @@
 #include <cassert>
 #include <exception>
 #include <vector>
+#include <queue>
 #include <string>
 #include <tuple>
 #include <fstream>
 #include <stdint.h>
 #include <iostream>
+#include <mutex>
+#include <condition_variable>
 #if defined(__linux__)|| defined(__APPLE__)
 #include <sys/time.h>
+#elif defined(ANDROID)
+#include <time.h>
 #elif defined(_WIN32)
 #include <windows.h>
 #include <time.h>
@@ -66,13 +71,17 @@ public:
 
 class AsyncMultiMapper {
 public:
-    static AsyncMultiMapper * New(const std::vector<MapperTemplate> & mts, std::vector<cv::Size> in_sizes, int blend=128);
-    static AsyncMultiMapper * New(const MapperTemplate & mt, std::vector<cv::Size> in_sizes, int blend=128);
+    static AsyncMultiMapper * New(const std::vector<MapperTemplate> & mts, std::vector<cv::Size> in_sizes, 
+                                  int blend=128, bool enable_gain_compensator=true,
+                                  std::vector<cv::Size> scale_outputs=std::vector<cv::Size>());
+    static AsyncMultiMapper * New(const MapperTemplate & mt, std::vector<cv::Size> in_sizes, 
+                                  int blend=128, bool enable_gain_compensator=true,
+                                  cv::Size scale_output=cv::Size(0, 0));
 
     /**
      * Push one frame
-     * @param inputs Input images, in RGB
-     * @param output Output images, in RGB
+     * @param inputs Input images, in UYVY422
+     * @param output Output images, in UYVY422
      */
     virtual void push(std::vector<cv::Mat> & inputs,
                       std::vector<cv::Mat> & outputs) = 0;
@@ -83,19 +92,27 @@ public:
     virtual ~AsyncMultiMapper() {}
 };
 
-class CPUMapper {
+class FastMapper {
 
 private:
+    std::vector<cv::Size> in_sizes;
     cv::Size out_size;
 
-    std::vector<cv::UMat> map1s;
-    std::vector<cv::UMat> map2s;
-    std::vector<cv::UMat> masks;
-    std::vector<cv::UMat> feather_masks;
+    std::vector<cv::UMat> map1s, half_map1s;
+    std::vector<cv::UMat> map2s, half_map2s;
+    std::vector<cv::UMat> masks, half_masks;
+    std::vector<cv::UMat> feather_masks, half_feather_masks;
+
+private:
+    cv::UMat output_s_c0;
+    std::vector<cv::UMat> output_s_c1c2;
+    std::vector<cv::UMat> input_c1c2;
+    cv::UMat output_c1c2_merge;
 
 public:
-    CPUMapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes);
+    FastMapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes);
     void stitch(const std::vector<cv::UMat> & inputs, cv::UMat & output);
+    void stitch_nv12(const std::vector<cv::UMat> & inputs, cv::UMat & output);
 };
 
 class Timer {
@@ -111,6 +128,29 @@ public:
     explicit Timer(std::string name);
     Timer();
     void tick(std::string msg);
+};
+
+template <class T>
+class Queue {
+private:
+    std::queue<T> q;
+    std::mutex mtx;
+    std::condition_variable cond_empty;
+public:
+    bool empty() { return q.empty() ;}
+    void push(T&& val) {
+        std::lock_guard<std::mutex> guard(mtx);
+        q.push(std::forward<T>(val));
+        cond_empty.notify_one();
+    }
+    void push(const T & val) { this->push(T(val)); }
+    T pop() {
+        std::unique_lock<std::mutex> lock(mtx);
+        cond_empty.wait(lock, [this](){ return !this->empty(); });
+        T ret = q.front();
+        q.pop();
+        return ret;
+    }
 };
 
 }

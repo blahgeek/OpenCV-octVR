@@ -55,7 +55,8 @@
                     "/usr/local/opt/qt5/include/QtWidgets/",
                     "/usr/local/opt/qt5/include/QtGui/",
                     "/usr/local/opt/qt5/include/QtMultimedia/",
-                    "/usr/local/opt/qt5/include/QtMultimediaWidgets/"
+                    "/usr/local/opt/qt5/include/QtMultimediaWidgets/",
+                    "/usr/local/opt/android-ndk/platforms/android-21/arch-arm64/usr/include/"
                 ]
             }
         }

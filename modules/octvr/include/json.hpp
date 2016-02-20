@@ -38,6 +38,7 @@ Class @ref nlohmann::basic_json is a good entry point for the documentation.
 #ifndef NLOHMANN_JSON_HPP
 #define NLOHMANN_JSON_HPP
 
+#include <cstdlib>
 #include <algorithm>
 #include <array>
 #include <ciso646>
@@ -56,6 +57,10 @@ Class @ref nlohmann::basic_json is a good entry point for the documentation.
 #include <type_traits>
 #include <utility>
 #include <vector>
+
+#ifdef ANDROID
+  #define strtold strtod
+#endif
 
 // enable ssize_t on MinGW
 #ifdef __GNUC__

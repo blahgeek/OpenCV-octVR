@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-11-09
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-01-24
+* @Last Modified time: 2016-02-16
 */
 
 #include <iostream>
@@ -45,6 +45,32 @@ std::pair<std::vector<cv::UMat>, std::vector<cv::Size>> readImages(std::vector<s
     return std::make_pair(imgs, sizes);
 }
 
+void cvtBGRtoNV12(const cv::UMat & src, cv::UMat & dst) {
+    cv::Mat yuv;
+    cv::cvtColor(src, yuv, cv::COLOR_BGR2YUV);
+    CV_Assert(yuv.size() == src.size());
+    CV_Assert(yuv.type() == CV_8UC3);
+
+    dst.create(src.rows + src.rows / 2, src.cols, CV_8U);
+    cv::Mat dst_m = dst.getMat(cv::ACCESS_WRITE);
+
+    for(int h = 0 ; h < src.rows ; h += 1) {
+        uint8_t * dst_row = dst_m.ptr<uint8_t>(h);
+        for(int w = 0 ; w < src.cols ; w += 1) {
+            dst_row[w] = yuv.at<uint8_t>(h, w*3);
+        }
+    }
+    for(int h = 0 ; h < src.rows / 2 ; h += 1) {
+        uint8_t * dst_row = dst_m.ptr<uint8_t>(h + src.rows);
+        for(int w = 0 ; w < src.cols ; w += 1) {
+            if(w % 2 == 0)
+                dst_row[w] = yuv.at<uint8_t>(h*2, w*3+2);
+            else
+                dst_row[w] = yuv.at<uint8_t>(h*2, w*3+1);
+        }
+    }
+}
+
 int main(int argc, char const *argv[]) {
     if(argc < 4) {
         std::cerr << "Usage: " << argv[0] << " map.dat output.jpg input0.jpg input1.jpg ..." << std::endl
@@ -67,7 +93,7 @@ int main(int argc, char const *argv[]) {
     auto async_remapper = AsyncMultiMapper::New(map_template, in_sizes);
     assert(async_remapper != NULL);
 #else
-    auto remapper = new CPUMapper(map_template, in_sizes);
+    auto remapper = new FastMapper(map_template, in_sizes);
 #endif
 
     auto output_size = map_template.out_size;
@@ -92,7 +118,16 @@ int main(int argc, char const *argv[]) {
     async_remapper->pop();
 #else
     cv::UMat output(output_size, CV_8UC3);
-    remapper->stitch(imgs, output);
+
+    std::vector<cv::UMat> imgs_nv12(imgs.size());
+    for(int i = 0 ; i < imgs.size() ; i += 1) {
+        cvtBGRtoNV12(imgs[i], imgs_nv12[i]);
+        cv::cvtColor(imgs_nv12[i], imgs[i], cv::COLOR_YUV2BGR_NV12);
+    }
+    cv::UMat output_nv12;
+    // remapper->stitch(imgs, output);
+    remapper->stitch_nv12(imgs_nv12, output_nv12);
+    cv::cvtColor(output_nv12, output, cv::COLOR_YUV2BGR_NV12);
 #endif
 
     cv::imwrite(output_filename, output);

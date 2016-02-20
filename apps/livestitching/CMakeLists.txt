@@ -25,6 +25,7 @@ ocv_add_executable(livestitching
                    qjsonitem.cpp
                    qjsonmodel.cpp
                    icons.qrc
+                   style.qrc
                    )
 
 ocv_target_link_libraries(livestitching ${OPENCV_LIVESTITCHING_DEPS})
