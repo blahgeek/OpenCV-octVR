@@ -134,7 +134,10 @@ void MainWindow::deviceAddCamera() {
         this->jsonAddOverlay();
     }
     else {
-        ui->layout_inputs->addWidget(viewfinder);
+        viewfinder->setFixedSize(200, 200);
+        viewfinder->setSizePolicy(QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed));
+        this->inputs_layout->addWidget(viewfinder);
+        // ui->layout_inputs->addWidget(viewfinder);
         input_cameras.emplace_back(std::unique_ptr<QCamera>(camera),
                                    std::unique_ptr<QCameraViewfinder>(viewfinder),
                                    current_cam_info.deviceName());
@@ -233,15 +236,6 @@ void MainWindow::gotoStitch() {
 
     loadPTO(temp_path.append("/template.pto"));
 
-    return;
-}
-
-void MainWindow::removeImageCapture(int id, const QString & fileName) {
-    QCameraImageCapture * image_capture = this->image_captures[id];
-    image_captures.erase(id);
-    delete image_capture;
-    qDebug() << "Image saved to " << fileName;
-    qDebug() << "Current image_captures size: " << this->image_captures.size();
     return;
 }
 
@@ -345,11 +339,30 @@ void MainWindow::stopPreview() {
     return;
 }
 
+void MainWindow::onTabChanged(int index) {
+    qDebug() << "onTabChanged: " << index;
+    if(index == 0)
+        this->inputs_selector->start();
+    else {
+        this->inputs_selector->stop();
+        auto selected = this->inputs_selector->getSelected();
+        qDebug() << "selected count: " << selected.size();
+    }
+}
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+
+    inputs_selector.reset(new InputsSelector(ui->inputs_grid));
+
+    inputs_layout = new QHBoxLayout(ui->area_inputs_widget);
+    ui->area_inputs_widget->setFixedSize(0, 0);
+    ui->area_inputs_widget->setSizePolicy(QSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum));
+    ui->area_inputs->setWidgetResizable(true);
+    // inputs_layout->setSpacing(1);
 
     {
         QFile f(":qdarkstyle/style.qss");
@@ -382,6 +395,9 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->pushButton_locate_hugin, &QPushButton::clicked, this, &MainWindow::locateHugin);
 
     connect(ui->pushButton_run, &QPushButton::clicked, this, &MainWindow::run);
+
+    connect(ui->tabWidget, &QTabWidget::currentChanged, this, &MainWindow::onTabChanged);
+    connect(ui->inputs_action_save, &QPushButton::clicked, this->inputs_selector.get(), &InputsSelector::saveImages);
 
     temp_path = QDir::tempPath() + "/vrlive";
     qDebug() << "temporary dir: " << temp_path;

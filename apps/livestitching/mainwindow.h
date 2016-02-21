@@ -9,6 +9,7 @@
 #include <QCamera>
 #include <QCameraViewfinder>
 #include <QCameraImageCapture>
+#include <QBoxLayout>
 
 #include <QMediaPlayer>
 
@@ -17,6 +18,8 @@
 #include <memory>
 
 #include "./qjsonmodel.h"
+
+#include "./inputs_select.hpp"
 
 namespace Ui {
 class MainWindow;
@@ -52,11 +55,14 @@ public:
     void startPreview();
     void stopPreview();
 
-public slots:
-    void removeImageCapture(int id, const QString & fileName);
+    void onTabChanged(int index);
 
 private:
     Ui::MainWindow *ui;
+
+    std::unique_ptr<InputsSelector> inputs_selector;
+
+    QHBoxLayout * inputs_layout = nullptr;
 
     QJsonModel json_model;
     QList<QCameraInfo> camera_infos;

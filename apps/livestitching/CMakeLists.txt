@@ -22,6 +22,7 @@ ocv_include_directories("${OpenCV_SOURCE_DIR}/include/opencv")
 ocv_add_executable(livestitching
                    main.cpp
                    mainwindow.cpp
+                   inputs_select.cpp
                    qjsonitem.cpp
                    qjsonmodel.cpp
                    icons.qrc
