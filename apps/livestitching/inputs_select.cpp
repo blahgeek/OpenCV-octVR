@@ -33,6 +33,8 @@ InputsSelector::InputsSelector(QGridLayout * _grid): grid(_grid) {
 
         this->check_boxs.emplace_back(new QCheckBox("Enable"));
         this->check_boxs.back()->setCheckState(Qt::Checked);
+        connect(this->check_boxs.back().get(), &QCheckBox::stateChanged,
+                this, &InputsSelector::selectedChanged);
         layout->addWidget(this->check_boxs.back().get());
 
         group_box->setLayout(layout);
@@ -61,6 +63,13 @@ std::vector<QCameraInfo> InputsSelector::getSelected() {
     for(int i = 0 ; i < this->camera_infos.size() ; i += 1)
         if(this->check_boxs[i]->checkState() == Qt::Checked)
             ret.push_back(this->camera_infos.at(i));
+    return ret;
+}
+
+std::vector<QCameraInfo> InputsSelector::getAll() {
+    std::vector<QCameraInfo> ret;
+    for(int i = 0 ; i < this->camera_infos.size() ; i += 1)
+        ret.push_back(this->camera_infos.at(i));
     return ret;
 }
 

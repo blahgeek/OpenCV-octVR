@@ -350,6 +350,14 @@ void MainWindow::onTabChanged(int index) {
     }
 }
 
+void MainWindow::onInputsSelectChanged() {
+    auto selected = this->inputs_selector->getSelected();
+    auto all = this->inputs_selector->getAll();
+    this->ui->inputs_info->setText(QString("%1 found, %2 selected")
+                                   .arg(all.size())
+                                   .arg(selected.size()));
+}
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
@@ -398,6 +406,9 @@ MainWindow::MainWindow(QWidget *parent) :
 
     connect(ui->tabWidget, &QTabWidget::currentChanged, this, &MainWindow::onTabChanged);
     connect(ui->inputs_action_save, &QPushButton::clicked, this->inputs_selector.get(), &InputsSelector::saveImages);
+    connect(this->inputs_selector.get(), &InputsSelector::selectedChanged, this, &MainWindow::onInputsSelectChanged);
+
+    this->onInputsSelectChanged();
 
     temp_path = QDir::tempPath() + "/vrlive";
     qDebug() << "temporary dir: " << temp_path;

@@ -23,6 +23,9 @@
 #include <QCheckBox>
 
 class InputsSelector: public QObject {
+
+    Q_OBJECT
+
 private:
     std::vector<std::unique_ptr<QCamera>> cameras;
     std::vector<std::unique_ptr<QCameraViewfinder>> views;
@@ -30,6 +33,9 @@ private:
 
     QGridLayout * grid = nullptr;
     std::vector<std::unique_ptr<QCheckBox>> check_boxs;
+
+signals:
+    void selectedChanged();
 
 public:
     InputsSelector(QGridLayout * _grid);
@@ -40,6 +46,7 @@ public:
     void saveImages();
 
     std::vector<QCameraInfo> getSelected();
+    std::vector<QCameraInfo> getAll();
 
 };
 

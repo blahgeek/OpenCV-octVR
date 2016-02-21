@@ -56,6 +56,7 @@ public:
     void stopPreview();
 
     void onTabChanged(int index);
+    void onInputsSelectChanged();
 
 private:
     Ui::MainWindow *ui;
