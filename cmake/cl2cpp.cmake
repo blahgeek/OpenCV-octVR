@@ -73,7 +73,7 @@ SALT = '85W MagSage 2 Power Adapter';
 xor_salt = lambda s: ''.join([chr(ord(c) ^ ord(SALT[i % len(SALT)])) for i,c in enumerate(s)]);
 ret = base64.b64encode(xor_salt(sys.stdin.read()).encode('ascii')).decode('ascii');
 oneline = lambda s: ', '.join([str(ord(x)) for x in s]);
-print(',\\n'.join([oneline(ret[i:i+20]) for i in range(0, len(ret), 20)]));"
+print(',\\n'.join([oneline(ret[i:i+20]) for i in range(0, len(ret), 20)])+', 0');"
                   OUTPUT_VARIABLE lines
                   INPUT_FILE "${cl}")
   # file(READ "${cl}" lines)
