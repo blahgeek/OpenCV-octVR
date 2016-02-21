@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-01-21
+* @Last Modified time: 2016-02-21
 */
 
 #ifndef VR_LIBMAP_PINHOLE_CAM_H
@@ -28,7 +28,7 @@ protected:
     virtual void _project(std::vector<cv::Point3d> & objectPoints,
                           std::vector<cv::Point2d> & imagePoints);
 public:
-    PinholeCamera(const json & options);
+    PinholeCamera(const rapidjson::Value & options);
     double get_aspect_ratio() override {
         return double(width) / double(height);
     }

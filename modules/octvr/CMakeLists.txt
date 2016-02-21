@@ -27,3 +27,4 @@ ocv_define_module(octvr
                   OPTIONAL opencv_cudaarithm opencv_cudafilters opencv_cudafeatures2d opencv_cudalegacy)
 
 install(FILES "include/octvr.hpp" DESTINATION "${OPENCV_INCLUDE_INSTALL_PATH}/")
+install(DIRECTORY "include/rapidjson" DESTINATION "${OPENCV_INCLUDE_INSTALL_PATH}/")

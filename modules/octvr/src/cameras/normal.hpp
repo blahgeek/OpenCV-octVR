@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-01-21
+* @Last Modified time: 2016-02-21
 */
 
 #ifndef VR_LIBMAP_NORMAL_H
@@ -22,7 +22,7 @@ private:
     double cam_x, cam_y, cam_z;
     double aspect_ratio;
 public:
-    Normal(const json & options);
+    Normal(const rapidjson::Value & options);
     double get_aspect_ratio() override {
         return this->aspect_ratio;
     }

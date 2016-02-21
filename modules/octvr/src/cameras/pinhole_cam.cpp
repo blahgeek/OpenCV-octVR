@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-10-22
+* @Last Modified time: 2016-02-21
 */
 
 #include <iostream>
@@ -10,16 +10,17 @@
 
 using namespace vr;
 
-PinholeCamera::PinholeCamera(const json & options): Camera(options) {
+PinholeCamera::PinholeCamera(const rapidjson::Value & options): Camera(options) {
     this->camera_matrix = cv::Mat::eye(3, 3, CV_64F);
-    this->camera_matrix.at<double>(0, 0) = options["fx"];
-    this->camera_matrix.at<double>(1, 1) = options["fy"];
-    this->camera_matrix.at<double>(0, 2) = options["cx"];
-    this->camera_matrix.at<double>(1, 2) = options["cy"];
+    this->camera_matrix.at<double>(0, 0) = options["fx"].GetDouble();
+    this->camera_matrix.at<double>(1, 1) = options["fy"].GetDouble();
+    this->camera_matrix.at<double>(0, 2) = options["cx"].GetDouble();
+    this->camera_matrix.at<double>(1, 2) = options["cy"].GetDouble();
 
-    this->dist_coeffs = options["dist_coeffs"].get<std::vector<double>>();
-    this->width = options["width"].get<int>();
-    this->height = options["height"].get<int>();
+    for(auto x = options["dist_coeffs"].Begin() ; x != options["dist_coeffs"].End() ; x ++)
+        this->dist_coeffs.push_back(x->GetDouble());
+    this->width = options["width"].GetInt();
+    this->height = options["height"].GetInt();
 
     std::cerr << "Camera matrix: " << this->camera_matrix << std::endl;
     std::cerr << "Distort coeffs: ";

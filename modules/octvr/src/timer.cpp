@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-12-07
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-02-16
+* @Last Modified time: 2016-02-21
 */
 
 #include <iostream>
@@ -27,7 +27,7 @@ using namespace vr;
     }
 #endif
 
-Timer::Timer(std::string name): t(gettime()), name(name) {}
+Timer::Timer(std::string _name): t(gettime()), name(_name) {}
 Timer::Timer(): Timer::Timer("") {}
 
 #ifdef ANDROID

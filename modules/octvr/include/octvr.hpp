@@ -2,13 +2,13 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-02-20
+* @Last Modified time: 2016-02-21
 */
 
 #ifndef VR_LIBMAP_BASE_H
 #define VR_LIBMAP_BASE_H value
 
-#include "json.hpp"
+#include "rapidjson/document.h"
 #include <utility>
 #include <cmath>
 #include <cassert>
@@ -28,13 +28,11 @@
 
 namespace vr {
 
-using json = nlohmann::json;
-
 // Multiple input -> single output
 class MapperTemplate {
 public:
     std::string out_type;
-    json out_opts;
+    const rapidjson::Value & out_opts;
     cv::Size out_size;
 
     typedef struct {
@@ -51,9 +49,11 @@ public:
     // Create new template
     // width/height must be suitable to output model
     MapperTemplate(const std::string & to,
-                   const json & to_opts,
+                   const rapidjson::Value & to_opts,
                    int width, int height);
-    void add_input(const std::string & from, const json & from_opts, bool overlay=false);
+    void add_input(const std::string & from, 
+                   const rapidjson::Value & from_opts, 
+                   bool overlay=false);
     // Prepare seam masks with provided images (optional)
     void create_masks(const std::vector<cv::Mat> & imgs = std::vector<cv::Mat>());
     void dump(std::ofstream & f);

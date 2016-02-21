@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-12-08
+* @Last Modified time: 2016-02-21
 */
 
 #include "./equirectangular.hpp"
@@ -10,10 +10,10 @@
 
 using namespace vr;
 
-Equirectangular::Equirectangular(const json & options): Camera(options) {
+Equirectangular::Equirectangular(const rapidjson::Value & options): Camera(options) {
     #define ASSIGN(KEY) \
-        if(options.find( #KEY ) != options.end()) \
-            this->KEY = options[#KEY].get<double>();
+        if(options.HasMember( #KEY )) \
+            this->KEY = options[#KEY].GetDouble();
     ASSIGN(min_lat)
     ASSIGN(max_lat)
     ASSIGN(scale_lon)
