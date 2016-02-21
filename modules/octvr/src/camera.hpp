@@ -2,15 +2,18 @@
 * @Author: BlahGeek
 * @Date:   2015-10-20
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-01-21
+* @Last Modified time: 2016-02-21
 */
 
 #ifndef VR_LIBMAP_CAMERA_H
 #define VR_LIBMAP_CAMERA_H value
 
+#if defined( _MSC_VER )
 #define _USE_MATH_DEFINES
+#endif
 #include <cmath>
-#include "json.hpp"
+#include "rapidjson/document.h"
+#include <memory>
 #include <utility>
 #include <cassert>
 #include <exception>
@@ -20,8 +23,6 @@
 #include "opencv2/core.hpp"
 
 namespace vr {
-
-using json = nlohmann::json;
 
 class NotImplemented: std::exception {};
 
@@ -40,13 +41,13 @@ protected:
 
     void sphere_rotate(std::vector<cv::Point3d> & points, bool reverse);
 
-    void drawExcludeMask(const json & masks);
+    void drawExcludeMask(const rapidjson::Value & masks);
 
 public:
     /**
      * Provide "rotate" optionally
      */
-    Camera(const json & options);
+    Camera(const rapidjson::Value & options);
 
     /**
      * Return aspect ratio of mapped image
@@ -62,7 +63,7 @@ protected:
      * @param  lonlat lon in [-PI, +PI), lat in [-PI/2, +PI/2)
      * @return        x, y in [0, 1) or NAN
      */
-    virtual cv::Point2d obj_to_image_single(const cv::Point2d & lonlat) {
+    virtual cv::Point2d obj_to_image_single(const cv::Point2d &) {
         throw NotImplemented();
     }
 
@@ -71,7 +72,7 @@ protected:
      * @param  xy x, y in [0, 1)
      * @return    lonlat, lon in [-PI, +PI), lat in [-PI/2, +PI/2), may be NAN
      */
-    virtual cv::Point2d image_to_obj_single(const cv::Point2d & xy) {
+    virtual cv::Point2d image_to_obj_single(const cv::Point2d &) {
         throw NotImplemented();
     }
 
@@ -87,7 +88,7 @@ public:
     virtual std::vector<cv::Point2d> image_to_obj(const std::vector<cv::Point2d> & xys);
 
 public:
-    static std::unique_ptr<Camera> New(const std::string & type, const json & opts);
+    static std::unique_ptr<Camera> New(const std::string & type, const rapidjson::Value & opts);
 };
 
 }

@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2015-10-20
+* @Last Modified time: 2016-02-21
 */
 
 #include <iostream>
@@ -10,10 +10,10 @@
 
 using namespace vr;
 
-Normal::Normal(const json & options): Camera(options) {
-    this->aspect_ratio = options["aspect_ratio"].get<double>();
+Normal::Normal(const rapidjson::Value & options): Camera(options) {
+    this->aspect_ratio = options["aspect_ratio"].GetDouble();
 
-    cam_x = options["cam_opt"].get<double>();
+    cam_x = options["cam_opt"].GetDouble();
     cam_z = sqrt((1.0 - cam_x * cam_x) / 
                  (1.0 + 1.0 / this->aspect_ratio / this->aspect_ratio));
     cam_y = cam_z / this->aspect_ratio;

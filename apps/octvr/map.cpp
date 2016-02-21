@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-11-09
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-02-16
+* @Last Modified time: 2016-02-21
 */
 
 #include <iostream>
@@ -31,7 +31,7 @@ using namespace vr;
 std::pair<std::vector<cv::UMat>, std::vector<cv::Size>> readImages(std::vector<std::string> filenames) {
     std::vector<cv::UMat> imgs;
     std::vector<cv::Size> sizes;
-    for(int i = 0 ; i < filenames.size() ; i += 1) {
+    for(size_t i = 0 ; i < filenames.size() ; i += 1) {
         std::cerr << "Reading input #" << i << ": " << filenames[i] << std::endl;
 
         cv::Mat img = cv::imread(filenames[i]);
@@ -120,7 +120,7 @@ int main(int argc, char const *argv[]) {
     cv::UMat output(output_size, CV_8UC3);
 
     std::vector<cv::UMat> imgs_nv12(imgs.size());
-    for(int i = 0 ; i < imgs.size() ; i += 1) {
+    for(size_t i = 0 ; i < imgs.size() ; i += 1) {
         cvtBGRtoNV12(imgs[i], imgs_nv12[i]);
         cv::cvtColor(imgs_nv12[i], imgs[i], cv::COLOR_YUV2BGR_NV12);
     }

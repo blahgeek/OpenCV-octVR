@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-11-03
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-01-21
+* @Last Modified time: 2016-02-21
 */
 
 #include "./fullframe_fisheye_cam.hpp"
@@ -102,13 +102,15 @@ static double CalcCorrectionRadius_copy(double *coeff )
     return smallestRoot_copy( a );
 }
 
-FullFrameFisheyeCamera::FullFrameFisheyeCamera(const json & options): 
+FullFrameFisheyeCamera::FullFrameFisheyeCamera(const rapidjson::Value & options): 
 Camera(options) {
 
-    this->size.width = options["width"].get<int>();
-    this->size.height = options["height"].get<int>();
-    if(options.find("circular_crop") != options.end()) {
-        auto crop_args = options["circular_crop"].get<std::vector<double>>();
+    this->size.width = options["width"].GetInt();
+    this->size.height = options["height"].GetInt();
+    if(options.HasMember("circular_crop")) {
+        std::vector<double> crop_args;
+        for(auto x = options["circular_crop"].Begin() ; x != options["circular_crop"].End() ; x ++)
+            crop_args.push_back(x->GetDouble());
         circular_crop.x = - this->size.width * 0.5 
                           - crop_args[0] * this->size.width
                           + crop_args[2] * this->size.width;
@@ -122,32 +124,32 @@ Camera(options) {
         this->size.width = crop_args[2] * 2 * this->size.width;
     }
 
-    this->hfov = options["hfov"].get<double>();
-    this->center_shift.x = options["center_dx"].get<double>();
-    this->center_shift.y = options["center_dy"].get<double>();
+    this->hfov = options["hfov"].GetDouble();
+    this->center_shift.x = options["center_dx"].GetDouble();
+    this->center_shift.y = options["center_dy"].GetDouble();
 
-    std::vector<double> _r = options["radial"];
-    this->radial_distortion[3] = _r[0];
-    this->radial_distortion[2] = _r[1];
-    this->radial_distortion[1] = _r[2];
-    this->radial_distortion[0] = 1.0 - _r[0] - _r[1] - _r[2];
+    auto _r = options["radial"].GetArray();
+    this->radial_distortion[3] = _r[0].GetDouble();
+    this->radial_distortion[2] = _r[1].GetDouble();
+    this->radial_distortion[1] = _r[2].GetDouble();
+    this->radial_distortion[0] = 1.0 - _r[0].GetDouble() - _r[1].GetDouble() - _r[2].GetDouble();
     this->radial_distortion[4] = (size.width < size.height ? size.width : size.height) / 2.0;
     this->radial_distortion[5] = CalcCorrectionRadius_copy(this->radial_distortion);
 
     #define VAR(n) (this->radial_distortion[n])
 
     // print debug info
-    json debug = {
-        {"radial_distortion", {VAR(0), VAR(1), VAR(2), VAR(3), VAR(4), VAR(5)}},
-        {"hfov", this->hfov},
-        {"center_shift", {this->center_shift.x, this->center_shift.y}},
-        {"size", {this->size.width, this->size.height}},
-        {"rotate", {this->rotate_matrix.at<double>(0, 0), this->rotate_matrix.at<double>(0, 1), this->rotate_matrix.at<double>(0, 2),
-                    this->rotate_matrix.at<double>(1, 0), this->rotate_matrix.at<double>(1, 1), this->rotate_matrix.at<double>(1, 2),
-                    this->rotate_matrix.at<double>(2, 0), this->rotate_matrix.at<double>(2, 1), this->rotate_matrix.at<double>(2, 2),
-                   }}
-    };
-    std::cout << debug.dump(4) << ", " << std::endl;
+    // json debug = {
+    //     {"radial_distortion", {VAR(0), VAR(1), VAR(2), VAR(3), VAR(4), VAR(5)}},
+    //     {"hfov", this->hfov},
+    //     {"center_shift", {this->center_shift.x, this->center_shift.y}},
+    //     {"size", {this->size.width, this->size.height}},
+    //     {"rotate", {this->rotate_matrix.at<double>(0, 0), this->rotate_matrix.at<double>(0, 1), this->rotate_matrix.at<double>(0, 2),
+    //                 this->rotate_matrix.at<double>(1, 0), this->rotate_matrix.at<double>(1, 1), this->rotate_matrix.at<double>(1, 2),
+    //                 this->rotate_matrix.at<double>(2, 0), this->rotate_matrix.at<double>(2, 1), this->rotate_matrix.at<double>(2, 2),
+    //                }}
+    // };
+    // std::cout << debug.dump(4) << ", " << std::endl;
 }
 
 double FullFrameFisheyeCamera::get_aspect_ratio() {

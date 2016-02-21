@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-11-09
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-01-24
+* @Last Modified time: 2016-02-21
 */
 
 #include <iostream>
@@ -22,6 +22,9 @@
 #include "opencv2/core/ocl.hpp"
 #include "opencv2/core/cuda.hpp"
 #include "octvr.hpp"
+
+#include "rapidjson/document.h"
+#include "rapidjson/istreamwrapper.h"
 
 using namespace vr;
 
@@ -59,30 +62,31 @@ int main(int argc, char * const argv[]){
     }
     argv += optind;
 
-    json options;
+    rapidjson::Document options;
     std::ifstream f(argv[0]);
-    options << f;
+    rapidjson::IStreamWrapper ifs(f);
+    options.ParseStream(ifs);
 
-    MapperTemplate mt(options["output"]["type"],
+    MapperTemplate mt(options["output"]["type"].GetString(),
                       options["output"]["options"],
                       opt_width, opt_height);
 
     auto out_size = mt.out_size;
     fprintf(stderr, "Output: %dx%d %s\n", out_size.width, out_size.height, 
-            options["output"]["type"].get<std::string>().c_str());
+            options["output"]["type"].GetString());
 
-    for(auto i: options["inputs"]) {
-        fprintf(stderr, "Input: %s\n", i["type"].get<std::string>().c_str());
-        mt.add_input(i["type"], i["options"]);
+    for(auto i = options["inputs"].Begin() ; i != options["inputs"].End() ; i ++ ) {
+        fprintf(stderr, "Input: %s\n", (*i)["type"].GetString());
+        mt.add_input((*i)["type"].GetString(), (*i)["options"]);
     }
-    if(options.find("overlays") != options.end()) {
-        for(auto i: options["overlays"]) {
-            fprintf(stderr, "Overlay input: %s\n", i["type"].get<std::string>().c_str());
-            mt.add_input(i["type"], i["options"], true);
+    if(options.HasMember("overlays")) {
+        for(auto i = options["overlays"].Begin() ; i != options["overlays"].End() ; i ++) {
+            fprintf(stderr, "Overlay input: %s\n", (*i)["type"].GetString());
+            mt.add_input((*i)["type"].GetString(), (*i)["options"], true);
         }
     }
     
-    if(!(argc == 1 || argc - 1 == options["inputs"].size())) {
+    if(!(argc == 1 || argc - 1 == options["inputs"].Size())) {
         fprintf(stderr, "Invalid argument\n");
         return 1;
     }

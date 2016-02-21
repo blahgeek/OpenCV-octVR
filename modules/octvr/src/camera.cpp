@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-20
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-01-24
+* @Last Modified time: 2016-02-21
 */
 
 #include "./camera.hpp"
@@ -22,7 +22,7 @@
 
 using namespace vr;
 
-std::unique_ptr<Camera> Camera::New(const std::string & type, const json & options) {
+std::unique_ptr<Camera> Camera::New(const std::string & type, const rapidjson::Value & options) {
     #define X(s, t) \
         else if (type == s) return std::unique_ptr<Camera>(new t(options));
 
@@ -42,12 +42,12 @@ std::unique_ptr<Camera> Camera::New(const std::string & type, const json & optio
     #undef X
 }
 
-Camera::Camera(const json & options) {
+Camera::Camera(const rapidjson::Value & options) {
     this->rotate_vector = std::vector<double>({0, 0, 0});
-    if(options.find("rotation") != options.end()) {
-        this->rotate_vector[0] = options["rotation"]["roll"].get<double>();
-        this->rotate_vector[1] = options["rotation"]["yaw"].get<double>();
-        this->rotate_vector[2] = options["rotation"]["pitch"].get<double>();
+    if(options.HasMember("rotation")) {
+        this->rotate_vector[0] = options["rotation"]["roll"].GetDouble();
+        this->rotate_vector[1] = options["rotation"]["yaw"].GetDouble();
+        this->rotate_vector[2] = options["rotation"]["pitch"].GetDouble();
     }
 
     cv::Mat rotate_x, rotate_y, rotate_z;
@@ -59,19 +59,21 @@ Camera::Camera(const json & options) {
 
     this->rotate_matrix = (rotate_x * rotate_z) * rotate_y;
 
-    if(options.find("exclude_masks") != options.end()) {
-        int width = options["width"].get<int>();
-        int height = options["height"].get<int>();
+    if(options.HasMember("exclude_masks")) {
+        int width = options["width"].GetInt();
+        int height = options["height"].GetInt();
         this->exclude_mask = cv::Mat(height, width, CV_8U);
         this->exclude_mask.setTo(0);
         this->drawExcludeMask(options["exclude_masks"]);
     }
 }
 
-void Camera::drawExcludeMask(const json & masks) {
-    for(auto & area: masks) {
-        auto area_type = area["type"].get<std::string>();
-        auto args = area["args"].get<std::vector<double>>();
+void Camera::drawExcludeMask(const rapidjson::Value & masks) {
+    for(auto area = masks.Begin() ; area != masks.End() ; area ++) {
+        std::string area_type = (*area)["type"].GetString();
+        std::vector<double> args;
+        for(auto x = (*area)["args"].Begin() ; x != (*area)["args"].End() ; x ++)
+            args.push_back(x->GetDouble());
         if(area_type == "polygonal") {
             std::cerr << "Drawing polygonal mask... " << args.size() / 2 << " points" << std::endl;
             std::vector<cv::Point2i> points;

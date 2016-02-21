@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-11-03
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-01-16
+* @Last Modified time: 2016-02-21
 */
 
 #ifndef VR_LIBMAP_FULLFRAME_FISHEYE_H_
@@ -24,7 +24,7 @@ protected:
     cv::Point2d do_radial_distort(cv::Point2d src);
 
 public:
-    FullFrameFisheyeCamera(const json & options);
+    FullFrameFisheyeCamera(const rapidjson::Value & options);
 
     double get_aspect_ratio() override;
     cv::Point2d obj_to_image_single(const cv::Point2d & lonlat) override;

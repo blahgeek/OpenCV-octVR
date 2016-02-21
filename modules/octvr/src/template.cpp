@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-12-07
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-01-21
+* @Last Modified time: 2016-02-21
 */
 
 #include "octvr.hpp"
@@ -16,7 +16,7 @@
 using namespace vr;
 
 MapperTemplate::MapperTemplate(const std::string & to,
-                               const json & to_opts,
+                               const rapidjson::Value & to_opts,
                                int width, int height):
 out_type(to), out_opts(to_opts) {
 
@@ -36,7 +36,7 @@ out_type(to), out_opts(to_opts) {
 }
 
 void MapperTemplate::add_input(const std::string & from,
-                               const json & from_opts,
+                               const rapidjson::Value & from_opts,
                                bool overlay) {
     std::unique_ptr<Camera> out_camera = Camera::New(out_type, out_opts);
     std::unique_ptr<Camera> cam = Camera::New(from, from_opts);
@@ -95,7 +95,7 @@ void MapperTemplate::create_masks(const std::vector<cv::Mat> & imgs) {
     scaled_size.height *= scale;
     std::cerr << "Scaled size: " << scaled_size << std::endl;
 
-    for(int i = 0 ; i < inputs.size() ; i += 1) {
+    for(size_t i = 0 ; i < inputs.size() ; i += 1) {
         if(i < imgs.size()) {
             cv::Mat tmp0, tmp1;
             cv::remap(imgs[i], tmp0, inputs[i].map1, inputs[i].map2, cv::INTER_LINEAR);
@@ -124,7 +124,7 @@ void MapperTemplate::create_masks(const std::vector<cv::Mat> & imgs) {
                       umasks);
 
     this->seam_masks.resize(inputs.size());
-    for(int i = 0 ; i < inputs.size() ; i += 1)
+    for(size_t i = 0 ; i < inputs.size() ; i += 1)
         cv::resize(umasks[i], seam_masks[i], this->out_size);
 
     delete seam_finder;
@@ -172,7 +172,9 @@ void MapperTemplate::dump(std::ofstream & f) {
     }
 }
 
-MapperTemplate::MapperTemplate(std::ifstream & f) {
+static const rapidjson::Value __unused__;
+
+MapperTemplate::MapperTemplate(std::ifstream & f): out_opts(__unused__) {
     char read_magic[16];
     f.read(read_magic, strlen(DUMP_MAGIC));
     if(strncmp(read_magic, DUMP_MAGIC, strlen(DUMP_MAGIC)) != 0)
@@ -205,7 +207,7 @@ MapperTemplate::MapperTemplate(std::ifstream & f) {
         input.mask = Rmat();
     }
     this->seam_masks.resize(this->inputs.size());
-    for(int i = 0 ; i < this->seam_masks.size() ; i += 1)
+    for(size_t i = 0 ; i < this->seam_masks.size() ; i += 1)
         this->seam_masks[i] = Rmat();
 
     this->overlay_inputs.resize(R64i());
