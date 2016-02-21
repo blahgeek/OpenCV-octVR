@@ -59,7 +59,8 @@ Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes,
     this->scaled_output_size = scale_output.area() == 0 ? mt.out_size : scale_output;
 
 #ifdef WITH_OCTVR_LOGO
-    cv::Mat logo_png = cv::imdecode(OCTVR_LOGO_DATA, -1);
+    std::vector<unsigned char> logo_data_(OCTVR_LOGO_DATA, OCTVR_LOGO_DATA + OCTVR_LOGO_DATA_LEN);
+    cv::Mat logo_png = cv::imdecode(logo_data_, -1);
     CV_Assert(logo_png.type() == CV_8UC4);
 
     std::vector<cv::Mat> logo_channels(4);

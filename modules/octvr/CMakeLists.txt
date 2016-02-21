@@ -29,6 +29,12 @@ if (WITH_OCTVR_LOGO)
                     "${CMAKE_CURRENT_BINARY_DIR}/src/logo_png.cpp")
 endif (WITH_OCTVR_LOGO)
 
+macro(ocv_get_module_external_sources)
+    set(__filesvar "OPENCV_MODULE_opencv_octvr_SOURCES")
+    list(APPEND ${__filesvar} "${CMAKE_CURRENT_BINARY_DIR}/src/logo_png.cpp")  
+endmacro(ocv_get_module_external_sources)
+# TODO : can we unset this macro afterwards?
+
 set(the_description "octVR, you know it")
 ocv_warnings_disable(CMAKE_CXX_FLAGS -Wnon-virtual-dtor)
 ocv_define_module(octvr 

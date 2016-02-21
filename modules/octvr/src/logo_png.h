@@ -9,4 +9,5 @@
 #define OCTVR_LOGO_PNG_H__ value
 
 extern const unsigned char OCTVR_LOGO_DATA[];
+extern const int OCTVR_LOGO_DATA_LEN;
 #endif
