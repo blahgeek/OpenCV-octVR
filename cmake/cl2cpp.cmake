@@ -72,30 +72,31 @@ import base64;
 SALT = '85W MagSage 2 Power Adapter';
 xor_salt = lambda s: ''.join([chr(ord(c) ^ ord(SALT[i % len(SALT)])) for i,c in enumerate(s)]);
 ret = base64.b64encode(xor_salt(sys.stdin.read()).encode('ascii')).decode('ascii');
-print('\\n'.join([ret[i:i+128] for i in range(0, len(ret), 128)]));"
+oneline = lambda s: ', '.join([str(ord(x)) for x in s]);
+print(',\\n'.join([oneline(ret[i:i+20]) for i in range(0, len(ret), 20)]));"
                   OUTPUT_VARIABLE lines
                   INPUT_FILE "${cl}")
   # file(READ "${cl}" lines)
 
-  string(REPLACE "\r" "" lines "${lines}\n")
-  string(REPLACE "\t" "  " lines "${lines}")
+  # string(REPLACE "\r" "" lines "${lines}\n")
+  # string(REPLACE "\t" "  " lines "${lines}")
 
-  string(REGEX REPLACE "/\\*([^*]/|\\*[^/]|[^*/])*\\*/" ""   lines "${lines}") # multiline comments
-  string(REGEX REPLACE "/\\*([^\n])*\\*/"               ""   lines "${lines}") # single-line comments
-  string(REGEX REPLACE "[ ]*//[^\n]*\n"                 "\n" lines "${lines}") # single-line comments
-  string(REGEX REPLACE "\n[ ]*(\n[ ]*)*"                "\n" lines "${lines}") # empty lines & leading whitespace
-  string(REGEX REPLACE "^\n"                            ""   lines "${lines}") # leading new line
+  # string(REGEX REPLACE "/\\*([^*]/|\\*[^/]|[^*/])*\\*/" ""   lines "${lines}") # multiline comments
+  # string(REGEX REPLACE "/\\*([^\n])*\\*/"               ""   lines "${lines}") # single-line comments
+  # string(REGEX REPLACE "[ ]*//[^\n]*\n"                 "\n" lines "${lines}") # single-line comments
+  # string(REGEX REPLACE "\n[ ]*(\n[ ]*)*"                "\n" lines "${lines}") # empty lines & leading whitespace
+  # string(REGEX REPLACE "^\n"                            ""   lines "${lines}") # leading new line
 
-  string(REPLACE "\\" "\\\\" lines "${lines}")
-  string(REPLACE "\"" "\\\"" lines "${lines}")
+  # string(REPLACE "\\" "\\\\" lines "${lines}")
+  # string(REPLACE "\"" "\\\"" lines "${lines}")
   # string(REPLACE "\n" "\\n\"\n\"" lines "${lines}")
-  string(REPLACE "\n" "\"\n\"" lines "${lines}")
+  # string(REPLACE "\n" "\"\n\"" lines "${lines}")
 
-  string(REGEX REPLACE "\"$" "" lines "${lines}") # unneeded " at the eof
+  # string(REGEX REPLACE "\"$" "" lines "${lines}") # unneeded " at the eof
 
   string(MD5 hash "${lines}")
 
-  set(STR_CPP_DECL "const struct ProgramEntry ${cl_filename}={\"${cl_filename}\",\n\"${lines}, \"${hash}\"};\n")
+  set(STR_CPP_DECL "static const char ${cl_filename}_src[] = {\n${lines}\n};\n const struct ProgramEntry ${cl_filename}={\"${cl_filename}\",\n${cl_filename}_src, \"${hash}\"};\n")
   set(STR_HPP_DECL "extern const struct ProgramEntry ${cl_filename};\n")
   if(new_mode)
     set(STR_CPP_DECL "${STR_CPP_DECL}ProgramSource ${cl_filename}_oclsrc(${cl_filename}.programStr);\n")
