@@ -5,9 +5,9 @@
 * @Last Modified time: 2016-02-21
 */
 
-#include <iostream>
-#include "opencv2/imgproc.hpp"
 #include "./fullframe_fisheye_cam.hpp"
+#include "opencv2/imgproc.hpp"
+#include <iostream>
 
 using namespace vr;
 

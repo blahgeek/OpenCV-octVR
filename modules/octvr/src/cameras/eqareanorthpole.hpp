@@ -10,7 +10,8 @@ namespace vr {
 
 class Eqareanorthpole: public Camera {
 public:
-    using Camera::Camera;
+    //using Camera::Camera;
+    Eqareanorthpole(const rapidjson::Value & options) :Camera(options){}
 
     double get_aspect_ratio() override {
         return 1.0;

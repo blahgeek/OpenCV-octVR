@@ -22,7 +22,14 @@
 #include <iostream>
 #include <mutex>
 #include <condition_variable>
+#if defined(__linux__)|| defined(__APPLE__)
 #include <sys/time.h>
+#elif defined(ANDROID)
+#include <time.h>
+#elif defined(_WIN32)
+#include <windows.h>
+#include <time.h>
+#endif
 
 #include "opencv2/core.hpp"
 
@@ -32,7 +39,8 @@ namespace vr {
 class MapperTemplate {
 public:
     std::string out_type;
-    const rapidjson::Value & out_opts;
+    const rapidjson::Value * out_opts = nullptr;
+    // const rapidjson::Value & out_opts;
     cv::Size out_size;
 
     typedef struct {
@@ -112,6 +120,10 @@ class Timer {
 protected:
     int64_t t;
     std::string name;
+
+#if defined(_WIN32)
+	int64_t frequency;
+#endif
 
 public:
     explicit Timer(std::string name);
