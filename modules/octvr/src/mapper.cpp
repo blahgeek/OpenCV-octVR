@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-02-20
+* @Last Modified time: 2016-02-21
 */
 
 #include <iostream>
@@ -33,6 +33,10 @@
 #include "opencv2/cudaarithm.hpp"
 #endif
 
+#ifdef WITH_OCTVR_LOGO
+#include "./logo_png.h"
+#endif
+
 // TODO Set by options
 #define WORKING_MEGAPIX 0.1
 
@@ -49,12 +53,35 @@ Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes,
 #ifdef HAVE_CUDA
     Timer timer("Mapper constructor");
 
-    std::vector<GpuMat> scaled_masks;
-
     this->nonoverlay_num = mt.inputs.size();
 
     this->stitch_size = mt.out_size;
     this->scaled_output_size = scale_output.area() == 0 ? mt.out_size : scale_output;
+
+#ifdef WITH_OCTVR_LOGO
+    cv::Mat logo_png = cv::imdecode(OCTVR_LOGO_DATA, -1);
+    CV_Assert(logo_png.type() == CV_8UC4);
+
+    std::vector<cv::Mat> logo_channels(4);
+    cv::Mat logo_data_mat, logo_mask_mat;
+
+    cv::split(logo_png, logo_channels);
+    logo_mask_mat = logo_channels[3];
+    logo_channels.pop_back();
+    cv::merge(logo_channels, logo_data_mat);
+
+    GpuMat logo_data_tmp, logo_mask_tmp;
+    logo_data_tmp.upload(logo_data_mat);
+    logo_mask_tmp.upload(logo_mask_mat);
+
+    cv::cuda::resize(logo_data_tmp, this->logo_data, this->stitch_size);
+    cv::cuda::resize(logo_mask_tmp, this->logo_mask, this->stitch_size);
+    CV_Assert(this->logo_data.type() == CV_8UC3 && this->logo_mask.type() == CV_8U);
+    
+    timer.tick("Prepare logo");
+#endif
+
+    std::vector<GpuMat> scaled_masks;
 
     this->map1s.resize(mt.inputs.size() + mt.overlay_inputs.size());
     this->map2s.resize(mt.inputs.size() + mt.overlay_inputs.size());
@@ -198,31 +225,37 @@ void Mapper::stitch(std::vector<GpuMat> & inputs,
         timer.tick("Compensator apply");
     }
 
+    cv::cuda::Stream & final_s = streams[inputs.size()];
+
     if(this->blender) {
         blender->blend(partial_warped_imgs, result);
         timer.tick("Blender blend");
     } else {
         for(int i = 0 ; i < nonoverlay_num ; i += 1)
-            warped_imgs[i].copyTo(result, masks[i], streams[inputs.size()]);
+            warped_imgs[i].copyTo(result, masks[i], final_s);
         timer.tick("No blend copy");
     }
 
     for(int i = nonoverlay_num ; i < inputs.size() ; i += 1) {
         streams[i].waitForCompletion();
-        warped_imgs_scale[i].copyTo(result, masks[i], streams[inputs.size()]);
+        warped_imgs_scale[i].copyTo(result, masks[i], final_s);
     }
     CV_Assert(result.type() == CV_8UC3);
+
+#ifdef WITH_OCTVR_LOGO
+    this->logo_data.copyTo(result, this->logo_mask, final_s);
+#endif
 
     if(this->stitch_size != this->scaled_output_size)
         cv::cuda::resize(result, result_scaled, this->scaled_output_size);
     else
         result_scaled = result;
 
-    cv::cuda::cvtRGB24toUYVY422(result_scaled, output, streams[inputs.size()]);
+    cv::cuda::cvtRGB24toUYVY422(result_scaled, output, final_s);
     cv::cuda::GpuMat output_c4 = output.reshape(4);
-    cv::cuda::swapChannels(output_c4, swap_orders, streams[inputs.size()]);
+    cv::cuda::swapChannels(output_c4, swap_orders, final_s);
 
-    streams[inputs.size()].waitForCompletion();
+    final_s.waitForCompletion();
     timer.tick("Convert output");
 
     CV_Assert(output.type() == CV_8UC2);

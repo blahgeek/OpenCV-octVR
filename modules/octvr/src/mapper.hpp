@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-20
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-02-20
+* @Last Modified time: 2016-02-21
 */
 
 #ifndef VR_LIBMAP_IMPL_H
@@ -42,6 +42,10 @@ private:
     std::vector<GpuMat> map2s;
     std::vector<GpuMat> masks; 
     std::vector<GpuMat> seam_masks;
+
+#ifdef WITH_OCTVR_LOGO
+    GpuMat logo_data, logo_mask;
+#endif
 
 private:
     std::unique_ptr<cv::detail::GainCompensatorGPU> compensator;

@@ -20,6 +20,15 @@ else(${WITH_DONGLE_LICENSE})
     message("Dongle license disabled")
 endif (WITH_DONGLE_LICENSE)
 
+option(WITH_OCTVR_LOGO "Enable hard logo for octVR" OFF)
+if (WITH_OCTVR_LOGO)
+    message("OctVR Logo Enabled")
+    add_definitions(-DWITH_OCTVR_LOGO)
+    execute_process(COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tools/logo_converter.py"
+                    "${CMAKE_CURRENT_SOURCE_DIR}/images/logo.png"
+                    "${CMAKE_CURRENT_BINARY_DIR}/src/logo_png.cpp")
+endif (WITH_OCTVR_LOGO)
+
 set(the_description "octVR, you know it")
 ocv_warnings_disable(CMAKE_CXX_FLAGS -Wnon-virtual-dtor)
 ocv_define_module(octvr 
