@@ -9,6 +9,7 @@
 #define VR_LIBMAP_CAMERA_H value
 
 #include "rapidjson/document.h"
+#include <memory>
 #include <utility>
 #include <cmath>
 #include <cassert>
