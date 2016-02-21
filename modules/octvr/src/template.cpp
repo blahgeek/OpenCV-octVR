@@ -18,9 +18,9 @@ using namespace vr;
 MapperTemplate::MapperTemplate(const std::string & to,
                                const rapidjson::Value & to_opts,
                                int width, int height):
-out_type(to), out_opts(to_opts) {
+out_type(to), out_opts(&to_opts) {
 
-    std::unique_ptr<Camera> out_camera = Camera::New(out_type, out_opts);
+    std::unique_ptr<Camera> out_camera = Camera::New(out_type, *out_opts);
     if(!out_camera)
         throw std::string("Invalid output camera type");
 
@@ -38,7 +38,7 @@ out_type(to), out_opts(to_opts) {
 void MapperTemplate::add_input(const std::string & from,
                                const rapidjson::Value & from_opts,
                                bool overlay) {
-    std::unique_ptr<Camera> out_camera = Camera::New(out_type, out_opts);
+    std::unique_ptr<Camera> out_camera = Camera::New(out_type, *out_opts);
     std::unique_ptr<Camera> cam = Camera::New(from, from_opts);
     if(!cam)
         throw std::string("Invalid input camera type");
@@ -172,9 +172,7 @@ void MapperTemplate::dump(std::ofstream & f) {
     }
 }
 
-static const rapidjson::Value __unused__;
-
-MapperTemplate::MapperTemplate(std::ifstream & f): out_opts(__unused__) {
+MapperTemplate::MapperTemplate(std::ifstream & f) {
     char read_magic[16];
     f.read(read_magic, strlen(DUMP_MAGIC));
     if(strncmp(read_magic, DUMP_MAGIC, strlen(DUMP_MAGIC)) != 0)

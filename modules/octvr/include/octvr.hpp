@@ -39,7 +39,8 @@ namespace vr {
 class MapperTemplate {
 public:
     std::string out_type;
-    const rapidjson::Value & out_opts;
+    const rapidjson::Value * out_opts = nullptr;
+    // const rapidjson::Value & out_opts;
     cv::Size out_size;
 
     typedef struct {
