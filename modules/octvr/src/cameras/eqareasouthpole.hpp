@@ -11,7 +11,7 @@ namespace vr {
 class Eqareasouthpole: public Camera {
 public:
     //using Camera::Camera;
-    Eqareasouthpole(const json & options) :Camera(options){}
+    Eqareasouthpole(const rapidjson::Value & options) :Camera(options){}
 
     double get_aspect_ratio() override {
         return 1.0;
