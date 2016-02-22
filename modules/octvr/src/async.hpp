@@ -22,6 +22,8 @@
 #include <memory>
 #include <condition_variable>
 
+#include <QSharedMemory>
+
 namespace vr {
 
 class AsyncMultiMapperImpl: public AsyncMultiMapper {

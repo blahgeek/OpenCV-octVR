@@ -175,6 +175,9 @@ AsyncMultiMapperImpl::AsyncMultiMapperImpl(const std::vector<MapperTemplate> & m
             auto preview_mem = cv::cuda::HostMem(preview_size, CV_8UC3);
             free_previews_gpumat_q.push(std::move(preview_mat));
             free_previews_hostmem_q.push(std::move(preview_mem));
+        } else {
+            free_previews_gpumat_q.push(cv::cuda::GpuMat());
+            free_previews_hostmem_q.push(cv::cuda::HostMem());
         }
     }
 

@@ -33,7 +33,6 @@
 
 #include "opencv2/core.hpp"
 
-#include <QSharedMemory>
 
 namespace vr {
 
