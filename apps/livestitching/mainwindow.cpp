@@ -49,20 +49,15 @@ void MainWindow::run() {
     dumper_args << "-w" << QString::number(ui->paranoma_width->value())
                 << "-o" << (temp_dir.path() + "/vr.dat")
                 << output_json_path;
-    qDebug() << dumper_args.join(" ");
+    qDebug() << "Running dumper: " << dumper_args;
 
-    // QFileInfo dumper = QFileInfo(ui->path_dumper->text());
-    QFileInfo dumper = QFileInfo("./dumper"); // FIXME
-    if (!dumper.exists()){
-        QMessageBox::warning(this, "File not exist", "Cannot find dumper");
+    QProcess dumper_proc;
+    dumper_proc.start("/home/blahgeek/dumper", dumper_args); // FIXME
+    bool finished = dumper_proc.waitForFinished();
+    if(!(finished && dumper_proc.exitStatus() == QProcess::NormalExit && dumper_proc.exitCode() == 0)) {
+        QMessageBox::warning(nullptr, "", "Unable to create dat file");
         return;
     }
-    QProcess dumper_proc;
-    dumper_proc.start(dumper.absoluteFilePath(), dumper_args);
-    dumper_proc.waitForFinished();
-    assert(dumper_proc.exitStatus() == QProcess::NormalExit 
-           && dumper_proc.exitCode() == 0);
-    qDebug() << "Template dumped.";
 
     QStringList args;
     for(auto & input: selected_cams)
@@ -101,18 +96,9 @@ void MainWindow::run() {
     }
 
     args << "-f" << "tee" << "-y" << tee_output;
-    qDebug() << args.join(" ");
+    qDebug() << "Running ffmpeg: " << args;
 
-    // QFileInfo ffmpeg = QFileInfo(ui->path_ffmpeg->text());
-    QFileInfo ffmpeg = QFileInfo("./ffmpeg"); // FIXME
-    if (!ffmpeg.exists()){
-        QMessageBox::warning(this, "File not exist", "Cannot find ffmpeg");
-        return;
-    }
-
-    this->ffmpeg_proc.start(ffmpeg.absoluteFilePath(), args);
-
-    return;
+    this->ffmpeg_proc.start("/home/blahgeek/ffmpeg", args); // FIXME
 }
 
 void MainWindow::initPreview() {

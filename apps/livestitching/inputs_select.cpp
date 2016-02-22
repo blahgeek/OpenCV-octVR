@@ -99,8 +99,8 @@ void InputsSelector::saveImages(int crop_x, int crop_w) {
 
     QProcess proc;
     proc.start("/home/blahgeek/ffmpeg", in_args + out_args); // FIXME
-    proc.waitForFinished();
-    if(proc.exitStatus() == QProcess::NormalExit && proc.exitCode() == 0)
+    bool finished = proc.waitForFinished();
+    if(finished && proc.exitStatus() == QProcess::NormalExit && proc.exitCode() == 0)
         QMessageBox::information(nullptr, "", "Images saved");
     else
         QMessageBox::warning(nullptr, "", "Error occured while saving images");
