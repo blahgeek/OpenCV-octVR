@@ -95,6 +95,9 @@ void MainWindow::run() {
                           .arg(ui->decklink_device->currentText()));
     }
 
+    if(tee_output.size() > 0)
+        tee_output.remove(0, 1);
+
     args << "-f" << "tee" << "-y" << tee_output;
     qDebug() << "Running ffmpeg: " << args;
 
