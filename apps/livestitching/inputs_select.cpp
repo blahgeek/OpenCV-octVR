@@ -9,6 +9,8 @@
 #include <cmath>
 
 #include <QFileDialog>
+#include <QProcess>
+#include <QMessageBox>
 #include <QCameraViewfinderSettings>
 
 #include "./inputs_select.hpp"
@@ -91,8 +93,15 @@ void InputsSelector::saveImages(int crop_x, int crop_w) {
         if(crop_w > 0)
             out_args << "-vf" << QString("crop=w=%1:x=%2").arg(crop_w).arg(crop_x);
         out_args << "-vframes" << "1"
-                 << "-y" << QString("crop_\%d_%1.bmp").arg(i);
+                 << "-y" << QString("%1/crop_\%d_%2.bmp").arg(dir).arg(i);
     }
     qDebug() << "Running: " << in_args << out_args;
-    // TODO
+
+    QProcess proc;
+    proc.start("/home/blahgeek/ffmpeg", in_args + out_args); // FIXME
+    proc.waitForFinished();
+    if(proc.exitStatus() == QProcess::NormalExit && proc.exitCode() == 0)
+        QMessageBox::information(nullptr, "", "Images saved");
+    else
+        QMessageBox::warning(nullptr, "", "Error occured while saving images");
 }
