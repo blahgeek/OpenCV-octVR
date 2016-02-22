@@ -218,6 +218,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     connect(ui->pushButton_run, &QPushButton::clicked, this, &MainWindow::run);
     connect(ui->pushButton_stop, &QPushButton::clicked, &this->ffmpeg_proc, &QProcess::terminate);
+    connect(&this->ffmpeg_proc, &QProcess::stateChanged, this, &MainWindow::onFfmpegStateChanged);
 
     connect(ui->tabWidget, &QTabWidget::currentChanged, this, &MainWindow::onTabChanged);
     connect(ui->inputs_action_save, &QPushButton::clicked, this, &MainWindow::onInputSaveButtonClicked);
