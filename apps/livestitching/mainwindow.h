@@ -10,6 +10,7 @@
 #include <QCameraViewfinder>
 #include <QCameraImageCapture>
 #include <QBoxLayout>
+#include <QTemporaryDir>
 
 #include <QMediaPlayer>
 
@@ -53,6 +54,8 @@ private:
 
     std::unique_ptr<InputsSelector> inputs_selector;
     std::unique_ptr<PTOTemplate> pto_template;
+
+    QTemporaryDir temp_dir;
 
     QProcess ffmpeg_proc;
     QString temp_path;
