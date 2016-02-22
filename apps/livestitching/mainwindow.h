@@ -20,6 +20,7 @@
 #include "./qjsonmodel.h"
 
 #include "./inputs_select.hpp"
+#include "./pto_template.hpp"
 
 namespace Ui {
 class MainWindow;
@@ -55,13 +56,18 @@ public:
     void startPreview();
     void stopPreview();
 
+public slots:
     void onTabChanged(int index);
     void onInputsSelectChanged();
+    void onInputSaveButtonClicked();
+
+    void onTemplateChanged();
 
 private:
     Ui::MainWindow *ui;
 
     std::unique_ptr<InputsSelector> inputs_selector;
+    std::unique_ptr<PTOTemplate> pto_template;
 
     QHBoxLayout * inputs_layout = nullptr;
 

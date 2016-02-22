@@ -58,7 +58,8 @@ void MainWindow::locateHugin() {
                                                     "C:/Users/jun/Documents/livestitching/script/",
                                                     "Hugin executable file (*.*);;All files(*.*)");
     hugin_path = filename;
-    ui->path_hugin->setText(filename);
+    // FIXME
+    // ui->path_hugin->setText(filename);
 }
 
 void MainWindow::reEditPTO() {
@@ -183,8 +184,8 @@ void MainWindow::gotoStitch() {
                      << "-i" << camera_info;
         crop_out_args << "-map" << QString("%1").arg(i)
                       << "-vf" << QString("crop=w=%1:x=%2")
-                         .arg(ui->paranoma_crop_w->value())
-                         .arg(ui->paranoma_crop_x->value())
+                         .arg(ui->inputs_crop_w->value())
+                         .arg(ui->inputs_crop_x->value())
                       << "-vframes" << "1"
                       << image_file_name;
         image_list << image_file_name;
@@ -203,7 +204,8 @@ void MainWindow::gotoStitch() {
     }
 
     QProcess ffmpeg_crop_proc;
-    QFileInfo ffmpeg = QFileInfo(ui->path_ffmpeg->text());
+    // QFileInfo ffmpeg = QFileInfo(ui->path_ffmpeg->text());
+    QFileInfo ffmpeg = QFileInfo("./ffmpeg");  // FIXME
     if (!ffmpeg.exists()) {
         QMessageBox::warning(this, "File not exist", "Cannot find ffmpeg");
         return;
@@ -218,7 +220,8 @@ void MainWindow::gotoStitch() {
     qDebug() << ffmpeg_error;
 
     // Create template.pto file
-    QFileInfo pto_gen = QFileInfo(ui->path_pto_gen->text());
+    // QFileInfo pto_gen = QFileInfo(ui->path_pto_gen->text());
+    QFileInfo pto_gen = QFileInfo("./pto_gen"); // FIXME
     if (!pto_gen.exists()) {
         QMessageBox::warning(this, "File not exist", "Cannot find pto_gen");
         return;
@@ -265,7 +268,8 @@ void MainWindow::run() {
                 << output_json_path;
     qDebug() << dumper_args.join(" ");
 
-    QFileInfo dumper = QFileInfo(ui->path_dumper->text());
+    // QFileInfo dumper = QFileInfo(ui->path_dumper->text());
+    QFileInfo dumper = QFileInfo("./dumper"); // FIXME
     if (!dumper.exists()){
         QMessageBox::warning(this, "File not exist", "Cannot find dumper");
         return;
@@ -285,8 +289,8 @@ void MainWindow::run() {
     args << "-filter_complex"
          << QString("vr_map=inputs=%1:outputs=:crop_x=%2:crop_w=%3:blend=%4")
             .arg(input_cameras.size() + overlay_cameras.size())
-            .arg(ui->paranoma_crop_x->value())
-            .arg(ui->paranoma_crop_w->value())
+            .arg(ui->inputs_crop_x->value())
+            .arg(ui->inputs_crop_w->value())
             .arg(ui->paranoma_algorithm->currentIndex() == 0 ? 128 : -5);
     args << "-c:v" << ui->encoding_codec->currentText()
          << "-b:v" << QString("%1M").arg(ui->encoding_bitrate->value())
@@ -298,7 +302,8 @@ void MainWindow::run() {
          << "-y" << QString("%1/vr.m3u8").arg(ui->hls_dir->text());
     qDebug() << args.join(" ");
 
-    QFileInfo ffmpeg = QFileInfo(ui->path_ffmpeg->text());
+    // QFileInfo ffmpeg = QFileInfo(ui->path_ffmpeg->text());
+    QFileInfo ffmpeg = QFileInfo("./ffmpeg"); // FIXME
     if (!ffmpeg.exists()){
         QMessageBox::warning(this, "File not exist", "Cannot find ffmpeg");
         return;
@@ -356,6 +361,19 @@ void MainWindow::onInputsSelectChanged() {
     this->ui->inputs_info->setText(QString("%1 found, %2 selected")
                                    .arg(all.size())
                                    .arg(selected.size()));
+    this->ui->inputs_action_save->setEnabled(selected.size() > 0);
+}
+
+void MainWindow::onInputSaveButtonClicked() {
+    this->inputs_selector->saveImages(this->ui->inputs_crop_x->value(),
+                                      this->ui->inputs_crop_w->value());
+}
+
+void MainWindow::onTemplateChanged() {
+    auto json_doc = this->pto_template->getJsonDocument();
+    QJsonObject doc_obj = json_doc.object();
+    QJsonArray inputs = doc_obj["inputs"].toArray();
+    this->ui->template_info->setText(QString("%1 inputs").arg(inputs.size()));
 }
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -365,6 +383,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
 
     inputs_selector.reset(new InputsSelector(ui->inputs_grid));
+    pto_template.reset(new PTOTemplate(ui->template_tree_view));
 
     inputs_layout = new QHBoxLayout(ui->area_inputs_widget);
     ui->area_inputs_widget->setFixedSize(0, 0);
@@ -405,10 +424,14 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->pushButton_run, &QPushButton::clicked, this, &MainWindow::run);
 
     connect(ui->tabWidget, &QTabWidget::currentChanged, this, &MainWindow::onTabChanged);
-    connect(ui->inputs_action_save, &QPushButton::clicked, this->inputs_selector.get(), &InputsSelector::saveImages);
+    connect(ui->inputs_action_save, &QPushButton::clicked, this, &MainWindow::onInputSaveButtonClicked);
     connect(this->inputs_selector.get(), &InputsSelector::selectedChanged, this, &MainWindow::onInputsSelectChanged);
 
+    connect(ui->template_load, &QPushButton::clicked, this->pto_template.get(), &PTOTemplate::loadPTO);
+    connect(this->pto_template.get(), &PTOTemplate::dataChanged, this, &MainWindow::onTemplateChanged);
+
     this->onInputsSelectChanged();
+    this->onTemplateChanged();
 
     temp_path = QDir::tempPath() + "/vrlive";
     qDebug() << "temporary dir: " << temp_path;

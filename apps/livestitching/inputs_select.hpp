@@ -43,7 +43,7 @@ public:
     void start();
     void stop();
 
-    void saveImages();
+    void saveImages(int crop_x, int crop_w);
 
     std::vector<QCameraInfo> getSelected();
     std::vector<QCameraInfo> getAll();

@@ -23,6 +23,7 @@ ocv_add_executable(livestitching
                    main.cpp
                    mainwindow.cpp
                    inputs_select.cpp
+                   pto_template.cpp
                    qjsonitem.cpp
                    qjsonmodel.cpp
                    icons.qrc

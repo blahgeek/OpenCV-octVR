@@ -31,7 +31,7 @@ InputsSelector::InputsSelector(QGridLayout * _grid): grid(_grid) {
         QVBoxLayout * layout = new QVBoxLayout;
         layout->addWidget(this->views.back().get());
 
-        this->check_boxs.emplace_back(new QCheckBox("Enable"));
+        this->check_boxs.emplace_back(new QCheckBox("Select"));
         this->check_boxs.back()->setCheckState(Qt::Checked);
         connect(this->check_boxs.back().get(), &QCheckBox::stateChanged,
                 this, &InputsSelector::selectedChanged);
@@ -73,7 +73,7 @@ std::vector<QCameraInfo> InputsSelector::getAll() {
     return ret;
 }
 
-void InputsSelector::saveImages() {
+void InputsSelector::saveImages(int crop_x, int crop_w) {
     QString dir = QFileDialog::getExistingDirectory(nullptr, ("Choose Directory"),
                                                     "/home", QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
     auto selected = this->getSelected();
@@ -81,12 +81,10 @@ void InputsSelector::saveImages() {
     for(size_t i = 0 ; i < selected.size() ; i += 1) {
         in_args << "-f" << "v4l2" << "-input_format" << "rgb24"
                 << "-i" << selected[i].deviceName();
-        out_args << "-map" << QString("%1").arg(i)
-                 // TODO
-                 // << "-vf" << QString("crop=w=%1:x=%2")
-                 //         .arg(ui->paranoma_crop_w->value())
-                 //         .arg(ui->paranoma_crop_x->value())
-                 << "-vframes" << "1"
+        out_args << "-map" << QString("%1").arg(i);
+        if(crop_w > 0)
+            out_args << "-vf" << QString("crop=w=%1:x=%2").arg(crop_w).arg(crop_x);
+        out_args << "-vframes" << "1"
                  << "-y" << QString("crop_\%d_%1.bmp").arg(i);
     }
     qDebug() << "Running: " << in_args << out_args;
