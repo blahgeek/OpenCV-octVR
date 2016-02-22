@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-02-22
+* @Last Modified time: 2016-02-23
 */
 
 #ifndef VR_LIBMAP_BASE_H
@@ -72,12 +72,13 @@ public:
     explicit MapperTemplate(std::ifstream & f);
 };
 
-#define OCTVR_PREVIEW_DATA_MEMORY_KEY "opencv_octvr_preview"
+#define OCTVR_PREVIEW_DATA0_MEMORY_KEY "opencv_octvr_preview_0"
+#define OCTVR_PREVIEW_DATA1_MEMORY_KEY "opencv_octvr_preview_1"
+#define OCTVR_PREVIEW_DATA_META_MEMORY_KEY "opencv_octvr_preview_meta"
 
 struct PreviewDataHeader {
     int width, height;
     int step;
-    bool updated;
 };
 
 class AsyncMultiMapper {

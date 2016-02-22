@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-12-01
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-02-22
+* @Last Modified time: 2016-02-23
 */
 
 
@@ -81,10 +81,24 @@ void AsyncMultiMapperImpl::run_copy_outputs_hostmem_to_mat() {
 
     auto preview_hostmem = this->previews_hostmem_q.pop();
     // TODO: lock
-    if(preview_size.area() > 0)
+    if(preview_size.area() > 0) {
+        void * preview_meta_p = preview_meta.data();
+        char zone_index = *(static_cast<char *>(preview_meta_p));
+        std::cerr << "Copying preview frame to shared zone " << zone_index;
+
+        QSharedMemory & target = zone_index == 0 ? preview_data0 : preview_data1;
+        target.lock();
+
         preview_hostmem.createMatHeader().copyTo(cv::Mat(preview_size, CV_8UC3,
-                                                         static_cast<char *>(preview_data.data()) + sizeof(struct PreviewDataHeader),
+                                                         static_cast<char *>(target.data()) + sizeof(struct PreviewDataHeader),
                                                          0));
+        struct PreviewDataHeader * hdr = static_cast<struct PreviewDataHeader *>(target.data());
+        hdr->width = preview_size.width;
+        hdr->height = preview_size.height;
+        hdr->step = 0;
+
+        target.unlock();
+    }
     this->free_previews_hostmem_q.push(std::move(preview_hostmem));
 }
 
@@ -165,11 +179,19 @@ AsyncMultiMapperImpl::AsyncMultiMapperImpl(const std::vector<MapperTemplate> & m
     }
 
     if(this->preview_size.area() > 0) {
-        preview_data.setKey(OCTVR_PREVIEW_DATA_MEMORY_KEY);
-        CV_Assert(!preview_data.isAttached());
-        bool ret = preview_data.create(sizeof(struct PreviewDataHeader) 
-                                       + preview_size.area() * 3);
-        CV_Assert(ret);
+        preview_data0.setKey(OCTVR_PREVIEW_DATA0_MEMORY_KEY);
+        preview_data1.setKey(OCTVR_PREVIEW_DATA1_MEMORY_KEY);
+        preview_meta.setKey(OCTVR_PREVIEW_DATA_META_MEMORY_KEY);
+
+        preview_data0.attach();
+        preview_data1.attach();
+        preview_meta.attach();
+
+        CV_Assert(preview_data0.isAttached()
+                  && preview_data0.size() == sizeof(struct PreviewDataHeader) + preview_size.area() * 3);
+        CV_Assert(preview_data1.isAttached() 
+                  && preview_data1.size() == sizeof(struct PreviewDataHeader) + preview_size.area() * 3);
+        CV_Assert(preview_meta.isAttached() && preview_meta.size() == 1);
     }
 
 #define RUN_THREAD(X) do { \
