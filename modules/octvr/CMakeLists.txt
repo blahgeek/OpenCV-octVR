@@ -27,13 +27,13 @@ if (WITH_OCTVR_LOGO)
     execute_process(COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tools/logo_converter.py"
                     "${CMAKE_CURRENT_SOURCE_DIR}/images/logo.png"
                     "${CMAKE_CURRENT_BINARY_DIR}/src/logo_png.cpp")
+    
+    macro(ocv_get_module_external_sources)
+        set(__filesvar "OPENCV_MODULE_opencv_octvr_SOURCES")
+        list(APPEND ${__filesvar} "${CMAKE_CURRENT_BINARY_DIR}/src/logo_png.cpp")  
+    endmacro(ocv_get_module_external_sources)
+    # TODO : can we unset this macro afterwards?
 endif (WITH_OCTVR_LOGO)
-
-macro(ocv_get_module_external_sources)
-    set(__filesvar "OPENCV_MODULE_opencv_octvr_SOURCES")
-    list(APPEND ${__filesvar} "${CMAKE_CURRENT_BINARY_DIR}/src/logo_png.cpp")  
-endmacro(ocv_get_module_external_sources)
-# TODO : can we unset this macro afterwards?
 
 set(the_description "octVR, you know it")
 ocv_warnings_disable(CMAKE_CXX_FLAGS -Wnon-virtual-dtor)
