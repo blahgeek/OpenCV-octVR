@@ -20,7 +20,7 @@ InputsSelector::InputsSelector(QGridLayout * _grid): grid(_grid) {
     int size_row = std::ceil(std::sqrt(float(size_all)));
 
     QCameraViewfinderSettings settings;
-    settings.setMaximumFrameRate(10);
+    settings.setMaximumFrameRate(5);
     settings.setResolution(QSize(640, 480));
 
     int row = 0, col = 0;

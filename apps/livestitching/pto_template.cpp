@@ -7,7 +7,7 @@
 
 #include <iostream>
 
-#include <QHEaderView>
+#include <QHeaderView>
 #include <QFileDialog>
 
 #include "./pto_template.hpp"

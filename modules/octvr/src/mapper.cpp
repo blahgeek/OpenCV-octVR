@@ -249,7 +249,8 @@ void Mapper::stitch(std::vector<GpuMat> & inputs,
 #endif
 
     if(this->stitch_size != this->scaled_output_size)
-        cv::cuda::resize(result, result_scaled, this->scaled_output_size);
+        cv::cuda::resize(result, result_scaled, this->scaled_output_size,
+                         0, 0, cv::INTER_LINEAR, stream_final);
     else
         result_scaled = result;
 
@@ -258,8 +259,9 @@ void Mapper::stitch(std::vector<GpuMat> & inputs,
     cv::cuda::swapChannels(output_c4, swap_orders, stream_final);
 
     if(!preview_output.empty()) {
-        CV_Assert(preview_output.type() == CV_8U3);
-        cv::cuda::resize(result, preview_output, preview_output.size(), stream_final);
+        CV_Assert(preview_output.type() == CV_8UC3);
+        cv::cuda::resize(result, preview_output, preview_output.size(), 
+                         0, 0, cv::INTER_LINEAR, stream_final);
     }
 
     stream_final.waitForCompletion();
