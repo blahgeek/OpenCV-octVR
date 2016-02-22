@@ -42,12 +42,16 @@ public:
     void startPreview();
     void stopPreview();
 
+    enum RunningStatus { NOT_RUNNING, DUMPER_RUNNING, FFMPEG_RUNNING };
 public slots:
     void onTabChanged(int index);
     void onInputsSelectChanged();
     void onInputSaveButtonClicked();
 
     void onTemplateChanged();
+
+    void onRunningStatusChanged(enum RunningStatus status);
+    void onFfmpegStateChanged(QProcess::ProcessState state);
 
 private:
     Ui::MainWindow *ui;

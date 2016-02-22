@@ -51,11 +51,14 @@ void MainWindow::run() {
                 << output_json_path;
     qDebug() << "Running dumper: " << dumper_args;
 
+    this->onRunningStatusChanged(DUMPER_RUNNING);
+
     QProcess dumper_proc;
     dumper_proc.start("/home/blahgeek/dumper", dumper_args); // FIXME
     bool finished = dumper_proc.waitForFinished();
     if(!(finished && dumper_proc.exitStatus() == QProcess::NormalExit && dumper_proc.exitCode() == 0)) {
         QMessageBox::warning(nullptr, "", "Unable to create dat file");
+        this->onRunningStatusChanged(NOT_RUNNING);
         return;
     }
 
@@ -101,7 +104,37 @@ void MainWindow::run() {
     args << "-f" << "tee" << "-y" << tee_output;
     qDebug() << "Running ffmpeg: " << args;
 
+    this->onRunningStatusChanged(FFMPEG_RUNNING);
     this->ffmpeg_proc.start("/home/blahgeek/ffmpeg", args); // FIXME
+}
+
+void MainWindow::onRunningStatusChanged(enum RunningStatus status) {
+    switch(status){
+        case NOT_RUNNING:
+            this->ui->pushButton_run->setEnabled(true);
+            this->ui->pushButton_stop->setEnabled(false);
+            this->ui->running_status->setText("Not running");
+            break;
+        case DUMPER_RUNNING:
+            this->ui->pushButton_run->setEnabled(false);
+            this->ui->pushButton_stop->setEnabled(false);
+            this->ui->running_status->setText("Preparing...");
+            break;
+        case FFMPEG_RUNNING:
+            this->ui->pushButton_run->setEnabled(false);
+            this->ui->pushButton_stop->setEnabled(true);
+            this->ui->running_status->setText("Running...");
+            break;
+        default:
+            break;
+    }
+}
+
+void MainWindow::onFfmpegStateChanged(QProcess::ProcessState state) {
+    if(state == QProcess::NotRunning)
+        this->onRunningStatusChanged(NOT_RUNNING);
+    else
+        this->onRunningStatusChanged(FFMPEG_RUNNING);
 }
 
 void MainWindow::initPreview() {
@@ -184,6 +217,7 @@ MainWindow::MainWindow(QWidget *parent) :
     }
 
     connect(ui->pushButton_run, &QPushButton::clicked, this, &MainWindow::run);
+    connect(ui->pushButton_stop, &QPushButton::clicked, &this->ffmpeg_proc, &QProcess::terminate);
 
     connect(ui->tabWidget, &QTabWidget::currentChanged, this, &MainWindow::onTabChanged);
     connect(ui->inputs_action_save, &QPushButton::clicked, this, &MainWindow::onInputSaveButtonClicked);
@@ -194,6 +228,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     this->onInputsSelectChanged();
     this->onTemplateChanged();
+    this->onRunningStatusChanged(NOT_RUNNING);
 
     this->ui->tabWidget->setCurrentIndex(0);
 
