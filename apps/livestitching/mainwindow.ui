@@ -146,11 +146,6 @@
           </property>
           <item>
            <widget class="QGroupBox" name="group_paranoma">
-            <property name="font">
-             <font>
-              <pointsize>13</pointsize>
-             </font>
-            </property>
             <property name="title">
              <string>Paranoma Settings</string>
             </property>
@@ -209,11 +204,6 @@
           </item>
           <item>
            <widget class="QGroupBox" name="group_encoding">
-            <property name="font">
-             <font>
-              <pointsize>13</pointsize>
-             </font>
-            </property>
             <property name="title">
              <string>Encoding Settings</string>
             </property>
@@ -299,11 +289,6 @@
           </property>
           <item>
            <widget class="QGroupBox" name="group_streaming">
-            <property name="font">
-             <font>
-              <pointsize>13</pointsize>
-             </font>
-            </property>
             <property name="title">
              <string>HLS</string>
             </property>
@@ -374,11 +359,6 @@
           </item>
           <item>
            <widget class="QGroupBox" name="group_streaming_2">
-            <property name="font">
-             <font>
-              <pointsize>13</pointsize>
-             </font>
-            </property>
             <property name="title">
              <string>Save to file</string>
             </property>
@@ -409,11 +389,6 @@
           </item>
           <item>
            <widget class="QGroupBox" name="group_streaming_3">
-            <property name="font">
-             <font>
-              <pointsize>13</pointsize>
-             </font>
-            </property>
             <property name="title">
              <string>Decklink</string>
             </property>
@@ -442,11 +417,6 @@
         </item>
         <item>
          <widget class="QGroupBox" name="group_run">
-          <property name="font">
-           <font>
-            <pointsize>13</pointsize>
-           </font>
-          </property>
           <property name="title">
            <string>Run</string>
           </property>
@@ -477,11 +447,6 @@
                <horstretch>1</horstretch>
                <verstretch>0</verstretch>
               </sizepolicy>
-             </property>
-             <property name="font">
-              <font>
-               <pointsize>15</pointsize>
-              </font>
              </property>
              <property name="text">
               <string>Stop</string>
