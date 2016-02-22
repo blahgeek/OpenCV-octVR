@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-02-01
+* @Last Modified time: 2016-02-22
 */
 
 #include <iostream>
@@ -173,8 +173,8 @@ void FastMapper::stitch_nv12(const std::vector<cv::UMat> & inputs, cv::UMat & ou
         timer.tick("split input");
 
         cv::remap_weighted(input_c0, output_s_c0, map1s[i], map2s[i], feather_masks[i], cv::INTER_LINEAR);
-        cv::remap_weighted(input_c1c2[0], output_s_c1c2[0], half_map1s[i], half_map2s[i], half_feather_masks[i], cv::INTER_LINEAR);
-        cv::remap_weighted(input_c1c2[1], output_s_c1c2[1], half_map1s[i], half_map2s[i], half_feather_masks[i], cv::INTER_LINEAR);
+        cv::remap_weighted(input_c1c2[1], output_s_c1c2[0], half_map1s[i], half_map2s[i], half_feather_masks[i], cv::INTER_LINEAR);
+        cv::remap_weighted(input_c1c2[0], output_s_c1c2[1], half_map1s[i], half_map2s[i], half_feather_masks[i], cv::INTER_LINEAR);
         timer.tick("remap");
     }
 

@@ -32,24 +32,9 @@ class MainWindow : public QMainWindow
 
 public:
     explicit MainWindow(QWidget *parent = 0);
-    void openPTO();
-
     ~MainWindow();
 
 public:
-    void jsonAddOverlay();
-    void jsonDelOverlay();
-
-    void deviceAddCamera();
-    void deviceDelCamera();
-
-    void loadPTO(const QString & filename);
-    void locateHugin(); 
-    void gotoStitch();
-
-    void reEditPTO();
-    void saveAsPTO();
-
     void run();
 
     void initPreview();
@@ -68,15 +53,6 @@ private:
 
     std::unique_ptr<InputsSelector> inputs_selector;
     std::unique_ptr<PTOTemplate> pto_template;
-
-    QHBoxLayout * inputs_layout = nullptr;
-
-    QJsonModel json_model;
-    QList<QCameraInfo> camera_infos;
-
-    using CameraAndView = std::tuple<std::unique_ptr<QCamera>, std::unique_ptr<QCameraViewfinder>, QString>;
-    std::vector<CameraAndView> input_cameras, overlay_cameras;
-    std::map<int, QCameraImageCapture *> image_captures;
 
     QProcess ffmpeg_proc;
     QString temp_path;

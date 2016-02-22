@@ -9,6 +9,7 @@
 #include <cmath>
 
 #include <QFileDialog>
+#include <QCameraViewfinderSettings>
 
 #include "./inputs_select.hpp"
 
@@ -18,6 +19,10 @@ InputsSelector::InputsSelector(QGridLayout * _grid): grid(_grid) {
     int size_all = this->camera_infos.size();
     int size_row = std::ceil(std::sqrt(float(size_all)));
 
+    QCameraViewfinderSettings settings;
+    settings.setMaximumFrameRate(10);
+    settings.setResolution(QSize(640, 480));
+
     int row = 0, col = 0;
     foreach(const QCameraInfo &info, camera_infos) {
         qDebug() << "Camera info: " << info.description() << ", " << info.deviceName();
@@ -25,6 +30,7 @@ InputsSelector::InputsSelector(QGridLayout * _grid): grid(_grid) {
         this->cameras.emplace_back(new QCamera(info));
         this->views.emplace_back(new QCameraViewfinder());
         this->cameras.back()->setViewfinder(this->views.back().get());
+        this->cameras.back()->setViewfinderSettings(settings);
         this->cameras.back()->start();
 
         QGroupBox * group_box = new QGroupBox(info.description());

@@ -7,947 +7,557 @@
     <x>0</x>
     <y>0</y>
     <width>821</width>
-    <height>568</height>
+    <height>575</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralWidget">
-   <widget class="QTabWidget" name="tabWidget">
-    <property name="enabled">
-     <bool>true</bool>
+   <layout class="QHBoxLayout" name="horizontalLayout">
+    <property name="topMargin">
+     <number>20</number>
     </property>
-    <property name="geometry">
-     <rect>
-      <x>10</x>
-      <y>20</y>
-      <width>801</width>
-      <height>531</height>
-     </rect>
-    </property>
-    <property name="sizePolicy">
-     <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
-      <horstretch>0</horstretch>
-      <verstretch>0</verstretch>
-     </sizepolicy>
-    </property>
-    <property name="currentIndex">
-     <number>2</number>
-    </property>
-    <widget class="QWidget" name="tab">
-     <attribute name="title">
-      <string>Page</string>
-     </attribute>
-     <widget class="QWidget" name="gridLayoutWidget">
-      <property name="geometry">
-       <rect>
-        <x>20</x>
-        <y>10</y>
-        <width>761</width>
-        <height>411</height>
-       </rect>
-      </property>
-      <layout class="QGridLayout" name="inputs_grid"/>
-     </widget>
-     <widget class="QPushButton" name="inputs_action_save">
-      <property name="geometry">
-       <rect>
-        <x>650</x>
-        <y>440</y>
-        <width>131</width>
-        <height>32</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Save Images</string>
-      </property>
-     </widget>
-     <widget class="QLabel" name="inputs_info">
-      <property name="geometry">
-       <rect>
-        <x>20</x>
-        <y>450</y>
-        <width>191</width>
-        <height>16</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Text</string>
-      </property>
-     </widget>
-     <widget class="QLabel" name="label_6">
-      <property name="geometry">
-       <rect>
-        <x>450</x>
-        <y>450</y>
-        <width>61</width>
-        <height>16</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Crop</string>
-      </property>
-     </widget>
-     <widget class="QSpinBox" name="inputs_crop_x">
-      <property name="geometry">
-       <rect>
-        <x>500</x>
-        <y>450</y>
-        <width>61</width>
-        <height>24</height>
-       </rect>
-      </property>
-      <property name="maximum">
-       <number>10000</number>
-      </property>
-     </widget>
-     <widget class="QSpinBox" name="inputs_crop_w">
-      <property name="geometry">
-       <rect>
-        <x>570</x>
-        <y>450</y>
-        <width>61</width>
-        <height>24</height>
-       </rect>
-      </property>
-      <property name="maximum">
-       <number>10000</number>
-      </property>
-     </widget>
-    </widget>
-    <widget class="QWidget" name="tab_device">
-     <attribute name="title">
-      <string>Device</string>
-     </attribute>
-     <widget class="QLabel" name="label_10">
-      <property name="geometry">
-       <rect>
-        <x>179</x>
-        <y>24</y>
-        <width>31</width>
-        <height>22</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Add</string>
-      </property>
-     </widget>
-     <widget class="QComboBox" name="comboBox_device">
-      <property name="geometry">
-       <rect>
-        <x>210</x>
-        <y>20</y>
-        <width>121</width>
-        <height>30</height>
-       </rect>
-      </property>
-     </widget>
-     <widget class="QPushButton" name="pushButton_add_camera">
-      <property name="geometry">
-       <rect>
-        <x>430</x>
-        <y>20</y>
-        <width>61</width>
-        <height>32</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Add</string>
-      </property>
-     </widget>
-     <widget class="QComboBox" name="comboBox_input_overlay">
-      <property name="geometry">
-       <rect>
-        <x>357</x>
-        <y>20</y>
-        <width>71</width>
-        <height>30</height>
-       </rect>
-      </property>
-      <item>
-       <property name="text">
-        <string>Input</string>
-       </property>
-      </item>
-      <item>
-       <property name="text">
-        <string>Overlay</string>
-       </property>
-      </item>
-     </widget>
-     <widget class="QWidget" name="horizontalLayoutWidget_2">
-      <property name="geometry">
-       <rect>
-        <x>20</x>
-        <y>240</y>
-        <width>741</width>
-        <height>151</height>
-       </rect>
-      </property>
-      <layout class="QHBoxLayout" name="layout_overlays"/>
-     </widget>
-     <widget class="QPushButton" name="pushButton_del_camera">
-      <property name="geometry">
-       <rect>
-        <x>490</x>
-        <y>20</y>
-        <width>61</width>
-        <height>32</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Del</string>
-      </property>
-     </widget>
-     <widget class="QLabel" name="label_8">
-      <property name="geometry">
-       <rect>
-        <x>338</x>
-        <y>24</y>
-        <width>31</width>
-        <height>22</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>as</string>
-      </property>
-     </widget>
-     <widget class="QScrollArea" name="area_inputs">
-      <property name="geometry">
-       <rect>
-        <x>20</x>
-        <y>80</y>
-        <width>741</width>
-        <height>141</height>
-       </rect>
-      </property>
-      <property name="widgetResizable">
+    <item>
+     <widget class="QTabWidget" name="tabWidget">
+      <property name="enabled">
        <bool>true</bool>
       </property>
-      <widget class="QWidget" name="area_inputs_widget">
-       <property name="geometry">
-        <rect>
-         <x>0</x>
-         <y>0</y>
-         <width>739</width>
-         <height>139</height>
-        </rect>
-       </property>
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="currentIndex">
+       <number>0</number>
+      </property>
+      <widget class="QWidget" name="tab">
+       <attribute name="title">
+        <string>Page</string>
+       </attribute>
+       <layout class="QGridLayout" name="gridLayout_2">
+        <item row="0" column="0" colspan="5">
+         <layout class="QGridLayout" name="inputs_grid"/>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="inputs_info">
+          <property name="text">
+           <string>Text</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QLabel" name="label_6">
+          <property name="text">
+           <string>Crop</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="2">
+         <widget class="QSpinBox" name="inputs_crop_x">
+          <property name="maximum">
+           <number>10000</number>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="3">
+         <widget class="QSpinBox" name="inputs_crop_w">
+          <property name="maximum">
+           <number>10000</number>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="4">
+         <widget class="QPushButton" name="inputs_action_save">
+          <property name="text">
+           <string>Save Images</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </widget>
-     </widget>
-    </widget>
-    <widget class="QWidget" name="tab_2">
-     <attribute name="title">
-      <string>Page</string>
-     </attribute>
-     <widget class="QTreeView" name="template_tree_view">
-      <property name="geometry">
-       <rect>
-        <x>30</x>
-        <y>50</y>
-        <width>741</width>
-        <height>431</height>
-       </rect>
-      </property>
-     </widget>
-     <widget class="QPushButton" name="template_load">
-      <property name="geometry">
-       <rect>
-        <x>30</x>
-        <y>10</y>
-        <width>121</width>
-        <height>32</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Load Template</string>
-      </property>
-     </widget>
-     <widget class="QLabel" name="template_info">
-      <property name="geometry">
-       <rect>
-        <x>620</x>
-        <y>10</y>
-        <width>141</width>
-        <height>20</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>TextLabel</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-      </property>
-     </widget>
-    </widget>
-    <widget class="QWidget" name="tab_template">
-     <attribute name="title">
-      <string>Template</string>
-     </attribute>
-     <widget class="QTreeView" name="treeView">
-      <property name="geometry">
-       <rect>
-        <x>40</x>
-        <y>50</y>
-        <width>721</width>
-        <height>421</height>
-       </rect>
-      </property>
-     </widget>
-     <widget class="QPushButton" name="pushButton_openfile">
-      <property name="geometry">
-       <rect>
-        <x>33</x>
-        <y>10</y>
-        <width>121</width>
-        <height>32</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Load Template</string>
-      </property>
-     </widget>
-     <widget class="QPushButton" name="pushButton_edit_pto">
-      <property name="geometry">
-       <rect>
-        <x>33</x>
-        <y>480</y>
-        <width>161</width>
-        <height>32</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Re-Edit Template</string>
-      </property>
-     </widget>
-     <widget class="QPushButton" name="pushButton_new_pto">
-      <property name="geometry">
-       <rect>
-        <x>150</x>
-        <y>10</y>
-        <width>181</width>
-        <height>32</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Create A New Template</string>
-      </property>
-     </widget>
-     <widget class="QPushButton" name="pushButton_saveas_pto">
-      <property name="geometry">
-       <rect>
-        <x>190</x>
-        <y>480</y>
-        <width>161</width>
-        <height>32</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Save Template As</string>
-      </property>
-     </widget>
-     <widget class="QPushButton" name="pushButton_locate_hugin">
-      <property name="geometry">
-       <rect>
-        <x>650</x>
-        <y>10</y>
-        <width>115</width>
-        <height>32</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Locate Hugin</string>
-      </property>
-     </widget>
-    </widget>
-    <widget class="QWidget" name="tab_config">
-     <property name="enabled">
-      <bool>true</bool>
-     </property>
-     <attribute name="title">
-      <string>Config</string>
-     </attribute>
-     <widget class="QGroupBox" name="group_encoding">
-      <property name="geometry">
-       <rect>
-        <x>440</x>
-        <y>20</y>
-        <width>231</width>
-        <height>131</height>
-       </rect>
-      </property>
-      <property name="font">
-       <font>
-        <pointsize>15</pointsize>
-       </font>
-      </property>
-      <property name="title">
-       <string>Encoding Settings</string>
-      </property>
-      <widget class="QComboBox" name="encoding_codec">
-       <property name="geometry">
-        <rect>
-         <x>110</x>
-         <y>30</y>
-         <width>104</width>
-         <height>26</height>
-        </rect>
-       </property>
-       <item>
-        <property name="text">
-         <string>libx264</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>nvenc_h264</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>nvenc_hevc</string>
-        </property>
-       </item>
+      <widget class="QWidget" name="tab_2">
+       <attribute name="title">
+        <string>Page</string>
+       </attribute>
+       <layout class="QGridLayout" name="gridLayout_3">
+        <item row="0" column="1">
+         <widget class="QLabel" name="template_info">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+            <horstretch>4</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string>Text</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0" colspan="2">
+         <widget class="QTreeView" name="template_tree_view"/>
+        </item>
+        <item row="0" column="0">
+         <widget class="QPushButton" name="template_load">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+            <horstretch>1</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string>Load Template</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </widget>
-      <widget class="QDoubleSpinBox" name="encoding_bitrate">
-       <property name="geometry">
-        <rect>
-         <x>110</x>
-         <y>60</y>
-         <width>101</width>
-         <height>24</height>
-        </rect>
-       </property>
-       <property name="maximum">
-        <double>1000.000000000000000</double>
-       </property>
-       <property name="value">
-        <double>10.000000000000000</double>
-       </property>
-      </widget>
-      <widget class="QSpinBox" name="encoding_gopsize">
-       <property name="geometry">
-        <rect>
-         <x>110</x>
-         <y>90</y>
-         <width>101</width>
-         <height>24</height>
-        </rect>
-       </property>
-       <property name="minimum">
-        <number>25</number>
-       </property>
-       <property name="maximum">
-        <number>1000</number>
-       </property>
-      </widget>
-      <widget class="QLabel" name="label">
-       <property name="geometry">
-        <rect>
-         <x>8</x>
-         <y>36</y>
-         <width>59</width>
-         <height>16</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Codec</string>
-       </property>
-      </widget>
-      <widget class="QLabel" name="label_2">
-       <property name="geometry">
-        <rect>
-         <x>8</x>
-         <y>66</y>
-         <width>91</width>
-         <height>16</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Bitrate (Mbps)</string>
-       </property>
-      </widget>
-      <widget class="QLabel" name="label_3">
-       <property name="geometry">
-        <rect>
-         <x>8</x>
-         <y>95</y>
-         <width>59</width>
-         <height>16</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>GOP Size</string>
-       </property>
-      </widget>
-     </widget>
-     <widget class="QGroupBox" name="group_paranoma">
-      <property name="geometry">
-       <rect>
-        <x>180</x>
-        <y>20</y>
-        <width>231</width>
-        <height>101</height>
-       </rect>
-      </property>
-      <property name="font">
-       <font>
-        <pointsize>15</pointsize>
-       </font>
-      </property>
-      <property name="title">
-       <string>Paranoma Settings</string>
-      </property>
-      <widget class="QSpinBox" name="paranoma_width">
-       <property name="geometry">
-        <rect>
-         <x>100</x>
-         <y>60</y>
-         <width>121</width>
-         <height>24</height>
-        </rect>
-       </property>
-       <property name="minimum">
-        <number>2</number>
-       </property>
-       <property name="maximum">
-        <number>7680</number>
-       </property>
-       <property name="singleStep">
-        <number>2</number>
-       </property>
-       <property name="value">
-        <number>3840</number>
-       </property>
-      </widget>
-      <widget class="QComboBox" name="paranoma_algorithm">
-       <property name="geometry">
-        <rect>
-         <x>100</x>
-         <y>30</y>
-         <width>121</width>
-         <height>26</height>
-        </rect>
-       </property>
-       <item>
-        <property name="text">
-         <string>Multi-band</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>Linear</string>
-        </property>
-       </item>
-      </widget>
-      <widget class="QLabel" name="label_4">
-       <property name="geometry">
-        <rect>
-         <x>8</x>
-         <y>36</y>
-         <width>59</width>
-         <height>16</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Algorithm</string>
-       </property>
-      </widget>
-      <widget class="QLabel" name="label_5">
-       <property name="geometry">
-        <rect>
-         <x>8</x>
-         <y>67</y>
-         <width>59</width>
-         <height>16</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Width</string>
-       </property>
-      </widget>
-     </widget>
-     <widget class="QGroupBox" name="group_streaming">
-      <property name="geometry">
-       <rect>
-        <x>30</x>
-        <y>180</y>
-        <width>211</width>
-        <height>161</height>
-       </rect>
-      </property>
-      <property name="font">
-       <font>
-        <pointsize>15</pointsize>
-       </font>
-      </property>
-      <property name="title">
-       <string>HLS</string>
-      </property>
-      <widget class="QSpinBox" name="hls_list_size">
-       <property name="geometry">
-        <rect>
-         <x>100</x>
-         <y>90</y>
-         <width>101</width>
-         <height>24</height>
-        </rect>
-       </property>
-       <property name="minimum">
-        <number>1</number>
-       </property>
-       <property name="maximum">
-        <number>1000</number>
-       </property>
-       <property name="value">
-        <number>30</number>
-       </property>
-      </widget>
-      <widget class="QLabel" name="label_11">
-       <property name="geometry">
-        <rect>
-         <x>8</x>
-         <y>66</y>
-         <width>91</width>
-         <height>16</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Seg Time (s)</string>
-       </property>
-      </widget>
-      <widget class="QLabel" name="label_12">
-       <property name="geometry">
-        <rect>
-         <x>8</x>
-         <y>95</y>
-         <width>59</width>
-         <height>16</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>List Size</string>
-       </property>
-      </widget>
-      <widget class="QSpinBox" name="hls_segment_time">
-       <property name="geometry">
-        <rect>
-         <x>100</x>
-         <y>60</y>
-         <width>101</width>
-         <height>24</height>
-        </rect>
-       </property>
-       <property name="minimum">
-        <number>1</number>
-       </property>
-       <property name="maximum">
-        <number>30</number>
-       </property>
-       <property name="value">
-        <number>2</number>
-       </property>
-      </widget>
-      <widget class="QLabel" name="label_13">
-       <property name="geometry">
-        <rect>
-         <x>8</x>
-         <y>124</y>
-         <width>91</width>
-         <height>16</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>.m3u8 path</string>
-       </property>
-      </widget>
-      <widget class="QLineEdit" name="hls_dir">
-       <property name="geometry">
-        <rect>
-         <x>100</x>
-         <y>120</y>
-         <width>101</width>
-         <height>21</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>/tmp/vr.m3u8</string>
-       </property>
-      </widget>
-      <widget class="QCheckBox" name="checkBox">
-       <property name="geometry">
-        <rect>
-         <x>100</x>
-         <y>30</y>
-         <width>86</width>
-         <height>20</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Enable</string>
-       </property>
-      </widget>
-     </widget>
-     <widget class="QGroupBox" name="group_run">
-      <property name="geometry">
-       <rect>
-        <x>30</x>
-        <y>380</y>
-        <width>751</width>
-        <height>91</height>
-       </rect>
-      </property>
-      <property name="font">
-       <font>
-        <pointsize>15</pointsize>
-       </font>
-      </property>
-      <property name="title">
-       <string>Run</string>
-      </property>
-      <widget class="QPushButton" name="pushButton_run">
-       <property name="geometry">
-        <rect>
-         <x>10</x>
-         <y>40</y>
-         <width>71</width>
-         <height>32</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Start</string>
-       </property>
-      </widget>
-      <widget class="QPushButton" name="pushButton_stop">
+      <widget class="QWidget" name="tab_config">
        <property name="enabled">
-        <bool>false</bool>
+        <bool>true</bool>
        </property>
-       <property name="geometry">
-        <rect>
-         <x>80</x>
-         <y>40</y>
-         <width>71</width>
-         <height>32</height>
-        </rect>
-       </property>
-       <property name="font">
-        <font>
-         <pointsize>15</pointsize>
-        </font>
-       </property>
-       <property name="text">
-        <string>Stop</string>
-       </property>
+       <attribute name="title">
+        <string>Config</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout">
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_2">
+          <property name="leftMargin">
+           <number>20</number>
+          </property>
+          <property name="topMargin">
+           <number>10</number>
+          </property>
+          <property name="rightMargin">
+           <number>20</number>
+          </property>
+          <property name="bottomMargin">
+           <number>10</number>
+          </property>
+          <item>
+           <widget class="QGroupBox" name="group_paranoma">
+            <property name="font">
+             <font>
+              <pointsize>15</pointsize>
+             </font>
+            </property>
+            <property name="title">
+             <string>Paranoma Settings</string>
+            </property>
+            <layout class="QFormLayout" name="formLayout">
+             <item row="0" column="0">
+              <widget class="QLabel" name="label_4">
+               <property name="text">
+                <string>Algorithm</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="1">
+              <widget class="QComboBox" name="paranoma_algorithm">
+               <item>
+                <property name="text">
+                 <string>Multi-band</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>Linear</string>
+                </property>
+               </item>
+              </widget>
+             </item>
+             <item row="1" column="0">
+              <widget class="QLabel" name="label_5">
+               <property name="text">
+                <string>Width</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="1">
+              <widget class="QSpinBox" name="paranoma_width">
+               <property name="minimum">
+                <number>2</number>
+               </property>
+               <property name="maximum">
+                <number>7680</number>
+               </property>
+               <property name="singleStep">
+                <number>2</number>
+               </property>
+               <property name="value">
+                <number>3840</number>
+               </property>
+              </widget>
+             </item>
+            </layout>
+            <zorder>paranoma_width</zorder>
+            <zorder>paranoma_algorithm</zorder>
+            <zorder>label_4</zorder>
+            <zorder>label_5</zorder>
+            <zorder>group_encoding</zorder>
+           </widget>
+          </item>
+          <item>
+           <widget class="QGroupBox" name="group_encoding">
+            <property name="font">
+             <font>
+              <pointsize>15</pointsize>
+             </font>
+            </property>
+            <property name="title">
+             <string>Encoding Settings</string>
+            </property>
+            <layout class="QFormLayout" name="formLayout_2">
+             <item row="0" column="0">
+              <widget class="QLabel" name="label">
+               <property name="text">
+                <string>Codec</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="1">
+              <widget class="QComboBox" name="encoding_codec">
+               <item>
+                <property name="text">
+                 <string>libx264</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>nvenc_h264</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>nvenc_hevc</string>
+                </property>
+               </item>
+              </widget>
+             </item>
+             <item row="1" column="0">
+              <widget class="QLabel" name="label_2">
+               <property name="text">
+                <string>Bitrate (Mbps)</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="1">
+              <widget class="QDoubleSpinBox" name="encoding_bitrate">
+               <property name="maximum">
+                <double>1000.000000000000000</double>
+               </property>
+               <property name="value">
+                <double>10.000000000000000</double>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="0">
+              <widget class="QLabel" name="label_3">
+               <property name="text">
+                <string>GOP Size</string>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="1">
+              <widget class="QSpinBox" name="encoding_gopsize">
+               <property name="minimum">
+                <number>25</number>
+               </property>
+               <property name="maximum">
+                <number>1000</number>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_3">
+          <property name="leftMargin">
+           <number>20</number>
+          </property>
+          <property name="topMargin">
+           <number>10</number>
+          </property>
+          <property name="rightMargin">
+           <number>20</number>
+          </property>
+          <property name="bottomMargin">
+           <number>10</number>
+          </property>
+          <item>
+           <widget class="QGroupBox" name="group_streaming">
+            <property name="font">
+             <font>
+              <pointsize>15</pointsize>
+             </font>
+            </property>
+            <property name="title">
+             <string>HLS</string>
+            </property>
+            <layout class="QFormLayout" name="formLayout_3">
+             <item row="0" column="1">
+              <widget class="QCheckBox" name="hls_enable">
+               <property name="text">
+                <string>Enable</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="0">
+              <widget class="QLabel" name="label_11">
+               <property name="text">
+                <string>Seg Time (s)</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="1">
+              <widget class="QSpinBox" name="hls_segment_time">
+               <property name="minimum">
+                <number>1</number>
+               </property>
+               <property name="maximum">
+                <number>30</number>
+               </property>
+               <property name="value">
+                <number>2</number>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="0">
+              <widget class="QLabel" name="label_12">
+               <property name="text">
+                <string>List Size</string>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="1">
+              <widget class="QSpinBox" name="hls_list_size">
+               <property name="minimum">
+                <number>1</number>
+               </property>
+               <property name="maximum">
+                <number>1000</number>
+               </property>
+               <property name="value">
+                <number>30</number>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="0">
+              <widget class="QLabel" name="label_13">
+               <property name="text">
+                <string>.m3u8 path</string>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="1">
+              <widget class="QLineEdit" name="hls_path">
+               <property name="text">
+                <string>/tmp/vr.m3u8</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <widget class="QGroupBox" name="group_streaming_2">
+            <property name="font">
+             <font>
+              <pointsize>15</pointsize>
+             </font>
+            </property>
+            <property name="title">
+             <string>Save to file</string>
+            </property>
+            <layout class="QFormLayout" name="formLayout_4">
+             <item row="2" column="0">
+              <widget class="QLabel" name="label_21">
+               <property name="text">
+                <string>Filename</string>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="1">
+              <widget class="QLineEdit" name="file_path">
+               <property name="text">
+                <string>/tmp/vr.ts</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="1">
+              <widget class="QCheckBox" name="file_enable">
+               <property name="text">
+                <string>Enable</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <widget class="QGroupBox" name="group_streaming_3">
+            <property name="font">
+             <font>
+              <pointsize>15</pointsize>
+             </font>
+            </property>
+            <property name="title">
+             <string>Decklink</string>
+            </property>
+            <layout class="QFormLayout" name="formLayout_5">
+             <item row="2" column="0">
+              <widget class="QLabel" name="label_22">
+               <property name="text">
+                <string>Device</string>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="1">
+              <widget class="QComboBox" name="decklink_device"/>
+             </item>
+             <item row="0" column="1">
+              <widget class="QCheckBox" name="decklink_enable">
+               <property name="text">
+                <string>Enable</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="group_run">
+          <property name="font">
+           <font>
+            <pointsize>15</pointsize>
+           </font>
+          </property>
+          <property name="title">
+           <string>Run</string>
+          </property>
+          <layout class="QHBoxLayout" name="horizontalLayout_4">
+           <item>
+            <widget class="QPushButton" name="pushButton_run">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+               <horstretch>1</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="text">
+              <string>Start</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="pushButton_stop">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+               <horstretch>1</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="font">
+              <font>
+               <pointsize>15</pointsize>
+              </font>
+             </property>
+             <property name="text">
+              <string>Stop</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="label_running_status">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+               <horstretch>3</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="text">
+              <string>Not Running</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+       </layout>
       </widget>
-      <widget class="QLabel" name="label_running_status">
-       <property name="geometry">
-        <rect>
-         <x>160</x>
-         <y>40</y>
-         <width>241</width>
-         <height>16</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Not Running</string>
-       </property>
+      <widget class="QWidget" name="tab_preview">
+       <attribute name="title">
+        <string>Preview</string>
+       </attribute>
+       <widget class="QWidget" name="verticalLayoutWidget">
+        <property name="geometry">
+         <rect>
+          <x>30</x>
+          <y>60</y>
+          <width>741</width>
+          <height>391</height>
+         </rect>
+        </property>
+        <layout class="QVBoxLayout" name="preview_vlayout"/>
+       </widget>
+       <widget class="QLineEdit" name="preview_url">
+        <property name="geometry">
+         <rect>
+          <x>130</x>
+          <y>30</y>
+          <width>551</width>
+          <height>22</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>http://demo.loft.party/vr.m3u8</string>
+        </property>
+       </widget>
+       <widget class="QLabel" name="label_19">
+        <property name="geometry">
+         <rect>
+          <x>30</x>
+          <y>30</y>
+          <width>91</width>
+          <height>21</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Preview URL: </string>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="pushButton_preview">
+        <property name="geometry">
+         <rect>
+          <x>690</x>
+          <y>30</y>
+          <width>81</width>
+          <height>21</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Play</string>
+        </property>
+       </widget>
       </widget>
      </widget>
-     <widget class="Line" name="line">
-      <property name="geometry">
-       <rect>
-        <x>30</x>
-        <y>160</y>
-        <width>751</width>
-        <height>16</height>
-       </rect>
-      </property>
-      <property name="orientation">
-       <enum>Qt::Horizontal</enum>
-      </property>
-     </widget>
-     <widget class="QGroupBox" name="group_streaming_2">
-      <property name="geometry">
-       <rect>
-        <x>290</x>
-        <y>180</y>
-        <width>211</width>
-        <height>101</height>
-       </rect>
-      </property>
-      <property name="font">
-       <font>
-        <pointsize>15</pointsize>
-       </font>
-      </property>
-      <property name="title">
-       <string>Save to file</string>
-      </property>
-      <widget class="QLabel" name="label_21">
-       <property name="geometry">
-        <rect>
-         <x>8</x>
-         <y>64</y>
-         <width>91</width>
-         <height>16</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Filename</string>
-       </property>
-      </widget>
-      <widget class="QLineEdit" name="hls_dir_2">
-       <property name="geometry">
-        <rect>
-         <x>80</x>
-         <y>60</y>
-         <width>121</width>
-         <height>21</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>/tmp/vr.ts</string>
-       </property>
-      </widget>
-      <widget class="QCheckBox" name="checkBox_2">
-       <property name="geometry">
-        <rect>
-         <x>80</x>
-         <y>30</y>
-         <width>86</width>
-         <height>20</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Enable</string>
-       </property>
-      </widget>
-     </widget>
-     <widget class="QGroupBox" name="group_streaming_3">
-      <property name="geometry">
-       <rect>
-        <x>540</x>
-        <y>180</y>
-        <width>211</width>
-        <height>101</height>
-       </rect>
-      </property>
-      <property name="font">
-       <font>
-        <pointsize>15</pointsize>
-       </font>
-      </property>
-      <property name="title">
-       <string>Decklink</string>
-      </property>
-      <widget class="QLabel" name="label_22">
-       <property name="geometry">
-        <rect>
-         <x>8</x>
-         <y>64</y>
-         <width>91</width>
-         <height>16</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Device</string>
-       </property>
-      </widget>
-      <widget class="QCheckBox" name="checkBox_3">
-       <property name="geometry">
-        <rect>
-         <x>70</x>
-         <y>30</y>
-         <width>86</width>
-         <height>20</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Enable</string>
-       </property>
-      </widget>
-      <widget class="QComboBox" name="comboBox">
-       <property name="geometry">
-        <rect>
-         <x>70</x>
-         <y>60</y>
-         <width>131</width>
-         <height>26</height>
-        </rect>
-       </property>
-      </widget>
-     </widget>
-     <widget class="Line" name="line_2">
-      <property name="geometry">
-       <rect>
-        <x>30</x>
-        <y>350</y>
-        <width>751</width>
-        <height>16</height>
-       </rect>
-      </property>
-      <property name="orientation">
-       <enum>Qt::Horizontal</enum>
-      </property>
-     </widget>
-    </widget>
-    <widget class="QWidget" name="tab_preview">
-     <attribute name="title">
-      <string>Preview</string>
-     </attribute>
-     <widget class="QWidget" name="verticalLayoutWidget">
-      <property name="geometry">
-       <rect>
-        <x>30</x>
-        <y>60</y>
-        <width>741</width>
-        <height>391</height>
-       </rect>
-      </property>
-      <layout class="QVBoxLayout" name="preview_vlayout"/>
-     </widget>
-     <widget class="QLineEdit" name="preview_url">
-      <property name="geometry">
-       <rect>
-        <x>130</x>
-        <y>30</y>
-        <width>551</width>
-        <height>22</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>http://demo.loft.party/vr.m3u8</string>
-      </property>
-     </widget>
-     <widget class="QLabel" name="label_19">
-      <property name="geometry">
-       <rect>
-        <x>30</x>
-        <y>30</y>
-        <width>91</width>
-        <height>21</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Preview URL: </string>
-      </property>
-     </widget>
-     <widget class="QPushButton" name="pushButton_preview">
-      <property name="geometry">
-       <rect>
-        <x>690</x>
-        <y>30</y>
-        <width>81</width>
-        <height>21</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Play</string>
-      </property>
-     </widget>
-    </widget>
-   </widget>
+    </item>
+   </layout>
   </widget>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
