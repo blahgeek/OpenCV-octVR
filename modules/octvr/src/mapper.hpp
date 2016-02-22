@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-20
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-02-21
+* @Last Modified time: 2016-02-22
 */
 
 #ifndef VR_LIBMAP_IMPL_H
@@ -68,7 +68,7 @@ public:
     Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes, 
            int blend=128, bool enable_gain_compensator=true, 
            cv::Size scale_output=cv::Size(0, 0));
-    void stitch(std::vector<GpuMat> & inputs, GpuMat & output);
+    void stitch(std::vector<GpuMat> & inputs, GpuMat & output, GpuMat & preview_output);
 };
 
 }

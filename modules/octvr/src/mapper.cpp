@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-02-21
+* @Last Modified time: 2016-02-22
 */
 
 #include <iostream>
@@ -162,6 +162,7 @@ Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes,
         this->compensator = nullptr;
     }
     timer.tick("Gain Compensator initialize");
+
 #else
     assert(false);
 #endif
@@ -169,7 +170,7 @@ Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes,
 }
 
 void Mapper::stitch(std::vector<GpuMat> & inputs,
-                    GpuMat & output) {
+                    GpuMat & output, GpuMat & preview_output) {
 #ifdef WITH_DONGLE_LICENSE
     this->lic_cnt += 1;
     if (this->lic_cnt % 3000 == 0) {
@@ -226,25 +227,25 @@ void Mapper::stitch(std::vector<GpuMat> & inputs,
         timer.tick("Compensator apply");
     }
 
-    cv::cuda::Stream & final_s = streams[inputs.size()];
+    cv::cuda::Stream & stream_final = streams[inputs.size()];
 
     if(this->blender) {
         blender->blend(partial_warped_imgs, result);
         timer.tick("Blender blend");
     } else {
         for(int i = 0 ; i < nonoverlay_num ; i += 1)
-            warped_imgs[i].copyTo(result, masks[i], final_s);
+            warped_imgs[i].copyTo(result, masks[i], stream_final);
         timer.tick("No blend copy");
     }
 
     for(int i = nonoverlay_num ; i < inputs.size() ; i += 1) {
         streams[i].waitForCompletion();
-        warped_imgs_scale[i].copyTo(result, masks[i], final_s);
+        warped_imgs_scale[i].copyTo(result, masks[i], stream_final);
     }
     CV_Assert(result.type() == CV_8UC3);
 
 #ifdef WITH_OCTVR_LOGO
-    this->logo_data.copyTo(result, this->logo_mask, final_s);
+    this->logo_data.copyTo(result, this->logo_mask, stream_final);
 #endif
 
     if(this->stitch_size != this->scaled_output_size)
@@ -252,11 +253,16 @@ void Mapper::stitch(std::vector<GpuMat> & inputs,
     else
         result_scaled = result;
 
-    cv::cuda::cvtRGB24toUYVY422(result_scaled, output, final_s);
+    cv::cuda::cvtRGB24toUYVY422(result_scaled, output, stream_final);
     cv::cuda::GpuMat output_c4 = output.reshape(4);
-    cv::cuda::swapChannels(output_c4, swap_orders, final_s);
+    cv::cuda::swapChannels(output_c4, swap_orders, stream_final);
 
-    final_s.waitForCompletion();
+    if(!preview_output.empty()) {
+        CV_Assert(preview_output.type() == CV_8U3);
+        cv::cuda::resize(result, preview_output, preview_output.size(), stream_final);
+    }
+
+    stream_final.waitForCompletion();
     timer.tick("Convert output");
 
     CV_Assert(output.type() == CV_8UC2);

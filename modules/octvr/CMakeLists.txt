@@ -34,6 +34,9 @@ macro(ocv_get_module_external_sources)
     list(APPEND ${__filesvar} "${CMAKE_CURRENT_BINARY_DIR}/src/logo_png.cpp")  
 endmacro(ocv_get_module_external_sources)
 # TODO : can we unset this macro afterwards?
+    
+find_package(Qt5Core REQUIRED)
+link_libraries(Qt5::Core)
 
 set(the_description "octVR, you know it")
 ocv_warnings_disable(CMAKE_CXX_FLAGS -Wnon-virtual-dtor)
