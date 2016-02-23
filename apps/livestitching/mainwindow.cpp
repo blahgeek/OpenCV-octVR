@@ -66,8 +66,9 @@ void MainWindow::run() {
     for(auto & input: selected_cams)
         args << "-f" << "v4l2" << "-input_format" << "uyvy422"
              << "-framerate" << "30" << "-i" << input.deviceName();
-    args << "-filter_complex"
-         << QString("vr_map=inputs=%1:outputs=%2:crop_x=%3:crop_w=%4:blend=%5:preview_ow=%6:preview_oh=%7")
+
+    QString filter_complex = 
+            QString("vr_map=inputs=%1:outputs=%2:crop_x=%3:crop_w=%4:blend=%5:preview_ow=%6:preview_oh=%7")
             .arg(selected_cams.size())
             .arg(temp_dir.path() + "/vr.dat")
             .arg(ui->inputs_crop_x->value())
@@ -75,6 +76,13 @@ void MainWindow::run() {
             .arg(ui->paranoma_algorithm->currentIndex() == 0 ? 128 : -5)
             .arg(PREVIEW_WIDTH)
             .arg(PREVIEW_HEIGHT);
+    if(this->ui->decklink_enable->checkState() == Qt::Checked)
+        filter_complex.append(QString(",split=2[o0][o1]"));
+
+    args << "-filter_complex" << filter_complex;
+
+    if(this->ui->decklink_enable->checkState() == Qt::Checked)
+        args << "-map" << "[o0]";
     args << "-c:v" << ui->encoding_codec->currentText()
          << "-b:v" << QString("%1M").arg(ui->encoding_bitrate->value())
          << "-g" << QString::number(ui->encoding_gopsize->value());
@@ -90,12 +98,12 @@ void MainWindow::run() {
         tee_output.append("|");
         tee_output.append(ui->file_path->text());
     }
-    if(this->ui->decklink_enable->checkState() == Qt::Checked) {
-        tee_output.append(QString("|[f=decklink]%1")
-                          .arg(ui->decklink_device->currentText()));
-    }
 
     args << "-f" << "tee" << "-y" << tee_output;
+
+    if(this->ui->decklink_enable->checkState() == Qt::Checked)
+        args << "-map" << "[o1]" << "-f" << "decklink" << this->ui->decklink_device->text();
+
     qDebug() << "Running ffmpeg: " << args;
 
     this->onRunningStatusChanged(FFMPEG_RUNNING);
