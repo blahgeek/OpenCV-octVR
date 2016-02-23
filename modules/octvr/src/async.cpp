@@ -84,7 +84,7 @@ void AsyncMultiMapperImpl::run_copy_outputs_hostmem_to_mat() {
     if(preview_size.area() > 0) {
         void * preview_meta_p = preview_meta.data();
         char zone_index = *(static_cast<char *>(preview_meta_p));
-        std::cerr << "Copying preview frame to shared zone " << zone_index;
+        std::cerr << "Copying preview frame to shared zone " << int(zone_index);
 
         QSharedMemory & target = zone_index == 0 ? preview_data0 : preview_data1;
         target.lock();
@@ -182,6 +182,8 @@ AsyncMultiMapperImpl::AsyncMultiMapperImpl(const std::vector<MapperTemplate> & m
     }
 
     if(this->preview_size.area() > 0) {
+
+        std::cerr << "Preview size: " << this->preview_size << std::endl;
         preview_data0.setKey(OCTVR_PREVIEW_DATA0_MEMORY_KEY);
         preview_data1.setKey(OCTVR_PREVIEW_DATA1_MEMORY_KEY);
         preview_meta.setKey(OCTVR_PREVIEW_DATA_META_MEMORY_KEY);
@@ -190,10 +192,10 @@ AsyncMultiMapperImpl::AsyncMultiMapperImpl(const std::vector<MapperTemplate> & m
         preview_data1.attach();
         preview_meta.attach();
 
-        CV_Assert(preview_data0.isAttached()
-                  && preview_data0.size() == sizeof(struct PreviewDataHeader) + preview_size.area() * 3);
-        CV_Assert(preview_data1.isAttached() 
-                  && preview_data1.size() == sizeof(struct PreviewDataHeader) + preview_size.area() * 3);
+        CV_Assert(preview_data0.isAttached());
+        CV_Assert(preview_data0.size() == sizeof(struct PreviewDataHeader) + preview_size.area() * 3);
+        CV_Assert(preview_data1.isAttached());
+        CV_Assert(preview_data1.size() == sizeof(struct PreviewDataHeader) + preview_size.area() * 3);
         CV_Assert(preview_meta.isAttached() && preview_meta.size() == 1);
     }
 

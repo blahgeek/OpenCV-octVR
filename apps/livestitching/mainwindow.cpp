@@ -179,6 +179,7 @@ MainWindow::MainWindow(QWidget *parent) :
     pto_template.reset(new PTOTemplate(ui->template_tree_view));
     preview_video.reset(new PreviewVideoWidget(this));
     this->ui->preview_layout->addWidget(preview_video.get());
+    preview_video->show();
 
     {
         QFile f(":qdarkstyle/style.qss");
