@@ -133,7 +133,7 @@ void MainWindow::onFfmpegStateChanged(QProcess::ProcessState state) {
 
 void MainWindow::onTabChanged(int index) {
     qDebug() << "onTabChanged: " << index;
-    if(index == 0 && ffmpeg_proc.state() != QProcess::NotRunning)
+    if(index == 0 && ffmpeg_proc.state() == QProcess::NotRunning)
         this->inputs_selector->start();
     else {
         this->inputs_selector->stop();

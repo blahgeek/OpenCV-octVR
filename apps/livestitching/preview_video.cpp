@@ -69,7 +69,7 @@ void PreviewVideoWidget::paintEvent(QPaintEvent *) {
         qDebug() << "Drawing...";
         QImage img(static_cast<unsigned char *>(data.data()) + sizeof(struct PreviewDataHeader), 
                    preview_w, preview_h, preview_w * 3, QImage::Format_RGB888);
-        painter.drawImage(QRect(QPoint(0, 0), this->sizeHint()), img);
+        painter.drawImage(QRect(QPoint(0, 0), this->size()), img);
     }
     data.unlock();
 }
