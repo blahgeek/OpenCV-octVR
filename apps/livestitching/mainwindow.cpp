@@ -49,33 +49,26 @@ void MainWindow::run() {
     dumper_args << "-w" << QString::number(ui->paranoma_width->value())
                 << "-o" << (temp_dir.path() + "/vr.dat")
                 << output_json_path;
-    qDebug() << "Running dumper: " << dumper_args;
-
-    this->onRunningStatusChanged(DUMPER_RUNNING);
-
-    QProcess dumper_proc;
-    dumper_proc.start("/home/blahgeek/dumper", dumper_args); // FIXME
-    bool finished = dumper_proc.waitForFinished();
-    if(!(finished && dumper_proc.exitStatus() == QProcess::NormalExit && dumper_proc.exitCode() == 0)) {
-        QMessageBox::warning(nullptr, "", "Unable to create dat file");
-        this->onRunningStatusChanged(NOT_RUNNING);
-        return;
-    }
 
     QStringList args;
     for(auto & input: selected_cams)
         args << "-f" << "v4l2" << "-input_format" << "uyvy422"
              << "-framerate" << "30" << "-i" << input.deviceName();
 
-    QString filter_complex = 
-            QString("vr_map=inputs=%1:outputs=%2:crop_x=%3:crop_w=%4:blend=%5:preview_ow=%6:preview_oh=%7")
-            .arg(selected_cams.size())
-            .arg(temp_dir.path() + "/vr.dat")
-            .arg(ui->inputs_crop_x->value())
-            .arg(ui->inputs_crop_w->value())
-            .arg(ui->paranoma_algorithm->currentIndex() == 0 ? 128 : -5)
-            .arg(PREVIEW_WIDTH)
-            .arg(PREVIEW_HEIGHT);
+    QString filter_complex = QString("vr_map=");
+    filter_complex.append(QString("inputs=%1:outputs=%2:crop_x=%3:crop_w=%4")
+                          .arg(selected_cams.size())
+                          .arg(temp_dir.path() + "/vr.dat")
+                          .arg(ui->inputs_crop_x->value())
+                          .arg(ui->inputs_crop_w->value()) );
+    filter_complex.append(QString(":blend=%1:preview_ow=%2:preview_oh=%3")
+                          .arg(ui->paranoma_algorithm->currentIndex() == 0 ? 128 : -5)
+                          .arg(PREVIEW_WIDTH)
+                          .arg(PREVIEW_HEIGHT));
+    filter_complex.append(QString(":scale_ow=%1:scale_oh=%2")
+                          .arg(ui->paranoma_width->value())
+                          .arg(ui->paranoma_height->value()));
+    
     if(this->ui->decklink_enable->checkState() == Qt::Checked)
         filter_complex.append(QString(",split=2[o0][o1]"));
 
@@ -104,25 +97,23 @@ void MainWindow::run() {
     if(this->ui->decklink_enable->checkState() == Qt::Checked)
         args << "-map" << "[o1]" << "-f" << "decklink" << this->ui->decklink_device->text();
 
-    qDebug() << "Running ffmpeg: " << args;
-
-    this->onRunningStatusChanged(FFMPEG_RUNNING);
-    this->ffmpeg_proc.start("/home/blahgeek/ffmpeg", args); // FIXME
+    this->runner->start(dumper_args, args);
 }
 
-void MainWindow::onRunningStatusChanged(enum RunningStatus status) {
+void MainWindow::onRunningStatusChanged() {
+    auto status = this->runner->status();
     switch(status){
-        case NOT_RUNNING:
+        case Runner::NOT_RUNNING:
             this->ui->pushButton_run->setEnabled(true);
             this->ui->pushButton_stop->setEnabled(false);
             this->ui->running_status->setText("Not running");
             break;
-        case DUMPER_RUNNING:
+        case Runner::DUMPER_RUNNING:
             this->ui->pushButton_run->setEnabled(false);
             this->ui->pushButton_stop->setEnabled(false);
             this->ui->running_status->setText("Preparing...");
             break;
-        case FFMPEG_RUNNING:
+        case Runner::FFMPEG_RUNNING:
             this->ui->pushButton_run->setEnabled(false);
             this->ui->pushButton_stop->setEnabled(true);
             this->ui->running_status->setText("Running...");
@@ -132,16 +123,9 @@ void MainWindow::onRunningStatusChanged(enum RunningStatus status) {
     }
 }
 
-void MainWindow::onFfmpegStateChanged(QProcess::ProcessState state) {
-    if(state == QProcess::NotRunning)
-        this->onRunningStatusChanged(NOT_RUNNING);
-    else
-        this->onRunningStatusChanged(FFMPEG_RUNNING);
-}
-
 void MainWindow::onTabChanged(int index) {
     qDebug() << "onTabChanged: " << index;
-    if(index == 0 && ffmpeg_proc.state() == QProcess::NotRunning)
+    if(index == 0 && this->runner->status() == Runner::NOT_RUNNING)
         this->inputs_selector->start();
     else {
         this->inputs_selector->stop();
@@ -180,6 +164,7 @@ MainWindow::MainWindow(QWidget *parent) :
     inputs_selector.reset(new InputsSelector(ui->inputs_grid));
     pto_template.reset(new PTOTemplate(ui->template_tree_view));
     preview_video.reset(new PreviewVideoWidget(this, PREVIEW_WIDTH, PREVIEW_HEIGHT));
+    runner.reset(new Runner());
     this->ui->preview_layout->addWidget(preview_video.get());
 
     preview_timer.setInterval(100);
@@ -195,8 +180,8 @@ MainWindow::MainWindow(QWidget *parent) :
     }
 
     connect(ui->pushButton_run, &QPushButton::clicked, this, &MainWindow::run);
-    connect(ui->pushButton_stop, &QPushButton::clicked, &this->ffmpeg_proc, &QProcess::terminate);
-    connect(&this->ffmpeg_proc, &QProcess::stateChanged, this, &MainWindow::onFfmpegStateChanged);
+    connect(ui->pushButton_stop, &QPushButton::clicked, this->runner.get(), &Runner::stop);
+    connect(this->runner.get(), &Runner::statusChanged, this, &MainWindow::onRunningStatusChanged);
 
     connect(ui->tabWidget, &QTabWidget::currentChanged, this, &MainWindow::onTabChanged);
     connect(ui->inputs_action_save, &QPushButton::clicked, this, &MainWindow::onInputSaveButtonClicked);
@@ -207,7 +192,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     this->onInputsSelectChanged();
     this->onTemplateChanged();
-    this->onRunningStatusChanged(NOT_RUNNING);
+    this->onRunningStatusChanged();
 
     this->ui->tabWidget->setCurrentIndex(0);
 

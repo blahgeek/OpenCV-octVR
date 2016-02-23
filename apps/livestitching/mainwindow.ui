@@ -194,11 +194,33 @@
                </property>
               </widget>
              </item>
+             <item row="2" column="0">
+              <widget class="QLabel" name="label_8">
+               <property name="text">
+                <string>Height</string>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="1">
+              <widget class="QSpinBox" name="paranoma_height">
+               <property name="minimum">
+                <number>1</number>
+               </property>
+               <property name="maximum">
+                <number>3840</number>
+               </property>
+               <property name="value">
+                <number>1920</number>
+               </property>
+              </widget>
+             </item>
             </layout>
             <zorder>paranoma_width</zorder>
             <zorder>paranoma_algorithm</zorder>
             <zorder>label_4</zorder>
             <zorder>label_5</zorder>
+            <zorder>label_8</zorder>
+            <zorder>paranoma_height</zorder>
            </widget>
           </item>
           <item>

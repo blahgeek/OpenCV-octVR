@@ -25,6 +25,7 @@
 #include "./inputs_select.hpp"
 #include "./pto_template.hpp"
 #include "./preview_video.hpp"
+#include "./runner.hpp"
 
 namespace Ui {
 class MainWindow;
@@ -44,16 +45,13 @@ public:
 public:
     void run();
 
-    enum RunningStatus { NOT_RUNNING, DUMPER_RUNNING, FFMPEG_RUNNING };
 public slots:
     void onTabChanged(int index);
     void onInputsSelectChanged();
     void onInputSaveButtonClicked();
 
     void onTemplateChanged();
-
-    void onRunningStatusChanged(enum RunningStatus status);
-    void onFfmpegStateChanged(QProcess::ProcessState state);
+    void onRunningStatusChanged();
 
 private:
     Ui::MainWindow *ui;
@@ -61,12 +59,11 @@ private:
     std::unique_ptr<InputsSelector> inputs_selector;
     std::unique_ptr<PTOTemplate> pto_template;
     std::unique_ptr<PreviewVideoWidget> preview_video;
+    std::unique_ptr<Runner> runner;
 
     QTimer preview_timer;
 
     QTemporaryDir temp_dir;
-
-    QProcess ffmpeg_proc;
 
     QVideoWidget * videoWidget;
     QMediaPlayer * videoPreviewer;

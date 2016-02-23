@@ -26,6 +26,7 @@ ocv_add_executable(livestitching
                    inputs_select.cpp
                    preview_video.cpp
                    pto_template.cpp
+                   runner.cpp
                    qjsonitem.cpp
                    qjsonmodel.cpp
                    icons.qrc
