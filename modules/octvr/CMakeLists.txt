@@ -35,6 +35,9 @@ if (WITH_OCTVR_LOGO)
     # TODO : can we unset this macro afterwards?
 endif (WITH_OCTVR_LOGO)
 
+find_package(Qt5Core REQUIRED)
+link_libraries(Qt5::Core)
+
 set(the_description "octVR, you know it")
 ocv_warnings_disable(CMAKE_CXX_FLAGS -Wnon-virtual-dtor)
 ocv_define_module(octvr 

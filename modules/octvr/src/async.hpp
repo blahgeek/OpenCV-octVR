@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-12-01
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-02-20
+* @Last Modified time: 2016-02-23
 */
 
 #ifndef LIBMAP_ASYNC_H_
@@ -22,6 +22,8 @@
 #include <memory>
 #include <condition_variable>
 
+#include <QSharedMemory>
+
 namespace vr {
 
 class AsyncMultiMapperImpl: public AsyncMultiMapper {
@@ -35,6 +37,13 @@ private:
     Queue<std::vector<cv::cuda::GpuMat>> outputs_gpumat_q, free_outputs_gpumat_q;
     Queue<std::vector<cv::cuda::HostMem>> outputs_hostmem_q, free_outputs_hostmem_q;
     Queue<std::vector<cv::Mat>> outputs_mat_q, free_outputs_mat_q;
+
+    // only support first output preview
+    // preview in RGB, using shared memory
+    Queue<cv::cuda::GpuMat> previews_gpumat_q, free_previews_gpumat_q;
+    Queue<cv::cuda::HostMem> previews_hostmem_q, free_previews_hostmem_q;
+    QSharedMemory preview_data0, preview_data1, preview_meta;
+    cv::Size preview_size;
 
     std::vector<cv::Size> out_sizes;
     std::vector<cv::Size> in_sizes;
@@ -55,7 +64,8 @@ private:
 public:
     AsyncMultiMapperImpl(const std::vector<MapperTemplate> & mt, std::vector<cv::Size> in_sizes, 
                          int blend=128, bool enable_gain_compensator=true,
-                         std::vector<cv::Size> scale_outputs=std::vector<cv::Size>());
+                         std::vector<cv::Size> scale_outputs=std::vector<cv::Size>(),
+                         cv::Size preview_size=cv::Size()); // only support first output preview
 
     void push(std::vector<cv::Mat> & inputs, 
               std::vector<cv::Mat> & outputs) override;

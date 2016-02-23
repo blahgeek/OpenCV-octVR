@@ -9,6 +9,10 @@
 #include <QCamera>
 #include <QCameraViewfinder>
 #include <QCameraImageCapture>
+#include <QBoxLayout>
+#include <QTemporaryDir>
+
+#include <QTimer>
 
 #include <QMediaPlayer>
 
@@ -18,9 +22,16 @@
 
 #include "./qjsonmodel.h"
 
+#include "./inputs_select.hpp"
+#include "./pto_template.hpp"
+#include "./preview_video.hpp"
+
 namespace Ui {
 class MainWindow;
 }
+
+#define PREVIEW_WIDTH 1280
+#define PREVIEW_HEIGHT 640
 
 class MainWindow : public QMainWindow
 {
@@ -28,46 +39,34 @@ class MainWindow : public QMainWindow
 
 public:
     explicit MainWindow(QWidget *parent = 0);
-    void openPTO();
-
     ~MainWindow();
 
 public:
-    void jsonAddOverlay();
-    void jsonDelOverlay();
-
-    void deviceAddCamera();
-    void deviceDelCamera();
-
-    void loadPTO(const QString & filename);
-    void locateHugin(); 
-    void gotoStitch();
-
-    void reEditPTO();
-    void saveAsPTO();
-
     void run();
 
-    void initPreview();
-    void startPreview();
-    void stopPreview();
-
+    enum RunningStatus { NOT_RUNNING, DUMPER_RUNNING, FFMPEG_RUNNING };
 public slots:
-    void removeImageCapture(int id, const QString & fileName);
+    void onTabChanged(int index);
+    void onInputsSelectChanged();
+    void onInputSaveButtonClicked();
+
+    void onTemplateChanged();
+
+    void onRunningStatusChanged(enum RunningStatus status);
+    void onFfmpegStateChanged(QProcess::ProcessState state);
 
 private:
     Ui::MainWindow *ui;
 
-    QJsonModel json_model;
-    QList<QCameraInfo> camera_infos;
+    std::unique_ptr<InputsSelector> inputs_selector;
+    std::unique_ptr<PTOTemplate> pto_template;
+    std::unique_ptr<PreviewVideoWidget> preview_video;
 
-    using CameraAndView = std::tuple<std::unique_ptr<QCamera>, std::unique_ptr<QCameraViewfinder>, QString>;
-    std::vector<CameraAndView> input_cameras, overlay_cameras;
-    std::map<int, QCameraImageCapture *> image_captures;
+    QTimer preview_timer;
+
+    QTemporaryDir temp_dir;
 
     QProcess ffmpeg_proc;
-    QString temp_path;
-    QString hugin_path;
 
     QVideoWidget * videoWidget;
     QMediaPlayer * videoPreviewer;

@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-02-21
+* @Last Modified time: 2016-02-23
 */
 
 #ifndef VR_LIBMAP_BASE_H
@@ -32,6 +32,7 @@
 #endif
 
 #include "opencv2/core.hpp"
+
 
 namespace vr {
 
@@ -70,14 +71,25 @@ public:
     explicit MapperTemplate(std::ifstream & f);
 };
 
+#define OCTVR_PREVIEW_DATA0_MEMORY_KEY "opencv_octvr_preview_0"
+#define OCTVR_PREVIEW_DATA1_MEMORY_KEY "opencv_octvr_preview_1"
+#define OCTVR_PREVIEW_DATA_META_MEMORY_KEY "opencv_octvr_preview_meta"
+
+struct PreviewDataHeader {
+    int width, height;
+    int step;
+};
+
 class AsyncMultiMapper {
 public:
     static AsyncMultiMapper * New(const std::vector<MapperTemplate> & mts, std::vector<cv::Size> in_sizes, 
                                   int blend=128, bool enable_gain_compensator=true,
-                                  std::vector<cv::Size> scale_outputs=std::vector<cv::Size>());
+                                  std::vector<cv::Size> scale_outputs=std::vector<cv::Size>(),
+                                  cv::Size preview_size=cv::Size(0, 0));
     static AsyncMultiMapper * New(const MapperTemplate & mt, std::vector<cv::Size> in_sizes, 
                                   int blend=128, bool enable_gain_compensator=true,
-                                  cv::Size scale_output=cv::Size(0, 0));
+                                  cv::Size scale_output=cv::Size(0, 0),
+                                  cv::Size preview_size=cv::Size(0, 0));
 
     /**
      * Push one frame
