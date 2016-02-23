@@ -67,39 +67,33 @@ void MainWindow::run() {
         args << "-f" << "v4l2" << "-input_format" << "uyvy422"
              << "-framerate" << "30" << "-i" << input.deviceName();
     args << "-filter_complex"
-         << QString("vr_map=inputs=%1:outputs=%2:crop_x=%3:crop_w=%4:blend=%5")
+         << QString("vr_map=inputs=%1:outputs=%2:crop_x=%3:crop_w=%4:blend=%5:preview_ow=%6:preview_oh=%7")
             .arg(selected_cams.size())
             .arg(temp_dir.path() + "/vr.dat")
             .arg(ui->inputs_crop_x->value())
             .arg(ui->inputs_crop_w->value())
-            .arg(ui->paranoma_algorithm->currentIndex() == 0 ? 128 : -5);
+            .arg(ui->paranoma_algorithm->currentIndex() == 0 ? 128 : -5)
+            .arg(PREVIEW_WIDTH)
+            .arg(PREVIEW_HEIGHT);
     args << "-c:v" << ui->encoding_codec->currentText()
          << "-b:v" << QString("%1M").arg(ui->encoding_bitrate->value())
          << "-g" << QString::number(ui->encoding_gopsize->value());
 
-    QString tee_output;
+    QString tee_output("[f=null]-");
     if(this->ui->hls_enable->checkState() == Qt::Checked) {
-        if(tee_output.size() == 0)
-            tee_output.append("|");
-        tee_output.append(QString("[f=hls:hls_time=%1:hls_list_size=%2:hls_flags=delete_segments:hls_allow_cache=0]%3")
+        tee_output.append(QString("|[f=hls:hls_time=%1:hls_list_size=%2:hls_flags=delete_segments:hls_allow_cache=0]%3")
                           .arg(ui->hls_segment_time->value())
                           .arg(ui->hls_list_size->value())
                           .arg(ui->hls_path->text()));
     }
     if(this->ui->file_enable->checkState() == Qt::Checked) {
-        if(tee_output.size() == 0)
-            tee_output.append("|");
+        tee_output.append("|");
         tee_output.append(ui->file_path->text());
     }
     if(this->ui->decklink_enable->checkState() == Qt::Checked) {
-        if(tee_output.size() == 0)
-            tee_output.append("|");
-        tee_output.append(QString("[f=decklink]%1")
+        tee_output.append(QString("|[f=decklink]%1")
                           .arg(ui->decklink_device->currentText()));
     }
-
-    if(tee_output.size() > 0)
-        tee_output.remove(0, 1);
 
     args << "-f" << "tee" << "-y" << tee_output;
     qDebug() << "Running ffmpeg: " << args;
@@ -139,7 +133,7 @@ void MainWindow::onFfmpegStateChanged(QProcess::ProcessState state) {
 
 void MainWindow::onTabChanged(int index) {
     qDebug() << "onTabChanged: " << index;
-    if(index == 0)
+    if(index == 0 && ffmpeg_proc.state() != QProcess::NotRunning)
         this->inputs_selector->start();
     else {
         this->inputs_selector->stop();
@@ -177,7 +171,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     inputs_selector.reset(new InputsSelector(ui->inputs_grid));
     pto_template.reset(new PTOTemplate(ui->template_tree_view));
-    preview_video.reset(new PreviewVideoWidget(this));
+    preview_video.reset(new PreviewVideoWidget(this, PREVIEW_WIDTH, PREVIEW_HEIGHT));
     this->ui->preview_layout->addWidget(preview_video.get());
 
     preview_timer.setInterval(100);

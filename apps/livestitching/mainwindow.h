@@ -30,6 +30,9 @@ namespace Ui {
 class MainWindow;
 }
 
+#define PREVIEW_WIDTH 1280
+#define PREVIEW_HEIGHT 640
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
