@@ -13,6 +13,8 @@
 
 #include "octvr.hpp"
 
+#include <mutex>
+
 class PreviewVideoWidget: public QVideoWidget {
 
     Q_OBJECT
@@ -20,6 +22,8 @@ class PreviewVideoWidget: public QVideoWidget {
 private:
     QSharedMemory preview_data0, preview_data1, preview_meta;
     int preview_w, preview_h;
+
+    std::mutex mtx;
 
 protected:
     void paintEvent(QPaintEvent *event);

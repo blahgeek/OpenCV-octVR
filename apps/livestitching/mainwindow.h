@@ -12,6 +12,8 @@
 #include <QBoxLayout>
 #include <QTemporaryDir>
 
+#include <QTimer>
+
 #include <QMediaPlayer>
 
 #include <vector>
@@ -56,6 +58,8 @@ private:
     std::unique_ptr<InputsSelector> inputs_selector;
     std::unique_ptr<PTOTemplate> pto_template;
     std::unique_ptr<PreviewVideoWidget> preview_video;
+
+    QTimer preview_timer;
 
     QTemporaryDir temp_dir;
 

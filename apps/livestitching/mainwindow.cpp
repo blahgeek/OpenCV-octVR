@@ -179,7 +179,10 @@ MainWindow::MainWindow(QWidget *parent) :
     pto_template.reset(new PTOTemplate(ui->template_tree_view));
     preview_video.reset(new PreviewVideoWidget(this));
     this->ui->preview_layout->addWidget(preview_video.get());
-    preview_video->show();
+
+    preview_timer.setInterval(100);
+    preview_timer.start();
+    connect(&preview_timer, &QTimer::timeout, preview_video.get(), &PreviewVideoWidget::updatePreview);
 
     {
         QFile f(":qdarkstyle/style.qss");
@@ -200,7 +203,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->template_load, &QPushButton::clicked, this->pto_template.get(), &PTOTemplate::loadPTO);
     connect(this->pto_template.get(), &PTOTemplate::dataChanged, this, &MainWindow::onTemplateChanged);
 
-    connect(this->ui->pushButton, &QPushButton::clicked, this->preview_video.get(), &PreviewVideoWidget::updatePreview);
+    // connect(this->ui->pushButton, &QPushButton::clicked, this->preview_video.get(), &PreviewVideoWidget::updatePreview);
 
     this->onInputsSelectChanged();
     this->onTemplateChanged();

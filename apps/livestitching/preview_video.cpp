@@ -55,6 +55,8 @@ QVideoWidget(parent), preview_w(_w), preview_h(_h) {
 }
 
 void PreviewVideoWidget::paintEvent(QPaintEvent *) {
+    std::lock_guard<std::mutex> lock(this->mtx);
+
     char * p_index = static_cast<char *>(preview_meta.data());
     *p_index = 1 - *p_index;
 
@@ -70,7 +72,6 @@ void PreviewVideoWidget::paintEvent(QPaintEvent *) {
         qDebug() << "Drawing...";
         QImage img(static_cast<unsigned char *>(data.data()) + sizeof(struct PreviewDataHeader), 
                    preview_w, preview_h, preview_w * 3, QImage::Format_RGB888);
-        painter.drawLine(QLineF(10, 80, 90, 20));
         painter.drawImage(QPoint(0, 0), img);
     }
     data.unlock();
