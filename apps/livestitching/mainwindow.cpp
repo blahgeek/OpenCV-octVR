@@ -137,36 +137,6 @@ void MainWindow::onFfmpegStateChanged(QProcess::ProcessState state) {
         this->onRunningStatusChanged(FFMPEG_RUNNING);
 }
 
-void MainWindow::initPreview() {
-    videoWidget = new QVideoWidget;
-    ui->preview_vlayout->addWidget(videoWidget);
-
-    videoPreviewer = new QMediaPlayer;
-    videoPreviewer->setVideoOutput(videoWidget);
-    videoWidget->show();
-
-    connect(ui->pushButton_preview, &QPushButton::clicked, this, &MainWindow::startPreview);
-
-    return;
-}
-
-void MainWindow::startPreview() {
-    videoPreviewer->setMedia(QUrl::fromUserInput(ui->preview_url->text()));
-    videoPreviewer->play();
-    ui->pushButton_preview->setText("Stop");
-
-    connect(ui->pushButton_preview, &QPushButton::clicked, this, &MainWindow::stopPreview);
-    return;
-}
-
-void MainWindow::stopPreview() {
-    videoPreviewer->stop();
-    ui->pushButton_preview->setText("Play");
-
-    connect(ui->pushButton_preview, &QPushButton::clicked, this, &MainWindow::startPreview);
-    return;
-}
-
 void MainWindow::onTabChanged(int index) {
     qDebug() << "onTabChanged: " << index;
     if(index == 0)
@@ -207,6 +177,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
     inputs_selector.reset(new InputsSelector(ui->inputs_grid));
     pto_template.reset(new PTOTemplate(ui->template_tree_view));
+    preview_video.reset(new PreviewVideoWidget(this));
+    this->ui->preview_layout->addWidget(preview_video.get());
 
     {
         QFile f(":qdarkstyle/style.qss");
@@ -226,6 +198,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
     connect(ui->template_load, &QPushButton::clicked, this->pto_template.get(), &PTOTemplate::loadPTO);
     connect(this->pto_template.get(), &PTOTemplate::dataChanged, this, &MainWindow::onTemplateChanged);
+
+    connect(this->ui->pushButton, &QPushButton::clicked, this->preview_video.get(), &PreviewVideoWidget::updatePreview);
 
     this->onInputsSelectChanged();
     this->onTemplateChanged();

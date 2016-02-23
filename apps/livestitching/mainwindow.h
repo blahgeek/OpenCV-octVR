@@ -22,6 +22,7 @@
 
 #include "./inputs_select.hpp"
 #include "./pto_template.hpp"
+#include "./preview_video.hpp"
 
 namespace Ui {
 class MainWindow;
@@ -37,10 +38,6 @@ public:
 
 public:
     void run();
-
-    void initPreview();
-    void startPreview();
-    void stopPreview();
 
     enum RunningStatus { NOT_RUNNING, DUMPER_RUNNING, FFMPEG_RUNNING };
 public slots:
@@ -58,12 +55,11 @@ private:
 
     std::unique_ptr<InputsSelector> inputs_selector;
     std::unique_ptr<PTOTemplate> pto_template;
+    std::unique_ptr<PreviewVideoWidget> preview_video;
 
     QTemporaryDir temp_dir;
 
     QProcess ffmpeg_proc;
-    QString temp_path;
-    QString hugin_path;
 
     QVideoWidget * videoWidget;
     QMediaPlayer * videoPreviewer;

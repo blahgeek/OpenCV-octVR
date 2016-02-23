@@ -1,6 +1,7 @@
 remove_definitions(-D__OPENCV_BUILD=1)
 
-set(OPENCV_LIVESTITCHING_DEPS opencv_core opencv_highgui opencv_photo opencv_video opencv_objdetect)
+set(OPENCV_LIVESTITCHING_DEPS 
+    opencv_core opencv_highgui opencv_photo opencv_video opencv_objdetect opencv_octvr)
 ocv_check_dependencies(${OPENCV_LIVESTITCHING_DEPS})
 
 if(NOT OCV_DEPENDENCIES_FOUND)
@@ -23,6 +24,7 @@ ocv_add_executable(livestitching
                    main.cpp
                    mainwindow.cpp
                    inputs_select.cpp
+                   preview_video.cpp
                    pto_template.cpp
                    qjsonitem.cpp
                    qjsonmodel.cpp

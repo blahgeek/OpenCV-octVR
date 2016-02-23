@@ -33,7 +33,7 @@
        </sizepolicy>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>3</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="title">
@@ -199,7 +199,6 @@
             <zorder>paranoma_algorithm</zorder>
             <zorder>label_4</zorder>
             <zorder>label_5</zorder>
-            <zorder>group_encoding</zorder>
            </widget>
           </item>
           <item>
@@ -475,56 +474,18 @@
        <attribute name="title">
         <string>Preview</string>
        </attribute>
-       <widget class="QWidget" name="verticalLayoutWidget">
-        <property name="geometry">
-         <rect>
-          <x>30</x>
-          <y>60</y>
-          <width>741</width>
-          <height>391</height>
-         </rect>
-        </property>
-        <layout class="QVBoxLayout" name="preview_vlayout"/>
-       </widget>
-       <widget class="QLineEdit" name="preview_url">
-        <property name="geometry">
-         <rect>
-          <x>130</x>
-          <y>30</y>
-          <width>551</width>
-          <height>22</height>
-         </rect>
-        </property>
-        <property name="text">
-         <string>http://demo.loft.party/vr.m3u8</string>
-        </property>
-       </widget>
-       <widget class="QLabel" name="label_19">
-        <property name="geometry">
-         <rect>
-          <x>30</x>
-          <y>30</y>
-          <width>91</width>
-          <height>21</height>
-         </rect>
-        </property>
-        <property name="text">
-         <string>Preview URL: </string>
-        </property>
-       </widget>
-       <widget class="QPushButton" name="pushButton_preview">
-        <property name="geometry">
-         <rect>
-          <x>690</x>
-          <y>30</y>
-          <width>81</width>
-          <height>21</height>
-         </rect>
-        </property>
-        <property name="text">
-         <string>Play</string>
-        </property>
-       </widget>
+       <layout class="QVBoxLayout" name="verticalLayout_3">
+        <item>
+         <widget class="QPushButton" name="pushButton">
+          <property name="text">
+           <string>PushButton</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <layout class="QVBoxLayout" name="preview_layout"/>
+        </item>
+       </layout>
       </widget>
      </widget>
     </item>
