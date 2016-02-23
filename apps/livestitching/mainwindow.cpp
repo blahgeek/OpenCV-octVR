@@ -203,8 +203,6 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->template_load, &QPushButton::clicked, this->pto_template.get(), &PTOTemplate::loadPTO);
     connect(this->pto_template.get(), &PTOTemplate::dataChanged, this, &MainWindow::onTemplateChanged);
 
-    // connect(this->ui->pushButton, &QPushButton::clicked, this->preview_video.get(), &PreviewVideoWidget::updatePreview);
-
     this->onInputsSelectChanged();
     this->onTemplateChanged();
     this->onRunningStatusChanged(NOT_RUNNING);

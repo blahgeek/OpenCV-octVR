@@ -47,11 +47,8 @@ QVideoWidget(parent), preview_w(_w), preview_h(_h) {
     createSharedMemory(preview_meta, OCTVR_PREVIEW_DATA_META_MEMORY_KEY, 1);
 
     *(static_cast<char *>(preview_meta.data())) = 0;
+    memset(preview_data0.data(), 0, sizeof(struct PreviewDataHeader));
     memset(preview_data1.data(), 0, sizeof(struct PreviewDataHeader));
-    memset(static_cast<char *>(preview_data0.data()) +sizeof(struct PreviewDataHeader), 255, _w * _h * 3);
-    struct PreviewDataHeader * hdr = static_cast<struct PreviewDataHeader *>(preview_data0.data());
-    hdr->width = _w;
-    hdr->height = _h;
 }
 
 void PreviewVideoWidget::paintEvent(QPaintEvent *) {
@@ -72,7 +69,7 @@ void PreviewVideoWidget::paintEvent(QPaintEvent *) {
         qDebug() << "Drawing...";
         QImage img(static_cast<unsigned char *>(data.data()) + sizeof(struct PreviewDataHeader), 
                    preview_w, preview_h, preview_w * 3, QImage::Format_RGB888);
-        painter.drawImage(QPoint(0, 0), img);
+        painter.drawImage(QRect(QPoint(0, 0), this->sizeHint()), img);
     }
     data.unlock();
 }
