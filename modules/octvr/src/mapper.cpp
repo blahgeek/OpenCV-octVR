@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-02-22
+* @Last Modified time: 2016-02-24
 */
 
 #include <iostream>
@@ -186,12 +186,12 @@ void Mapper::stitch(std::vector<GpuMat> & inputs,
         assert(inputs[i].type() == CV_8UC2); // UYVY422
     assert(output.type() == CV_8UC2 && output.size() == this->scaled_output_size);
 
-    int swap_orders[] = {3, 2, 1, 0};
+    int swap_orders[] = {1, 0, 3, 2};
     
     for(int i = 0 ; i < nonoverlay_num ; i += 1) {
         cv::cuda::GpuMat input_c4 = inputs[i].reshape(4);
         cv::cuda::swapChannels(input_c4, swap_orders, streams[i]);
-        cv::cuda::cvtUYVY422toRGB24(inputs[i], rgb_inputs[i], streams[i]);
+        cv::cuda::cvtYUYV422toRGB24(inputs[i], rgb_inputs[i], streams[i]);
         cv::cuda::cvtColor(rgb_inputs[i], rgba_inputs[i], cv::COLOR_RGB2RGBA, 4, streams[i]);
         cv::cuda::fastRemap(rgba_inputs[i], warped_imgs[i], map1s[i], map2s[i], true, streams[i]);
         if(this->compensator)
@@ -201,7 +201,7 @@ void Mapper::stitch(std::vector<GpuMat> & inputs,
     }
 
     for(int i = nonoverlay_num ; i < inputs.size() ; i += 1) {
-        cv::cuda::cvtUYVY422toRGB24(inputs[i], rgb_inputs[i], streams[i]);
+        cv::cuda::cvtYUYV422toRGB24(inputs[i], rgb_inputs[i], streams[i]);
         cv::cuda::cvtColor(rgb_inputs[i], rgba_inputs[i], cv::COLOR_RGB2RGBA, 4, streams[i]);
         cv::cuda::fastRemap(rgba_inputs[i], warped_imgs[i], map1s[i], map2s[i], false, streams[i]);
         cv::cuda::cvtColor(warped_imgs[i], warped_imgs_scale[i], cv::COLOR_RGBA2RGB, 3, streams[i]);
@@ -254,7 +254,7 @@ void Mapper::stitch(std::vector<GpuMat> & inputs,
     else
         result_scaled = result;
 
-    cv::cuda::cvtRGB24toUYVY422(result_scaled, output, stream_final);
+    cv::cuda::cvtRGB24toYUYV422(result_scaled, output, stream_final);
     cv::cuda::GpuMat output_c4 = output.reshape(4);
     cv::cuda::swapChannels(output_c4, swap_orders, stream_final);
 

@@ -2189,7 +2189,7 @@ void cv::cuda::demosaicing(InputArray _src, OutputArray _dst, int code, int dcn,
     }
 }
 
-void cv::cuda::cvtUYVY422toRGB24(InputArray _src, OutputArray _dst, Stream& _stream) {
+void cv::cuda::cvtYUYV422toRGB24(InputArray _src, OutputArray _dst, Stream& _stream) {
     GpuMat src = _src.getGpuMat();
     CV_Assert(src.type() == CV_8UC2);
 
@@ -2210,7 +2210,7 @@ void cv::cuda::cvtUYVY422toRGB24(InputArray _src, OutputArray _dst, Stream& _str
 
 }
 
-void cv::cuda::cvtRGB24toUYVY422(InputArray _src, OutputArray _dst, Stream& _stream) {
+void cv::cuda::cvtRGB24toYUYV422(InputArray _src, OutputArray _dst, Stream& _stream) {
     GpuMat src = _src.getGpuMat();
     CV_Assert(src.type() == CV_8UC3);
 

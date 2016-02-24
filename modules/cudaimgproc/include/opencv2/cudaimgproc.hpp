@@ -147,8 +147,8 @@ The methods support arbitrary permutations of the original channels, including r
  */
 CV_EXPORTS void swapChannels(InputOutputArray image, const int dstOrder[4], Stream& stream = Stream::Null());
 
-CV_EXPORTS void cvtUYVY422toRGB24(InputArray src, OutputArray dst, Stream& stream = Stream::Null());
-CV_EXPORTS void cvtRGB24toUYVY422(InputArray src, OutputArray dst, Stream& stream = Stream::Null());
+CV_EXPORTS void cvtYUYV422toRGB24(InputArray src, OutputArray dst, Stream& stream = Stream::Null());
+CV_EXPORTS void cvtRGB24toYUYV422(InputArray src, OutputArray dst, Stream& stream = Stream::Null());
 CV_EXPORTS void splitUYVY(InputArray uyvy, OutputArray y, OutputArray u, OutputArray v, Stream & stream = Stream::Null());
 CV_EXPORTS void mergeUYVY(InputArray y, InputArray u, InputArray v, OutputArray uyvy, Stream & _stream = Stream::Null());
 
