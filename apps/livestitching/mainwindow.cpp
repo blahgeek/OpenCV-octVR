@@ -98,6 +98,7 @@ void MainWindow::run() {
     if(this->ui->decklink_enable->checkState() == Qt::Checked)
         args << "-map" << "[o1]" 
              << "-pix_fmt" << "uyvy422"
+             << "-preroll" << "0.5" << "-vsync" << "drop"
              << "-f" << "decklink" << this->ui->decklink_device->text();
 
     this->runner->start(dumper_args, args);

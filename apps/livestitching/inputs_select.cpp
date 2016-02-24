@@ -98,7 +98,7 @@ void InputsSelector::saveImages(int crop_x, int crop_w) {
     qDebug() << "Running: " << in_args << out_args;
 
     QProcess proc;
-    proc.start("/home/blahgeek/ffmpeg", in_args + out_args); // FIXME
+    proc.start("./ffmpeg", in_args + out_args); // FIXME
     bool finished = proc.waitForFinished();
     if(finished && proc.exitStatus() == QProcess::NormalExit && proc.exitCode() == 0)
         QMessageBox::information(nullptr, "", "Images saved");
