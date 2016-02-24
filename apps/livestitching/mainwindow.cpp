@@ -68,7 +68,7 @@ void MainWindow::run() {
     filter_complex.append(QString(":scale_ow=%1:scale_oh=%2")
                           .arg(ui->paranoma_width->value())
                           .arg(ui->paranoma_height->value()));
-    
+
     if(this->ui->decklink_enable->checkState() == Qt::Checked)
         filter_complex.append(QString(",split=2[o0][o1]"));
 
@@ -77,6 +77,7 @@ void MainWindow::run() {
     if(this->ui->decklink_enable->checkState() == Qt::Checked)
         args << "-map" << "[o0]";
     args << "-c:v" << ui->encoding_codec->currentText()
+         << "-pix_fmt" << "yuv420p"
          << "-b:v" << QString("%1M").arg(ui->encoding_bitrate->value())
          << "-g" << QString::number(ui->encoding_gopsize->value());
 
@@ -95,7 +96,9 @@ void MainWindow::run() {
     args << "-f" << "tee" << "-y" << tee_output;
 
     if(this->ui->decklink_enable->checkState() == Qt::Checked)
-        args << "-map" << "[o1]" << "-f" << "decklink" << this->ui->decklink_device->text();
+        args << "-map" << "[o1]" 
+             << "-pix_fmt" << "uyvy422"
+             << "-f" << "decklink" << this->ui->decklink_device->text();
 
     this->runner->start(dumper_args, args);
 }
