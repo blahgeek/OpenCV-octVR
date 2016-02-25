@@ -39,7 +39,7 @@ void Runner::start(QStringList _dumper_args, QStringList _ffmpeg_args) {
     }
 
     qDebug() << "Running dumper: " << dumper_args;
-    dumper_proc.start("./dumper", dumper_args); // FIXME
+    dumper_proc.start("octvr_dump", dumper_args); // FIXME
     emit statusChanged();
     // bool finished = dumper_proc.waitForFinished();
     // if(!(finished && dumper_proc.exitStatus() == QProcess::NormalExit && dumper_proc.exitCode() == 0)) {
@@ -63,7 +63,7 @@ void Runner::onDumperProcessFinished(int exitCode, QProcess::ExitStatus status) 
     // run ffmpeg
 
     qDebug() << "Running ffmpeg: " << ffmpeg_args;
-    ffmpeg_proc.start("./ffmpeg", ffmpeg_args); // FIXME
+    ffmpeg_proc.start("ffmpeg", ffmpeg_args); // FIXME
 
     emit statusChanged();
 }

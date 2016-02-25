@@ -100,7 +100,7 @@ int main(int argc, char * const argv[]){
         mt.create_masks(imgs);
     }
 
-    std::ofstream of(opt_outfile);
+    std::ofstream of(opt_outfile, std::ios::binary);
     mt.dump(of);
 
 #define SAVE_MAT(D, N, S, MAT) \

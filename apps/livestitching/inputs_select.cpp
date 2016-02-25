@@ -21,9 +21,9 @@ InputsSelector::InputsSelector(QGridLayout * _grid): grid(_grid) {
     int size_all = this->camera_infos.size();
     int size_row = std::ceil(std::sqrt(float(size_all)));
 
-    QCameraViewfinderSettings settings;
-    settings.setMaximumFrameRate(5);
-    settings.setResolution(QSize(640, 480));
+//    QCameraViewfinderSettings settings;
+//    settings.setMaximumFrameRate(5);
+//    settings.setResolution(QSize(640, 480));
 
     int row = 0, col = 0;
     foreach(const QCameraInfo &info, camera_infos) {
@@ -32,7 +32,7 @@ InputsSelector::InputsSelector(QGridLayout * _grid): grid(_grid) {
         this->cameras.emplace_back(new QCamera(info));
         this->views.emplace_back(new QCameraViewfinder());
         this->cameras.back()->setViewfinder(this->views.back().get());
-        this->cameras.back()->setViewfinderSettings(settings);
+        // this->cameras.back()->setViewfinderSettings(settings);
         this->cameras.back()->start();
 
         QGroupBox * group_box = new QGroupBox(info.description());
@@ -98,7 +98,7 @@ void InputsSelector::saveImages(int crop_x, int crop_w) {
     qDebug() << "Running: " << in_args << out_args;
 
     QProcess proc;
-    proc.start("./ffmpeg", in_args + out_args); // FIXME
+    proc.start("ffmpeg", in_args + out_args); // FIXME
     bool finished = proc.waitForFinished();
     if(finished && proc.exitStatus() == QProcess::NormalExit && proc.exitCode() == 0)
         QMessageBox::information(nullptr, "", "Images saved");
