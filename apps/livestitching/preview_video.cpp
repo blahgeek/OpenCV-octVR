@@ -70,7 +70,7 @@ void PreviewVideoWidget::paintEvent(QPaintEvent *) {
         QImage img(static_cast<unsigned char *>(data.data()) + sizeof(struct PreviewDataHeader), 
                    preview_w, preview_h, preview_w * 3, QImage::Format_RGB888);
         painter.drawImage(QRect(QPoint(0, 0), this->size()), img);
-        painter.drawText(QPointF(0, 0), QString("FPS: %1").arg(QString::number(hdr->fps, 'g', 2)));
+        painter.drawText(QPointF(5, 10), QString("FPS: %1").arg(QString::number(hdr->fps, 'g', 4)));
     }
     data.unlock();
 }

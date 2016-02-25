@@ -82,7 +82,7 @@ void AsyncMultiMapperImpl::run_copy_outputs_hostmem_to_mat() {
     frame_total_time += fps_timer.tick("One frame poped");
     frame_count += 1;
     if(frame_count == 10) {
-        frame_fps = 1.0 / (frame_total_time / frame_count);
+        frame_fps = 1.0 / (frame_total_time / frame_count / 1000);
         frame_count = 0;
         frame_total_time = 0;
     }
