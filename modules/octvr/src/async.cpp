@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-12-01
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-02-23
+* @Last Modified time: 2016-02-25
 */
 
 
@@ -80,7 +80,7 @@ void AsyncMultiMapperImpl::run_copy_outputs_hostmem_to_mat() {
     this->free_outputs_hostmem_q.push(std::move(hostmems));
 
     auto preview_hostmem = this->previews_hostmem_q.pop();
-    // TODO: lock
+    #ifdef HAVE_QT5
     if(preview_size.area() > 0) {
         void * preview_meta_p = preview_meta.data();
         char zone_index = *(static_cast<char *>(preview_meta_p));
@@ -99,6 +99,7 @@ void AsyncMultiMapperImpl::run_copy_outputs_hostmem_to_mat() {
 
         target.unlock();
     }
+    #endif
     this->free_previews_hostmem_q.push(std::move(preview_hostmem));
 }
 
@@ -139,7 +140,11 @@ AsyncMultiMapperImpl::AsyncMultiMapperImpl(const std::vector<MapperTemplate> & m
                                            int blend, bool enable_gain_compensator, 
                                            std::vector<cv::Size> scale_outputs,
                                            cv::Size _preview_size) {
+    this->preview_size = cv::Size(0, 0);
+#ifdef HAVE_QT5
     this->preview_size = _preview_size;
+#endif
+
     this->in_sizes = in_sizes;
     this->do_blend = (blend != 0);
     for(int i = 0 ; i < mts.size() ; i += 1) {
@@ -181,6 +186,7 @@ AsyncMultiMapperImpl::AsyncMultiMapperImpl(const std::vector<MapperTemplate> & m
         }
     }
 
+#ifdef HAVE_QT5
     if(this->preview_size.area() > 0) {
 
         std::cerr << "Preview size: " << this->preview_size << std::endl;
@@ -198,6 +204,7 @@ AsyncMultiMapperImpl::AsyncMultiMapperImpl(const std::vector<MapperTemplate> & m
         CV_Assert(preview_data1.size() == sizeof(struct PreviewDataHeader) + preview_size.area() * 3);
         CV_Assert(preview_meta.isAttached() && preview_meta.size() == 1);
     }
+#endif
 
 #define RUN_THREAD(X) do { \
     std::cerr << "Running " << #X << std::endl; \

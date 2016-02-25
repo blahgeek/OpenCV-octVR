@@ -17,6 +17,8 @@ cmake \
     -DANDROID_ABI="armeabi-v7a with NEON" \
     -DANDROID_OPENCL_SDK=`pwd`/../android-opencl-sdk \
     -DWITH_TBB=ON \
+    -DWITH_QT=OFF \
+    $@ \
     ..
 
 echo "******************************************************"

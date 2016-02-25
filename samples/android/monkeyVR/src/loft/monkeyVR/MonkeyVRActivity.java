@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2016-01-21
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-02-03
+* @Last Modified time: 2016-02-25
 */
 
 package loft.monkeyVR;
@@ -142,8 +142,8 @@ public class MonkeyVRActivity extends Activity implements DialogInterface.OnClic
         dstAddrEditText.setText(remote_addr, TextView.BufferType.EDITABLE);
         EditText dstPortEditText = (EditText) view.findViewById(R.id.dstPortEditText);
         dstPortEditText.setText(Integer.toString(remote_port), TextView.BufferType.EDITABLE);
-        // CheckBox stitchCheckBox = (CheckBox) view.findViewById(R.id.stitchCheckBox);
-        // stitchCheckBox.setChecked(ifStitch);
+        CheckBox stitchCheckBox = (CheckBox) view.findViewById(R.id.stitchCheckBox);
+        stitchCheckBox.setChecked(ifStitch);
         CheckBox socketCheckBox = (CheckBox) view.findViewById(R.id.socketCheckBox);
         socketCheckBox.setChecked(ifSocket);
 
@@ -166,10 +166,10 @@ public class MonkeyVRActivity extends Activity implements DialogInterface.OnClic
             t = (EditText) ad.findViewById(R.id.dstPortEditText);
             remote_port = Integer.parseInt(t.getText().toString());
 
-            // CheckBox c = (CheckBox) ad.findViewById(R.id.stitchCheckBox);
-            // ifStitch = c.isChecked();
             CheckBox c = (CheckBox) ad.findViewById(R.id.socketCheckBox);
             ifSocket = c.isChecked();
+            c = (CheckBox) ad.findViewById(R.id.stitchCheckBox);
+            ifStitch = c.isChecked();
 
             CharSequence text = "Settings set.";
             Toast.makeText(this, text, Toast.LENGTH_SHORT).show();

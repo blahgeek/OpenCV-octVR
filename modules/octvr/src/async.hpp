@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-12-01
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-02-23
+* @Last Modified time: 2016-02-25
 */
 
 #ifndef LIBMAP_ASYNC_H_
@@ -22,7 +22,9 @@
 #include <memory>
 #include <condition_variable>
 
+#ifdef HAVE_QT5
 #include <QSharedMemory>
+#endif
 
 namespace vr {
 
@@ -42,7 +44,9 @@ private:
     // preview in RGB, using shared memory
     Queue<cv::cuda::GpuMat> previews_gpumat_q, free_previews_gpumat_q;
     Queue<cv::cuda::HostMem> previews_hostmem_q, free_previews_hostmem_q;
+#ifdef HAVE_QT5
     QSharedMemory preview_data0, preview_data1, preview_meta;
+#endif
     cv::Size preview_size;
 
     std::vector<cv::Size> out_sizes;
