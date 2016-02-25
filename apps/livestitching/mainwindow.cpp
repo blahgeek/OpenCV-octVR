@@ -175,12 +175,14 @@ void MainWindow::onTemplateChanged() {
 
 void MainWindow::onHLSPathSelect() {
     QString filename = QFileDialog::getSaveFileName(this);
-    this->ui->hls_path->setText(filename);
+    if(filename.size() > 0)
+        this->ui->hls_path->setText(filename);
 }
 
 void MainWindow::onFilePathSelect() {
     QString filename = QFileDialog::getSaveFileName(this);
-    this->ui->file_path->setText(filename);
+    if(filename.size() > 0)
+        this->ui->file_path->setText(filename);
 }
 
 MainWindow::MainWindow(QWidget *parent) :
