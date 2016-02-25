@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-02-23
+* @Last Modified time: 2016-02-25
 */
 
 #ifndef VR_LIBMAP_BASE_H
@@ -78,6 +78,7 @@ public:
 struct PreviewDataHeader {
     int width, height;
     int step;
+    double fps;
 };
 
 class AsyncMultiMapper {
@@ -140,7 +141,7 @@ protected:
 public:
     explicit Timer(std::string name);
     Timer();
-    void tick(std::string msg);
+    double tick(std::string msg);
 };
 
 template <class T>

@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-12-07
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-02-21
+* @Last Modified time: 2016-02-25
 */
 
 #include <iostream>
@@ -48,12 +48,13 @@ Timer::Timer(): Timer::Timer("") {}
     #define LOGD(...) ((void)__android_log_print(ANDROID_LOG_DEBUG, "octVR", __VA_ARGS__))
 #endif
 
-void Timer::tick(std::string msg) {
+double Timer::tick(std::string msg) {
     auto tn = gettime();
 	double time_elapsed;
 
 #ifdef ANDROID
-    LOGD("[Timer %s] %s: %.2fms", name.c_str(), msg.c_str(), (tn - t) / 1000.0);
+    time_elapsed = (tn - t) / 1000.0;
+    LOGD("[Timer %s] %s: %.2fms", name.c_str(), msg.c_str(), time_elapsed);
 #else
     #if defined(_WIN32)
         time_elapsed = (tn - t) * 1000.0 / frequency;
@@ -64,4 +65,6 @@ void Timer::tick(std::string msg) {
 #endif
 
     t = tn;
+
+    return time_elapsed;
 }
