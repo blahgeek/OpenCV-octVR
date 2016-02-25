@@ -1,3 +1,12 @@
+if (NOT HAVE_QT5)
+    message(WARNING "Building octvr without QT support")
+else(NOT HAVE_QT5)
+    message("Building with QT support")
+    find_package(Qt5Core REQUIRED)
+    link_libraries(Qt5::Core)
+    add_definitions(-DHAVE_QT5)
+endif(HAVE_QT5)
+
 include(FindOpenSSL)
 
 option(WITH_DONGLE_LICENSE "Enable dongle license protector" OFF)
@@ -16,7 +25,7 @@ if (WITH_DONGLE_LICENSE)
     link_libraries(${OPENSSL_CRYPTO_LIBRARY})
     add_definitions(-DWITH_DONGLE_LICENSE)
     message("Dongle license enabled")
-else(${WITH_DONGLE_LICENSE})
+else(WITH_DONGLE_LICENSE)
     message("Dongle license disabled")
 endif (WITH_DONGLE_LICENSE)
 
@@ -34,9 +43,6 @@ if (WITH_OCTVR_LOGO)
     endmacro(ocv_get_module_external_sources)
     # TODO : can we unset this macro afterwards?
 endif (WITH_OCTVR_LOGO)
-
-find_package(Qt5Core REQUIRED)
-link_libraries(Qt5::Core)
 
 set(the_description "octVR, you know it")
 ocv_warnings_disable(CMAKE_CXX_FLAGS -Wnon-virtual-dtor)

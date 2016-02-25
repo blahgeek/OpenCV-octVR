@@ -8,6 +8,11 @@ if(NOT OCV_DEPENDENCIES_FOUND)
   return()
 endif()
 
+if (NOT HAVE_QT5)
+  message("Livestitching is not building")
+  return()
+endif(NOT HAVE_QT5)
+
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
