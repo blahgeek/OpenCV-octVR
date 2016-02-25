@@ -5,7 +5,7 @@ else(NOT HAVE_QT5)
     find_package(Qt5Core REQUIRED)
     link_libraries(Qt5::Core)
     add_definitions(-DHAVE_QT5)
-endif(HAVE_QT5)
+endif(NOT HAVE_QT5)
 
 include(FindOpenSSL)
 
