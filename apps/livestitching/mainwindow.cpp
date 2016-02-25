@@ -74,7 +74,7 @@ void MainWindow::run() {
         output_args << "-c:v"  << ui->hls_codec->currentText()
                     << "-pix_fmt" << "yuv420p"
                     << "-b:v" << QString("%1M").arg(ui->hls_bitrate->value())
-                    << "-g" << QString::number(ui->hls_gopsize->value());
+                    << "-g" << QString::number(ui->hls_gopsize->value())
                     << "-f" << "hls"
                     << "-hls_time" << QString::number(ui->hls_segment_time->value())
                     << "-hls_list_size" << QString::number(ui->hls_list_size->value())
@@ -88,7 +88,7 @@ void MainWindow::run() {
         output_args << "-c:v"  << ui->file_codec->currentText()
                     << "-pix_fmt" << "yuv420p"
                     << "-b:v" << QString("%1M").arg(ui->file_bitrate->value())
-                    << "-g" << QString::number(ui->file_gopsize->value());
+                    << "-g" << QString::number(ui->file_gopsize->value())
                     << "-y" << ui->file_path->text();
         output_count += 1;
     }
