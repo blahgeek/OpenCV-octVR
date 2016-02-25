@@ -53,6 +53,9 @@ public slots:
     void onTemplateChanged();
     void onRunningStatusChanged();
 
+    void onHLSPathSelect();
+    void onFilePathSelect();
+
 private:
     Ui::MainWindow *ui;
 

@@ -173,6 +173,16 @@ void MainWindow::onTemplateChanged() {
     this->ui->template_info->setText(QString("%1 inputs").arg(inputs.size()));
 }
 
+void MainWindow::onHLSPathSelect() {
+    QString filename = QFileDialog::getSaveFileName(this);
+    this->ui->hls_path->setText(filename);
+}
+
+void MainWindow::onFilePathSelect() {
+    QString filename = QFileDialog::getSaveFileName(this);
+    this->ui->file_path->setText(filename);
+}
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
@@ -204,6 +214,9 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->tabWidget, &QTabWidget::currentChanged, this, &MainWindow::onTabChanged);
     connect(ui->inputs_action_save, &QPushButton::clicked, this, &MainWindow::onInputSaveButtonClicked);
     connect(this->inputs_selector.get(), &InputsSelector::selectedChanged, this, &MainWindow::onInputsSelectChanged);
+
+    connect(ui->hls_path_select, &QPushButton::clicked, this, &MainWindow::onHLSPathSelect);
+    connect(ui->file_path_select, &QPushButton::clicked, this, &MainWindow::onFilePathSelect);
 
     connect(ui->template_load, &QPushButton::clicked, this->pto_template.get(), &PTOTemplate::loadPTO);
     connect(this->pto_template.get(), &PTOTemplate::dataChanged, this, &MainWindow::onTemplateChanged);
