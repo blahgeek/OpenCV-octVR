@@ -79,6 +79,14 @@ void AsyncMultiMapperImpl::run_copy_outputs_hostmem_to_mat() {
     this->outputs_mat_q.push(std::move(mats));
     this->free_outputs_hostmem_q.push(std::move(hostmems));
 
+    frame_total_time += fps_timer.tick("One frame poped");
+    frame_count += 1;
+    if(frame_count == 10) {
+        frame_fps = 1.0 / (frame_total_time / frame_count / 1000);
+        frame_count = 0;
+        frame_total_time = 0;
+    }
+
     auto preview_hostmem = this->previews_hostmem_q.pop();
     #ifdef HAVE_QT5
     if(preview_size.area() > 0) {
@@ -96,6 +104,7 @@ void AsyncMultiMapperImpl::run_copy_outputs_hostmem_to_mat() {
         hdr->width = preview_size.width;
         hdr->height = preview_size.height;
         hdr->step = 0;
+        hdr->fps = this->frame_fps;
 
         target.unlock();
     }
@@ -139,7 +148,8 @@ AsyncMultiMapper * AsyncMultiMapper::New(const std::vector<MapperTemplate> & m, 
 AsyncMultiMapperImpl::AsyncMultiMapperImpl(const std::vector<MapperTemplate> & mts, std::vector<cv::Size> in_sizes, 
                                            int blend, bool enable_gain_compensator, 
                                            std::vector<cv::Size> scale_outputs,
-                                           cv::Size _preview_size) {
+                                           cv::Size _preview_size):
+fps_timer("FPS Timer") {
     this->preview_size = cv::Size(0, 0);
 #ifdef HAVE_QT5
     this->preview_size = _preview_size;

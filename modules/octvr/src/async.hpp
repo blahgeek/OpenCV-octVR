@@ -49,6 +49,11 @@ private:
 #endif
     cv::Size preview_size;
 
+    vr::Timer fps_timer;
+    int64_t frame_count = 0;
+    double frame_total_time = 0;
+    double frame_fps = 0;
+
     std::vector<cv::Size> out_sizes;
     std::vector<cv::Size> in_sizes;
 
