@@ -116,6 +116,7 @@ Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes,
     this->warped_imgs.resize(mt.inputs.size() + mt.overlay_inputs.size());
 
     this->warped_imgs_scale.resize(mt.inputs.size() + mt.overlay_inputs.size());
+    this->warped_imgs_rgb.resize(mt.inputs.size() + mt.overlay_inputs.size());
     for(int i = 0 ; i < mt.inputs.size() ; i += 1) {
         rgb_inputs[i].create(in_sizes[i], CV_8UC3);
         rgba_inputs[i].create(in_sizes[i], CV_8UC4);
@@ -124,13 +125,15 @@ Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes,
             cv::cuda::resize(warped_imgs[i], warped_imgs_scale[i],
                              cv::Size(), working_scale, working_scale,
                              cv::INTER_NEAREST);
+        if(blend == 0)
+            warped_imgs_rgb[i].create(stitch_size, CV_8UC3);
     }
 
     for(int i = mt.inputs.size() ; i < mt.inputs.size() + mt.overlay_inputs.size() ; i += 1) {
         rgb_inputs[i].create(in_sizes[i], CV_8UC3);
         rgba_inputs[i].create(in_sizes[i], CV_8UC4);
         warped_imgs[i].create(stitch_size, CV_8UC4);
-        warped_imgs_scale[i].create(stitch_size, CV_8UC3);  // NOTICE
+        warped_imgs_rgb[i].create(stitch_size, CV_8UC3);
     }
 
     this->result.create(stitch_size, CV_8UC3);
@@ -201,10 +204,12 @@ void Mapper::stitch(std::vector<GpuMat> & inputs,
     }
 
     for(int i = nonoverlay_num ; i < inputs.size() ; i += 1) {
+        cv::cuda::GpuMat input_c4 = inputs[i].reshape(4);
+        cv::cuda::swapChannels(input_c4, swap_orders, streams[i]);
         cv::cuda::cvtYUYV422toRGB24(inputs[i], rgb_inputs[i], streams[i]);
         cv::cuda::cvtColor(rgb_inputs[i], rgba_inputs[i], cv::COLOR_RGB2RGBA, 4, streams[i]);
         cv::cuda::fastRemap(rgba_inputs[i], warped_imgs[i], map1s[i], map2s[i], false, streams[i]);
-        cv::cuda::cvtColor(warped_imgs[i], warped_imgs_scale[i], cv::COLOR_RGBA2RGB, 3, streams[i]);
+        cv::cuda::cvtColor(warped_imgs[i], warped_imgs_rgb[i], cv::COLOR_RGBA2RGB, 3, streams[i]);
         // FIXME
         //cv::cuda::remap(inputs[i], warped_imgs_scale[i], map1s[i], map2s[i], 
                         //cv::INTER_LINEAR, cv::BORDER_CONSTANT, cv::Scalar(), streams[i]);
@@ -233,14 +238,16 @@ void Mapper::stitch(std::vector<GpuMat> & inputs,
         blender->blend(partial_warped_imgs, result);
         timer.tick("Blender blend");
     } else {
-        for(int i = 0 ; i < nonoverlay_num ; i += 1)
-            warped_imgs[i].copyTo(result, masks[i], stream_final);
+        for(int i = 0 ; i < nonoverlay_num ; i += 1) {
+            cv::cuda::cvtColor(warped_imgs[i], warped_imgs_rgb[i], cv::COLOR_RGBA2RGB, 3, stream_final);
+            warped_imgs_rgb[i].copyTo(result, masks[i], stream_final);
+        }
         timer.tick("No blend copy");
     }
 
     for(int i = nonoverlay_num ; i < inputs.size() ; i += 1) {
         streams[i].waitForCompletion();
-        warped_imgs_scale[i].copyTo(result, masks[i], stream_final);
+        warped_imgs_rgb[i].copyTo(result, masks[i], stream_final);
     }
     CV_Assert(result.type() == CV_8UC3);
 

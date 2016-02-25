@@ -59,6 +59,7 @@ private:
     std::vector<GpuMat> rgba_inputs;
     std::vector<GpuMat> warped_imgs;
     std::vector<GpuMat> warped_imgs_scale;
+    std::vector<GpuMat> warped_imgs_rgb;
     GpuMat result, result_scaled;
 
 public:
