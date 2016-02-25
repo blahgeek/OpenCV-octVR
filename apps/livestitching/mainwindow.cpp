@@ -32,12 +32,6 @@ void MainWindow::run() {
         QMessageBox::warning(this, "", "No input selected");
         return;
     }
-    if(this->ui->hls_enable->checkState() != Qt::Checked &&
-       this->ui->file_enable->checkState() != Qt::Checked &&
-       this->ui->decklink_enable->checkState() != Qt::Checked) {
-        QMessageBox::warning(this, "", "No output selected");
-        return;
-    }
 
     QString output_json_path = temp_dir.path() + "/vr.json";
     QFile output_json(output_json_path);
@@ -50,11 +44,13 @@ void MainWindow::run() {
                 << "-o" << (temp_dir.path() + "/vr.dat")
                 << output_json_path;
 
+    // BEGIN input args
     QStringList args;
     for(auto & input: selected_cams)
         args << "-f" << "v4l2" << "-input_format" << "uyvy422"
              << "-framerate" << "30" << "-i" << input.deviceName();
 
+    // BEGIN filter args
     QString filter_complex = QString("vr_map=");
     filter_complex.append(QString("inputs=%1:outputs=%2:crop_x=%3:crop_w=%4")
                           .arg(selected_cams.size())
@@ -69,37 +65,55 @@ void MainWindow::run() {
                           .arg(ui->paranoma_width->value())
                           .arg(ui->paranoma_height->value()));
 
-    if(this->ui->decklink_enable->checkState() == Qt::Checked)
-        filter_complex.append(QString(",split=2[o0][o1]"));
+    // BEGIN output args
+    QStringList output_args;
+    int output_count = 0;
 
-    args << "-filter_complex" << filter_complex;
-
-    if(this->ui->decklink_enable->checkState() == Qt::Checked)
-        args << "-map" << "[o0]";
-    args << "-c:v" << ui->encoding_codec->currentText()
-         << "-pix_fmt" << "yuv420p"
-         << "-b:v" << QString("%1M").arg(ui->encoding_bitrate->value())
-         << "-g" << QString::number(ui->encoding_gopsize->value());
-
-    QString tee_output("[f=null]-");
     if(this->ui->hls_enable->checkState() == Qt::Checked) {
-        tee_output.append(QString("|[f=hls:hls_time=%1:hls_list_size=%2:hls_flags=delete_segments:hls_allow_cache=0]%3")
-                          .arg(ui->hls_segment_time->value())
-                          .arg(ui->hls_list_size->value())
-                          .arg(ui->hls_path->text()));
+        output_args << "-map" << QString("[o%1]").arg(output_count);
+        output_args << "-c:v"  << ui->hls_codec->currentText()
+                    << "-pix_fmt" << "yuv420p"
+                    << "-b:v" << QString("%1M").arg(ui->hls_bitrate->value())
+                    << "-g" << QString::number(ui->hls_gopsize->value());
+                    << "-f" << "hls"
+                    << "-hls_time" << QString::number(ui->hls_segment_time->value())
+                    << "-hls_list_size" << QString::number(ui->hls_list_size->value())
+                    << "-hls_flags" << "delete_segments"
+                    << "-hls_allow_cache" << "0"
+                    << "-y" << ui->hls_path->text();
+        output_count += 1;
     }
     if(this->ui->file_enable->checkState() == Qt::Checked) {
-        tee_output.append("|");
-        tee_output.append(ui->file_path->text());
+        output_args << "-map" << QString("[o%1]").arg(output_count);
+        output_args << "-c:v"  << ui->file_codec->currentText()
+                    << "-pix_fmt" << "yuv420p"
+                    << "-b:v" << QString("%1M").arg(ui->file_bitrate->value())
+                    << "-g" << QString::number(ui->file_gopsize->value());
+                    << "-y" << ui->file_path->text();
+        output_count += 1;
+    }
+    if(this->ui->decklink_enable->checkState() == Qt::Checked) {
+        output_args << "-map" << QString("[o%1]").arg(output_count);
+        output_args << "-pix_fmt" << "uyvy422"
+                    << "-f" << "decklink"
+                    << "-vsync" << "drop"
+                    << "-preroll" << "0.5"
+                    << this->ui->decklink_device->text();
+        output_count += 1;
     }
 
-    args << "-f" << "tee" << "-y" << tee_output;
+    if(output_count == 0) {
+        output_args << "-map" << QString("[o%1]").arg(output_count);
+        output_args << "-c:v" << "rawvideo" << "-f" << "null" << "-";
+        output_count += 1;
+    }
 
-    if(this->ui->decklink_enable->checkState() == Qt::Checked)
-        args << "-map" << "[o1]" 
-             << "-pix_fmt" << "uyvy422"
-             << "-preroll" << "0.5" << "-vsync" << "drop"
-             << "-f" << "decklink" << this->ui->decklink_device->text();
+    filter_complex.append(QString(",split=%1").arg(output_count));
+    for(int i = 0 ; i < output_count ; i += 1)
+        filter_complex.append(QString("[o%1]").arg(i));
+
+    args << "-filter_complex" << filter_complex;
+    args += output_args;
 
     this->runner->start(dumper_args, args);
 }
