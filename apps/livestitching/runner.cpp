@@ -36,14 +36,25 @@ enum Runner::RunningStatus Runner::status() const {
     return NOT_RUNNING;
 }
 
-void Runner::start(QStringList _dumper_args, QStringList _ffmpeg_args) {
-    this->dumper_args = _dumper_args;
+void Runner::start(QJsonDocument json_doc, int width,
+                   QStringList _ffmpeg_args) {
     this->ffmpeg_args = _ffmpeg_args;
 
     if(this->status() != Runner::NOT_RUNNING) {
         qDebug() << "Runner already running, return";
         return;
     }
+
+    QString output_json_path = temp_dir.path() + "/vr.json";
+    QFile output_json(output_json_path);
+    output_json.open(QIODevice::WriteOnly);
+    output_json.write(json_doc.toJson());
+    output_json.close();
+
+    QStringList dumper_args;
+    dumper_args << "-w" << QString::number(width)
+                << "-o" << "vr.dat"
+                << output_json_path;
 
     qDebug() << "Running dumper: " << dumper_args;
     dumper_proc.start(QCoreApplication::applicationDirPath() + "/octvr_dump", 

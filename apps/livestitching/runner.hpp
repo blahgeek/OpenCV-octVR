@@ -11,13 +11,14 @@
 #include <QProcess>
 #include <QJsonDocument>
 #include <QTemporaryDir>
+#include <QJsonDocument>
 
 class Runner : public QObject {
     Q_OBJECT
 
 private:
     QProcess dumper_proc, ffmpeg_proc;
-    QStringList dumper_args, ffmpeg_args;
+    QStringList ffmpeg_args;
 
     QTemporaryDir temp_dir;
 
@@ -25,7 +26,8 @@ public:
     enum RunningStatus { NOT_RUNNING, DUMPER_RUNNING, FFMPEG_RUNNING };
 
     enum RunningStatus status() const;
-    void start(QStringList dumper_args, QStringList ffmpeg_args);
+    void start(QJsonDocument json_doc, int width,
+               QStringList ffmpeg_args);
 
     Runner();
 

@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2016-02-21
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-02-22
+* @Last Modified time: 2016-02-26
 */
 
 #ifndef LIVESTITCHING_INPUTS_SELECT_H__
@@ -47,6 +47,8 @@ public:
 
     std::vector<QCameraInfo> getSelected();
     std::vector<QCameraInfo> getAll();
+
+    QStringList getInputArgs();
 
 };
 
