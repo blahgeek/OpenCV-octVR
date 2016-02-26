@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2016-02-23
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-02-23
+* @Last Modified time: 2016-02-26
 */
 
 #include <iostream>
@@ -10,12 +10,19 @@
 #include "./runner.hpp"
 #include <QDebug>
 #include <QMessageBox>
+#include <QCoreApplication>
 
 #include <assert.h>
 
 Runner::Runner() {
     connect(&dumper_proc, static_cast<void(QProcess::*)(int, QProcess::ExitStatus)>(&QProcess::finished), this, &Runner::onDumperProcessFinished);
     connect(&ffmpeg_proc, static_cast<void(QProcess::*)(int, QProcess::ExitStatus)>(&QProcess::finished), this, &Runner::onFfmpegProcessFinished);
+
+    assert(temp_dir.isValid());
+    qDebug() << "Temporary dir: " << temp_dir.path();
+
+    dumper_proc.setWorkingDirectory(temp_dir.path());
+    ffmpeg_proc.setWorkingDirectory(temp_dir.path());
 }
 
 enum Runner::RunningStatus Runner::status() const {
@@ -39,14 +46,9 @@ void Runner::start(QStringList _dumper_args, QStringList _ffmpeg_args) {
     }
 
     qDebug() << "Running dumper: " << dumper_args;
-    dumper_proc.start("octvr_dump", dumper_args); // FIXME
+    dumper_proc.start(QCoreApplication::applicationDirPath() + "/octvr_dump", 
+                      dumper_args);
     emit statusChanged();
-    // bool finished = dumper_proc.waitForFinished();
-    // if(!(finished && dumper_proc.exitStatus() == QProcess::NormalExit && dumper_proc.exitCode() == 0)) {
-    //     QMessageBox::warning(nullptr, "", "Unable to create dat file");
-    //     this->onRunningStatusChanged(NOT_RUNNING);
-    //     return;
-    // }
 }
 
 void Runner::stop() {
@@ -63,7 +65,8 @@ void Runner::onDumperProcessFinished(int exitCode, QProcess::ExitStatus status) 
     // run ffmpeg
 
     qDebug() << "Running ffmpeg: " << ffmpeg_args;
-    ffmpeg_proc.start("ffmpeg", ffmpeg_args); // FIXME
+    ffmpeg_proc.start(QCoreApplication::applicationDirPath() + "/ffmpeg",
+                      ffmpeg_args);
 
     emit statusChanged();
 }

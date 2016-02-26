@@ -66,8 +66,6 @@ private:
 
     QTimer preview_timer;
 
-    QTemporaryDir temp_dir;
-
     QVideoWidget * videoWidget;
     QMediaPlayer * videoPreviewer;
 };

@@ -33,7 +33,7 @@ void MainWindow::run() {
         return;
     }
 
-    QString output_json_path = temp_dir.path() + "/vr.json";
+    QString output_json_path = "vr.json";
     QFile output_json(output_json_path);
     output_json.open(QIODevice::WriteOnly);
     output_json.write(json_doc.toJson());
@@ -41,7 +41,7 @@ void MainWindow::run() {
 
     QStringList dumper_args;
     dumper_args << "-w" << QString::number(ui->paranoma_width->value())
-                << "-o" << (temp_dir.path() + "/vr.dat")
+                << "-o" << "vr.dat"
                 << output_json_path;
 
     // BEGIN input args
@@ -54,7 +54,7 @@ void MainWindow::run() {
     QString filter_complex = QString("vr_map=");
     filter_complex.append(QString("inputs=%1:outputs=%2:crop_x=%3:crop_w=%4")
                           .arg(selected_cams.size())
-                          .arg(temp_dir.path() + "/vr.dat")
+                          .arg("vr.dat")
                           .arg(ui->inputs_crop_x->value())
                           .arg(ui->inputs_crop_w->value()) );
     filter_complex.append(QString(":blend=%1:preview_ow=%2:preview_oh=%3")
@@ -227,10 +227,10 @@ MainWindow::MainWindow(QWidget *parent) :
     this->onTemplateChanged();
     this->onRunningStatusChanged();
 
-    this->ui->tabWidget->setCurrentIndex(0);
+    this->ui->hls_path->setText(QDir::homePath() + QDir::separator() + "vr.m3u8");
+    this->ui->file_path->setText(QDir::homePath() + QDir::separator() + "vr.ts");
 
-    assert(temp_dir.isValid());
-    qDebug() << "Temp dir: " << temp_dir.path();
+    this->ui->tabWidget->setCurrentIndex(0);
 }
 
 MainWindow::~MainWindow()

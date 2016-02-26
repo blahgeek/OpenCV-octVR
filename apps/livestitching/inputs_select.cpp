@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2016-02-21
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-02-22
+* @Last Modified time: 2016-02-26
 */
 
 #include <iostream>
@@ -12,6 +12,7 @@
 #include <QProcess>
 #include <QMessageBox>
 #include <QCameraViewfinderSettings>
+#include <QCoreApplication>
 
 #include "./inputs_select.hpp"
 
@@ -98,7 +99,8 @@ void InputsSelector::saveImages(int crop_x, int crop_w) {
     qDebug() << "Running: " << in_args << out_args;
 
     QProcess proc;
-    proc.start("ffmpeg", in_args + out_args); // FIXME
+    proc.start(QCoreApplication::applicationDirPath() + "/ffmpeg",
+               in_args + out_args);
     bool finished = proc.waitForFinished();
     if(finished && proc.exitStatus() == QProcess::NormalExit && proc.exitCode() == 0)
         QMessageBox::information(nullptr, "", "Images saved");
