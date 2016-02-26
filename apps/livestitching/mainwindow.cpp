@@ -22,6 +22,7 @@ void MainWindow::run() {
     QJsonObject doc_obj = json_doc.object();
     QJsonArray inputs = doc_obj["inputs"].toArray();
 
+    auto all_cams = this->inputs_selector->getAll();
     auto selected_cams = this->inputs_selector->getSelected();
 
     if(inputs.size() != selected_cams.size()) {
@@ -46,9 +47,25 @@ void MainWindow::run() {
 
     // BEGIN input args
     QStringList args;
+#if defined(_WIN32)
+    for(auto & input: selected_cams) {
+        int device_name_dup = 0;
+        for(auto & x: all_cams) {
+            if(x.deviceName() == input.deviceName()) // it's me
+                break;
+            if(x.description() == input.description()) // dup
+                device_name_dup += 1;
+        }
+        args << "-f" << "dshow" << "-pixel_format" << "uyvy422"
+             << "-video_device_number" << QString::number(device_name_dup)
+             << "-framerate" << "30" 
+             << "-i" << QString("video=%1").arg(input.description());
+    }
+#else
     for(auto & input: selected_cams)
-        args << "-f" << "v4l2" << "-input_format" << "uyvy422"
+        args << "-f" << "v4l2" << "-pixel_format" << "uyvy422"
              << "-framerate" << "30" << "-i" << input.deviceName();
+#endif
 
     // BEGIN filter args
     QString filter_complex = QString("vr_map=");
