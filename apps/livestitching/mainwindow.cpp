@@ -227,8 +227,8 @@ MainWindow::MainWindow(QWidget *parent) :
     this->onTemplateChanged();
     this->onRunningStatusChanged();
 
-    this->ui->hls_path->setText(QDir::homePath() + QDir::separator() + "vr.m3u8");
-    this->ui->file_path->setText(QDir::homePath() + QDir::separator() + "vr.ts");
+    this->ui->hls_path->setText(QDir::toNativeSeparators(QDir::homePath() + "/vr.m3u8"));
+    this->ui->file_path->setText(QDir::toNativeSeparators(QDir::homePath() + "/vr.ts"));
 
     this->ui->tabWidget->setCurrentIndex(0);
 }
