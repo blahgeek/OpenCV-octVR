@@ -52,15 +52,16 @@ void MainWindow::run() {
 
     // BEGIN filter args
     QString filter_complex = QString("vr_map=");
-    filter_complex.append(QString("inputs=%1:outputs=%2:crop_x=%3:crop_w=%4")
+    filter_complex.append(QString("inputs=%1:outputs=%2:crop_x=%3:crop_w=%4:blend=%5")
                           .arg(selected_cams.size())
                           .arg("vr.dat")
                           .arg(ui->inputs_crop_x->value())
-                          .arg(ui->inputs_crop_w->value()) );
-    filter_complex.append(QString(":blend=%1:preview_ow=%2:preview_oh=%3")
-                          .arg(ui->paranoma_algorithm->currentIndex() == 0 ? 128 : -5)
-                          .arg(PREVIEW_WIDTH)
-                          .arg(PREVIEW_HEIGHT));
+                          .arg(ui->inputs_crop_w->value())
+                          .arg(ui->paranoma_algorithm->currentIndex()==0?128:-5) );
+    if(this->preview_video->isValid())
+        filter_complex.append(QString(":preview_ow=%1:preview_oh=%2")
+                              .arg(PREVIEW_WIDTH)
+                              .arg(PREVIEW_HEIGHT));
     filter_complex.append(QString(":scale_ow=%1:scale_oh=%2")
                           .arg(ui->paranoma_width->value())
                           .arg(ui->paranoma_height->value()));

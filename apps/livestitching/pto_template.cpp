@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2016-02-22
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-02-22
+* @Last Modified time: 2016-02-26
 */
 
 #include <iostream>
@@ -23,9 +23,9 @@ PTOTemplate::PTOTemplate(QTreeView * _tree): tree_view(_tree) {
 }
 
 void PTOTemplate::loadPTO() {
-    QString filename = QFileDialog::getOpenFileName(nullptr, "Open Document",
-                                                    "/home",
-                                                    "Document files (*.pto);;All files(*.*)");
+    QString filename = QFileDialog::getOpenFileName(nullptr, "Open Template",
+                                                    QDir::homePath(),
+                                                    "Hugin template (*.pto);;PTGui template (*.pts);;All files(*.*)");
     if(filename.isNull())
         return;
 

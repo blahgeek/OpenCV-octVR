@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-12-01
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-02-25
+* @Last Modified time: 2016-02-26
 */
 
 
@@ -200,19 +200,24 @@ fps_timer("FPS Timer") {
     if(this->preview_size.area() > 0) {
 
         std::cerr << "Preview size: " << this->preview_size << std::endl;
-        preview_data0.setKey(OCTVR_PREVIEW_DATA0_MEMORY_KEY);
-        preview_data1.setKey(OCTVR_PREVIEW_DATA1_MEMORY_KEY);
-        preview_meta.setKey(OCTVR_PREVIEW_DATA_META_MEMORY_KEY);
 
-        preview_data0.attach();
-        preview_data1.attach();
-        preview_meta.attach();
+    #define ATTACH(x, key, s) \
+        do { \
+            (x).setKey(key); \
+            bool ret = (x).attach(); \
+            if(ret) break; \
+            std::cerr << "Attach failed: " << (x).errorString().toStdString() << std::endl; \
+            CV_Assert(ret); \
+            CV_Assert((x).size() == s); \
+        } while(0)
 
-        CV_Assert(preview_data0.isAttached());
-        CV_Assert(preview_data0.size() == sizeof(struct PreviewDataHeader) + preview_size.area() * 3);
-        CV_Assert(preview_data1.isAttached());
-        CV_Assert(preview_data1.size() == sizeof(struct PreviewDataHeader) + preview_size.area() * 3);
-        CV_Assert(preview_meta.isAttached() && preview_meta.size() == 1);
+        ATTACH(preview_data0, OCTVR_PREVIEW_DATA0_MEMORY_KEY,
+               sizeof(struct PreviewDataHeader) + preview_size.area());
+        ATTACH(preview_data1, OCTVR_PREVIEW_DATA1_MEMORY_KEY,
+               sizeof(struct PreviewDataHeader) + preview_size.area());
+        ATTACH(preview_meta, OCTVR_PREVIEW_DATA_META_MEMORY_KEY, 1);
+
+    #undef ATTACH
     }
 #endif
 
