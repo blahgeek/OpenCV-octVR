@@ -14,4 +14,5 @@ cmake -G "NMake Makefiles" ^
     -D WITH_VFW=OFF ^
     -D BUILD_TESTS=OFF ^
     -D BUILD_PERF_TESTS=OFF ^
-    ..
+    %* ^
+    ..\..
