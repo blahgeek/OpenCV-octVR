@@ -167,15 +167,13 @@ cv::Point2d FullFrameFisheyeCamera::do_reverse_radial_distort(cv::Point2d orig) 
     for(int i = 0 ; i < roots.rows ; i += 1) {
         double real = roots.at<double>(i, 0);
         double virt = roots.at<double>(i, 1);
-        std::cerr << "solvePoly root " << i << ": "
-                  << real << "+" << virt << "i" << std::endl;
-        if(virt == 0 && real > 0)
+        if(fabs(virt) < 1e-5 && real > 0)
             r = real;
     }
-    CV_Assert(r > 0);
+    //CV_Assert(r > 0);
 
     double scale;
-    if(r < VAR(5))
+    if(r < VAR(5) && r > 0)
         scale = _sqrt / VAR(4) / r;
     else
         scale = 1000.0;
@@ -241,7 +239,7 @@ cv::Point2d FullFrameFisheyeCamera::image_to_obj_single(const cv::Point2d & _xy)
     double theta = xy.x / distance / cos(alpha);
 
     double lon = atan2(sin(theta) * cos(alpha), cos(theta));
-    double lat = atan2(sin(alpha) * sin(lon), cos(alpha));
+    double lat = atan(sin(alpha) / cos(alpha) * sin(lon));
 
     return cv::Point2d(lon, lat);
 
