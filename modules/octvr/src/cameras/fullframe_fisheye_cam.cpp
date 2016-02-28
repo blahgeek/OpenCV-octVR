@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-11-03
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-02-21
+* @Last Modified time: 2016-02-28
 */
 
 #include "./fullframe_fisheye_cam.hpp"
@@ -136,25 +136,13 @@ Camera(options) {
     this->radial_distortion[4] = (size.width < size.height ? size.width : size.height) / 2.0;
     this->radial_distortion[5] = CalcCorrectionRadius_copy(this->radial_distortion);
 
-    #define VAR(n) (this->radial_distortion[n])
-
-    // print debug info
-    // json debug = {
-    //     {"radial_distortion", {VAR(0), VAR(1), VAR(2), VAR(3), VAR(4), VAR(5)}},
-    //     {"hfov", this->hfov},
-    //     {"center_shift", {this->center_shift.x, this->center_shift.y}},
-    //     {"size", {this->size.width, this->size.height}},
-    //     {"rotate", {this->rotate_matrix.at<double>(0, 0), this->rotate_matrix.at<double>(0, 1), this->rotate_matrix.at<double>(0, 2),
-    //                 this->rotate_matrix.at<double>(1, 0), this->rotate_matrix.at<double>(1, 1), this->rotate_matrix.at<double>(1, 2),
-    //                 this->rotate_matrix.at<double>(2, 0), this->rotate_matrix.at<double>(2, 1), this->rotate_matrix.at<double>(2, 2),
-    //                }}
-    // };
-    // std::cout << debug.dump(4) << ", " << std::endl;
 }
 
 double FullFrameFisheyeCamera::get_aspect_ratio() {
     return double(this->size.width) / this->size.height;
 }
+
+#define VAR(n) (this->radial_distortion[n])
 
 cv::Point2d FullFrameFisheyeCamera::do_radial_distort(cv::Point2d orig) {
     double r, scale;
@@ -166,9 +154,37 @@ cv::Point2d FullFrameFisheyeCamera::do_radial_distort(cv::Point2d orig) {
         scale = 1000.0;  // WTF?
 
     return orig * scale;
-
-    #undef VAR
 }
+
+cv::Point2d FullFrameFisheyeCamera::do_reverse_radial_distort(cv::Point2d orig) {
+    double _sqrt = sqrt(orig.x * orig.x + orig.y * orig.y);
+
+    std::vector<double> coeffs({ - _sqrt / VAR(4), VAR(0), VAR(1), VAR(2), VAR(3)});
+    cv::Mat roots;
+    double r = -1;
+
+    cv::solvePoly(coeffs, roots);
+    for(int i = 0 ; i < roots.rows ; i += 1) {
+        double real = roots.at<double>(i, 0);
+        double virt = roots.at<double>(i, 1);
+        std::cerr << "solvePoly root " << i << ": "
+                  << real << "+" << virt << "i" << std::endl;
+        if(virt == 0 && real > 0)
+            r = real;
+    }
+    CV_Assert(r > 0);
+
+    double scale;
+    if(r < VAR(5))
+        scale = _sqrt / VAR(4) / r;
+    else
+        scale = 1000.0;
+
+    return orig / scale;
+
+}
+
+#undef VAR
 
 cv::Point2d FullFrameFisheyeCamera::obj_to_image_single(const cv::Point2d & lonlat) {
     double lon = lonlat.x, lat = lonlat.y;
@@ -203,4 +219,30 @@ cv::Point2d FullFrameFisheyeCamera::obj_to_image_single(const cv::Point2d & lonl
     }
 
     return ret;
+}
+
+cv::Point2d FullFrameFisheyeCamera::image_to_obj_single(const cv::Point2d & _xy) {
+    CV_Assert(this->circular_crop.area() == 0);
+
+    auto xy = _xy;
+
+    xy.x -= 0.5;
+    xy.y -= 0.5;
+
+    xy.x *= double(this->size.width);
+    xy.y *= double(this->size.height);
+
+    xy -= this->center_shift;
+    xy = this->do_reverse_radial_distort(xy);
+
+    double distance = double(this->size.width) / (this->hfov);
+
+    double alpha = atan2(-xy.y, xy.x);
+    double theta = xy.x / distance / cos(alpha);
+
+    double lon = atan2(sin(theta) * cos(alpha), cos(theta));
+    double lat = atan2(sin(alpha) * sin(lon), cos(alpha));
+
+    return cv::Point2d(lon, lat);
+
 }
