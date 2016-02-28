@@ -236,10 +236,13 @@ cv::Point2d FullFrameFisheyeCamera::image_to_obj_single(const cv::Point2d & _xy)
     double distance = double(this->size.width) / (this->hfov);
 
     double alpha = atan2(-xy.y, xy.x);
-    double theta = xy.x / distance / cos(alpha);
+
+    double theta = xy.y / distance / sin(alpha);
+    if(fabs(alpha) < 1e-3)
+        theta = xy.x / distance / cos(alpha);
 
     double lon = atan2(sin(theta) * cos(alpha), cos(theta));
-    double lat = atan(sin(alpha) / cos(alpha) * sin(lon));
+    double lat = atan(tan(alpha) * sin(lon));
 
     return cv::Point2d(lon, lat);
 
