@@ -25,6 +25,10 @@ class PTXParser:
                 val = self.inputs[int(val[1:])][key]
             self.processing_input[key] = val
 
+        if 'S' in self.processing_input:  # selection from hugin
+            self.processing_input['selection'] = map(int, self.processing_input['S'].split(','))
+            del self.processing_input['S']
+
         self.inputs.append(self.processing_input)
         self.processing_input = dict()
         logging.info("New input added")
@@ -100,7 +104,7 @@ class PTXParser:
                 "center_dy": float(img["e"]),
                 "radial": [float(img["a"]), float(img["b"]), float(img["c"])],
             }
-            for key in ('circular_crop', 'exclude_masks', ):
+            for key in ('circular_crop', 'exclude_masks', 'selection'):
                 if key in img:
                     options[key] = img[key]
             yield {

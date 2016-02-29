@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-20
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-02-21
+* @Last Modified time: 2016-03-01
 */
 
 #include "./camera.hpp"
@@ -59,11 +59,34 @@ Camera::Camera(const rapidjson::Value & options) {
 
     this->rotate_matrix = (rotate_x * rotate_z) * rotate_y;
 
-    if(options.HasMember("exclude_masks")) {
+    if(options.HasMember("selection")) {
         int width = options["width"].GetInt();
         int height = options["height"].GetInt();
         this->exclude_mask = cv::Mat(height, width, CV_8U);
-        this->exclude_mask.setTo(0);
+        this->exclude_mask.setTo(255); // exclude all
+
+        int left = options["selection"][0].GetInt();
+        int right = options["selection"][1].GetInt();
+        int top = options["selection"][2].GetInt();
+        int bottom = options["selection"][3].GetInt();
+
+        std::vector<cv::Point2i> points({
+            cv::Point2i(left, top),
+            cv::Point2i(left, bottom - 1),
+            cv::Point2i(right - 1, bottom - 1),
+            cv::Point2i(right - 1, top)
+        });
+        cv::fillPoly(this->exclude_mask, 
+                     std::vector<std::vector<cv::Point2i>>({points}), 0);
+    }
+
+    if(options.HasMember("exclude_masks")) {
+        int width = options["width"].GetInt();
+        int height = options["height"].GetInt();
+        if(this->exclude_mask.empty()) {
+            this->exclude_mask = cv::Mat(height, width, CV_8U);
+            this->exclude_mask.setTo(0);
+        }
         this->drawExcludeMask(options["exclude_masks"]);
     }
 }
