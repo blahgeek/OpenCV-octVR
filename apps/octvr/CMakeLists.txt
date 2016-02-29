@@ -4,12 +4,14 @@ if(NOT OCV_DEPENDENCIES_FOUND)
    return()
 endif()
 
-ocv_include_modules_recurse(opencv_octvr)
+ocv_include_modules_recurse(opencv_octvr opencv_stitching)
 
 ocv_add_executable(octvr_dump dump.cpp)
 ocv_add_executable(octvr_map map.cpp)
 ocv_add_executable(octvr_monkeygen monkey_gen.cpp)
+ocv_add_executable(octvr_gain gain.cpp)
 
 ocv_target_link_libraries(octvr_dump opencv_octvr)
 ocv_target_link_libraries(octvr_map opencv_octvr)
 ocv_target_link_libraries(octvr_monkeygen opencv_octvr)
+ocv_target_link_libraries(octvr_gain opencv_octvr opencv_stitching)
