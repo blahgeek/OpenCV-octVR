@@ -26,7 +26,7 @@ class PTXParser:
             self.processing_input[key] = val
 
         if 'S' in self.processing_input:  # selection from hugin
-            self.processing_input['selection'] = map(int, self.processing_input['S'].split(','))
+            self.processing_input['selection'] = list(map(int, self.processing_input['S'].split(',')))
             del self.processing_input['S']
 
         self.inputs.append(self.processing_input)
