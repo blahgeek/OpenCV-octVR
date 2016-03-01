@@ -50,6 +50,7 @@ QWidget
     background-clip: border;
     border-image: none;
     outline: 0;
+    font-family: "Arial";
 }
 
 QWidget:item:hover
