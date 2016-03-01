@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-12-01
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-02-26
+* @Last Modified time: 2016-03-01
 */
 
 
@@ -42,7 +42,7 @@ void AsyncMultiMapperImpl::run_do_mapping() {
     auto preview_output = this->free_previews_gpumat_q.pop();
 
     for(int i = 0 ; i < outputs.size() ; i += 1)
-        this->mappers[i]->stitch(gpumats, outputs[i], preview_output);
+        this->mappers[i]->stitch(gpumats, outputs[i], preview_output, i == 0);
 
     this->outputs_gpumat_q.push(std::move(outputs));
     this->free_inputs_gpumat_q.push(std::move(gpumats));

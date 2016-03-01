@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-02-24
+* @Last Modified time: 2016-03-01
 */
 
 #include <iostream>
@@ -173,7 +173,8 @@ Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes,
 }
 
 void Mapper::stitch(std::vector<GpuMat> & inputs,
-                    GpuMat & output, GpuMat & preview_output) {
+                    GpuMat & output, GpuMat & preview_output,
+                    bool mix_input_channels) {
 #ifdef WITH_DONGLE_LICENSE
     this->lic_cnt += 1;
     if (this->lic_cnt % 3000 == 0) {
@@ -192,8 +193,10 @@ void Mapper::stitch(std::vector<GpuMat> & inputs,
     int swap_orders[] = {1, 0, 3, 2};
     
     for(int i = 0 ; i < nonoverlay_num ; i += 1) {
-        cv::cuda::GpuMat input_c4 = inputs[i].reshape(4);
-        cv::cuda::swapChannels(input_c4, swap_orders, streams[i]);
+        if(mix_input_channels) {
+            cv::cuda::GpuMat input_c4 = inputs[i].reshape(4);
+            cv::cuda::swapChannels(input_c4, swap_orders, streams[i]);
+        }
         cv::cuda::cvtYUYV422toRGB24(inputs[i], rgb_inputs[i], streams[i]);
         cv::cuda::cvtColor(rgb_inputs[i], rgba_inputs[i], cv::COLOR_RGB2RGBA, 4, streams[i]);
         cv::cuda::fastRemap(rgba_inputs[i], warped_imgs[i], map1s[i], map2s[i], true, streams[i]);
@@ -204,8 +207,10 @@ void Mapper::stitch(std::vector<GpuMat> & inputs,
     }
 
     for(int i = nonoverlay_num ; i < inputs.size() ; i += 1) {
-        cv::cuda::GpuMat input_c4 = inputs[i].reshape(4);
-        cv::cuda::swapChannels(input_c4, swap_orders, streams[i]);
+        if(mix_input_channels) {
+            cv::cuda::GpuMat input_c4 = inputs[i].reshape(4);
+            cv::cuda::swapChannels(input_c4, swap_orders, streams[i]);
+        }
         cv::cuda::cvtYUYV422toRGB24(inputs[i], rgb_inputs[i], streams[i]);
         cv::cuda::cvtColor(rgb_inputs[i], rgba_inputs[i], cv::COLOR_RGB2RGBA, 4, streams[i]);
         cv::cuda::fastRemap(rgba_inputs[i], warped_imgs[i], map1s[i], map2s[i], false, streams[i]);
