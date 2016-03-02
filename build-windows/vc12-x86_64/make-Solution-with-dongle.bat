@@ -1,4 +1,4 @@
-cmake -G "NMake Makefiles" ^
+cmake -G "Visual Studio 12 2013 Win64" ^
     -D CMAKE_BUILD_TYPE=Release ^
     -D CMAKE_PREFIX_PATH="C:\Qt\Qt5.5.1\5.5\msvc2013_64\lib\cmake" ^
     -D CMAKE_INSTALL_PREFIX=%cd%\..\..\.. ^
@@ -16,5 +16,6 @@ cmake -G "NMake Makefiles" ^
     -D BUILD_PERF_TESTS=OFF ^
     -D BUILD_opencv_python2=OFF ^
     -D BUILD_opencv_python3=OFF ^
+    -D WITH_DONGLE_LICENSE=ON ^
     %* ^
     ..\..
