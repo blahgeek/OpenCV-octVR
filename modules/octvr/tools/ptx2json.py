@@ -7,6 +7,9 @@ import sys
 import re
 import json
 
+
+deg_to_rad = lambda s: float(s) / 180.0 * 3.1415926
+
 # Support .pts(PTGui project file) and .pto(Hugin project file)
 class PTXParser:
 
@@ -85,32 +88,49 @@ class PTXParser:
         elif line.startswith('k'):
             self.process_mask_line(line)
 
+    def dump_equirectangular_options(self, img):
+        assert float(img['v']) == 360, 'FOV must be 360 degree for equirectangular'
+        assert int(img['w']) == int(img['h']) * 2, 'Width must be twice of height for equirectangular'
+        return 'equirectangular', {}
+
+    def dump_fisheye_options(self, img):
+        return 'fullframe_fisheye', {
+            "hfov": deg_to_rad(img["v"]) / (img.get('fov_ratio', 0.5) * 2),
+            "center_dx": float(img["d"]),
+            "center_dy": float(img["e"]),
+            "radial": [float(img["a"]), float(img["b"]), float(img["c"])],
+        }
+
     def dump(self):
-        deg_to_rad = lambda s: float(s) / 180.0 * 3.1415926
         for img in self.inputs:
             if 'dummyimage' in img:
                 continue
-            assert img['f'] == '3' or img['f'] == '2', "Currently only support fisheye"
-            options = {
-                "rotation": {
-                    "roll": deg_to_rad(img["r"]),
-                    "yaw": -deg_to_rad(img["y"]),
-                    "pitch": -deg_to_rad(img["p"]),
-                },
+
+            if img['f'] == '3' or img['f'] == '2':
+                typ, options = self.dump_fisheye_options(img)
+            elif img['f'] == '4':
+                typ, options = self.dump_equirectangular_options(img)
+            else:
+                assert False, 'Only fisheye and equirectangular is supported'
+
+            options.update({
                 "width": int(img["w"]),
                 "height": int(img["h"]),
-                "hfov": deg_to_rad(img["v"]) / (img.get('fov_ratio', 0.5) * 2),
-                "center_dx": float(img["d"]),
-                "center_dy": float(img["e"]),
-                "radial": [float(img["a"]), float(img["b"]), float(img["c"])],
-            }
+                "rotation": {
+                   "roll": deg_to_rad(img["r"]),
+                   "yaw": -deg_to_rad(img["y"]),
+                   "pitch": -deg_to_rad(img["p"]),
+                }
+            })
+
             for key in ('circular_crop', 'exclude_masks', 'selection'):
                 if key in img:
                     options[key] = img[key]
             yield {
-                "type": "fullframe_fisheye",
+                "type": typ,
                 "options": options
             }
+
 
 if __name__ == '__main__':
     parser = PTXParser()
