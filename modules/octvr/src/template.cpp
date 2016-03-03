@@ -134,11 +134,10 @@ void MapperTemplate::create_masks(const std::vector<cv::Mat> & imgs) {
     cv::detail::SeamFinder * seam_finder = nullptr;
     if(imgs.empty()) {
         // VoronoiSeamFinder do not care about image content
-        std::cerr << "Using voronoi seam finder..." << std::endl;
-        seam_finder = new cv::detail::VoronoiSeamFinder();
-        // BFS Seam finder does not support corners yet // TODO
-        // std::cerr << "Using BFS seam finder..." << std::endl;
-        // seam_finder = new cv::detail::BFSSeamFinder();
+        // std::cerr << "Using voronoi seam finder..." << std::endl;
+        // seam_finder = new cv::detail::VoronoiSeamFinder();
+        std::cerr << "Using BFS seam finder..." << std::endl;
+        seam_finder = new cv::detail::BFSSeamFinder();
     }
     else {
         std::cerr << "Using graph cut seam finder..." << std::endl;
