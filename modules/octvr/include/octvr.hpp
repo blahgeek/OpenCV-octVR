@@ -45,6 +45,7 @@ public:
     cv::Size out_size;
 
     typedef struct {
+        cv::Rect roi; // related to out_size
         cv::Mat map1, map2;
         cv::Mat mask;
     } Input;
