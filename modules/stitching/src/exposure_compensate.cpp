@@ -170,7 +170,8 @@ void GainCompensatorGPU::apply(std::vector<cv::cuda::GpuMat> &, std::vector<cv::
 
 #else
 
-GainCompensatorGPU::GainCompensatorGPU(const std::vector<cv::cuda::GpuMat> & masks) {
+GainCompensatorGPU::GainCompensatorGPU(const std::vector<cv::cuda::GpuMat> & masks,
+                                       std::vector<cv::Rect> rois) {
     this->num_images = masks.size();
     std::cerr << "Initing GainCompensatorGPU, num_images = " << num_images << std::endl;
 
@@ -178,16 +179,29 @@ GainCompensatorGPU::GainCompensatorGPU(const std::vector<cv::cuda::GpuMat> & mas
 
     for(int i = 0 ; i < num_images ; i += 1) {
         for(int j = i ; j < num_images ; j += 1) {
-            cv::cuda::GpuMat this_intersect;
-            if(i != j) {
-                cv::cuda::bitwise_and(masks[i], masks[j], this_intersect);
-                int nz = cv::cuda::countNonZero(this_intersect);
-                N(i, j) = N(j, i) = std::max(1, nz);
-                this->intersects.push_back(this_intersect);
-            } else {
+            if(i == j) {
                 int nz = cv::cuda::countNonZero(masks[i]);
                 N(i, j) = std::max(1, nz);
+                continue;
             }
+
+            cv::cuda::GpuMat this_intersect;
+            cv::Rect overlap_roi = rois[i] & rois[j];
+            cv::Rect roi_img0 = overlap_roi - rois[i].tl();
+            cv::Rect roi_img1 = overlap_roi - rois[j].tl();
+
+            if(overlap_roi.area() == 0) {
+                N(i, j) = N(j, i) = 1;
+            } else {
+                cv::cuda::bitwise_and(masks[i](roi_img0), masks[j](roi_img1), this_intersect);
+                int nz = cv::cuda::countNonZero(this_intersect);
+                N(i, j) = N(j, i) = std::max(1, nz);
+            }
+            this->intersects.push_back(this_intersect);
+            this->intersect_roi.push_back(overlap_roi);
+            this->intersect_roi_img0.push_back(roi_img0);
+            this->intersect_roi_img1.push_back(roi_img1);
+
         }
     }
 
@@ -202,8 +216,6 @@ GainCompensatorGPU::GainCompensatorGPU(const std::vector<cv::cuda::GpuMat> & mas
         sum2_results_host.push_back(cv::cuda::HostMem(1, 1, CV_64FC1, cv::cuda::HostMem::SHARED));
         sum1_results.push_back(sum1_results_host.back().createGpuMatHeader());
         sum2_results.push_back(sum2_results_host.back().createGpuMatHeader());
-        //sum1_results.push_back(cv::cuda::GpuMat(1, 1, CV_64FC1));
-        //sum2_results.push_back(cv::cuda::GpuMat(1, 1, CV_64FC1));
     }
 }
 
@@ -227,11 +239,13 @@ void GainCompensatorGPU::feed(const std::vector<cv::cuda::GpuMat> & images) {
 
             cv::cuda::GpuMat & s1 = sum1_results[index];
             cv::cuda::GpuMat & s2 = sum2_results[index];
-            cv::cuda::calcSum(norm_images[i], s1, intersects[index], streams[index]);
-            cv::cuda::calcSum(norm_images[j], s2, intersects[index], streams[index]);
-
-            //s1.download(sum1_results_host[index], streams[index]);
-            //s2.download(sum2_results_host[index], streams[index]);
+            if(intersect_roi[index].area() > 0) {
+                cv::cuda::calcSum(norm_images[i](intersect_roi_img0[index]), s1, intersects[index], streams[index]);
+                cv::cuda::calcSum(norm_images[j](intersect_roi_img1[index]), s2, intersects[index], streams[index]);
+                // it's shared
+                //s1.download(sum1_results_host[index], streams[index]);
+                //s2.download(sum2_results_host[index], streams[index]);
+            }
         }
     }
 
@@ -239,12 +253,14 @@ void GainCompensatorGPU::feed(const std::vector<cv::cuda::GpuMat> & images) {
     for(int i = 0 ; i < images.size() ; i += 1) {
         for(int j = i + 1 ; j < images.size() ; j += 1) {
             index += 1;
-            streams[index].waitForCompletion();
-
-            int n = N(i, j);
-
-            I(i, j) = *(double *)sum1_results_host[index].data / n;
-            I(j, i) = *(double *)sum2_results_host[index].data / n;
+            if(intersect_roi[index].area() > 0) {
+                streams[index].waitForCompletion();
+                int n = N(i, j);
+                I(i, j) = *(double *)sum1_results_host[index].data / n;
+                I(j, i) = *(double *)sum2_results_host[index].data / n;
+            } else {
+                I(i, j) = I(j, i) = 0;
+            }
         }
     }
 

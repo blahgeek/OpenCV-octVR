@@ -89,7 +89,6 @@ Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes,
     this->masks.resize(mt.inputs.size() + mt.overlay_inputs.size());
 
     this->seam_masks.resize(mt.inputs.size());
-    scaled_masks.resize(mt.inputs.size());
 
     this->working_scale = std::min(1.0, sqrt(WORKING_MEGAPIX * 1e6 / stitch_size.area()));
 
