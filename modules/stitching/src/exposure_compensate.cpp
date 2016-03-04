@@ -156,7 +156,8 @@ void GainCompensator::feed(const std::vector<Point> &corners, const std::vector<
 }
 
 #if !defined HAVE_CUDA || defined(CUDA_DISABLER)
-GainCompensatorGPU::GainCompensatorGPU(const std::vector<cv::cuda::GpuMat> &) {
+GainCompensatorGPU::GainCompensatorGPU(const std::vector<cv::cuda::GpuMat> &,
+                                       std::vector<cv::Rect>) {
     throw_no_cuda();
 }
 
