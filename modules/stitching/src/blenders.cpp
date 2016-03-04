@@ -476,23 +476,28 @@ void MultiBandBlender::blend(InputOutputArray dst, InputOutputArray dst_mask)
     Blender::blend(dst, dst_mask);
 }
 
-GPUStaticBlender::GPUStaticBlender(const std::vector<cuda::GpuMat> & masks) {
-    this->num_images = masks.size();
-    CV_Assert(num_images >= 1);
+GPUStaticBlender::GPUStaticBlender(const std::vector<cuda::GpuMat> & masks,
+                                   std::vector<cv::Rect> _rois) {
+    CV_Assert(masks.size() == _rois.size());
+    CV_Assert(masks.size() >= 1);
 
-    this->image_size = masks[0].size();
-    for(int i = 1 ; i < num_images ; i += 1)
-        CV_Assert(masks[i].size() == this->image_size);
-    for(int i = 0 ; i < num_images ; i += 1)
+    this->rois = _rois;
+    this->result_roi = resultRoi(this->rois);
+    this->num_images = masks.size();
+
+    for(size_t i = 0 ; i < num_images ; i += 1) {
         CV_Assert(masks[i].type() == CV_8UC1);
+        CV_Assert(masks[i].size() == rois[i].size());
+    }
 }
 
 void GPUStaticBlender::blend(std::vector<cuda::GpuMat> & imgs, cuda::GpuMat & dst) {
     CV_Assert(imgs.size() == this->num_images);
-    for(int i = 0 ; i < this->num_images ; i += 1) {
-        CV_Assert(imgs[i].size() == this->image_size);
+    for(size_t i = 0 ; i < this->num_images ; i += 1) {
+        CV_Assert(imgs[i].size() == rois[i].size());
         CV_Assert(imgs[i].type() == CV_8UC4);
     }
+    CV_Assert(dst.cols >= result_roi.width && dst.rows >= result_roi.height);
 
     this->do_blend(imgs, dst);
 
@@ -502,7 +507,8 @@ void GPUStaticBlender::blend(std::vector<cuda::GpuMat> & imgs, cuda::GpuMat & ds
 
 #if !defined HAVE_CUDA || defined(CUDA_DISABLER)
 
-MultiBandGPUBlender::MultiBandGPUBlender(const std::vector<cuda::GpuMat> & masks, int): GPUStaticBlender(masks) {
+MultiBandGPUBlender::MultiBandGPUBlender(const std::vector<cuda::GpuMat> & masks, 
+                                         std::vector<cv::Rect> _rois, int): GPUStaticBlender(masks, _rois) {
     throw_no_cuda();
 }
 
@@ -510,7 +516,8 @@ void MultiBandGPUBlender::do_blend(std::vector<cuda::GpuMat> &, cuda::GpuMat &) 
     throw_no_cuda();
 }
 
-FeatherGPUBlender::FeatherGPUBlender(const std::vector<cuda::GpuMat> & masks, int) : GPUStaticBlender(masks) {
+FeatherGPUBlender::FeatherGPUBlender(const std::vector<cuda::GpuMat> & masks,
+                                     std::vector<cv::Rect> _rois, int) : GPUStaticBlender(masks, _rois) {
     throw_no_cuda();
 }
 
@@ -521,8 +528,9 @@ void FeatherGPUBlender::do_blend(std::vector<cuda::GpuMat> &, cuda::GpuMat & ) {
 #else
 
 FeatherGPUBlender::FeatherGPUBlender(const std::vector<cuda::GpuMat> & masks,
-                                     int border): GPUStaticBlender(masks) {
-    cuda::GpuMat dst_weight_map(masks[0].size(), CV_32F);
+                                     std::vector<cv::Rect> _rois,
+                                     int border): GPUStaticBlender(masks, _rois) {
+    cuda::GpuMat dst_weight_map(this->result_roi.size(), CV_32F);
     dst_weight_map.setTo(1e-5f);
 
     for(int i = 0 ; i < num_images ; i += 1) {
@@ -537,7 +545,9 @@ FeatherGPUBlender::FeatherGPUBlender(const std::vector<cuda::GpuMat> & masks,
 
         cuda::GpuMat weight_map;
         weight_map.upload(host_weight_map);
-        cv::cuda::add(weight_map, dst_weight_map, dst_weight_map);
+
+        cuda::GpuMat target_dst_weight_map = dst_weight_map(rois[i] - result_roi.tl());
+        cv::cuda::add(weight_map, target_dst_weight_map, target_dst_weight_map);
 
         this->weight_maps.push_back(std::move(weight_map));
     }
@@ -552,22 +562,33 @@ FeatherGPUBlender::FeatherGPUBlender(const std::vector<cuda::GpuMat> & masks,
         //this->weight_maps.push_back(std::move(weight_map));
     //}
 
-    for(auto & weight_map: this->weight_maps)
-        cv::cuda::divide(weight_map, dst_weight_map, weight_map, masks.size());
+    for(int i = 0 ; i < num_images ; i += 1) {
+        cuda::GpuMat target_dst_weight_map = dst_weight_map(rois[i] - result_roi.tl());
+        cv::cuda::divide(weight_maps[i], target_dst_weight_map, weight_maps[i], masks.size());
+    }
 
-    this->dst_16s.create(masks[0].size(), CV_16SC3);
+    this->dst_16s.create(result_roi.size(), CV_16SC3);
 }
 
 void FeatherGPUBlender::do_blend(std::vector<cuda::GpuMat> & imgs, cuda::GpuMat & dst) {
     dst_16s.setTo(0, stream);
-    for(int i = 0 ; i < imgs.size() ; i += 1)
-        cuda::device::vr_add_multiply<uchar4>(imgs[i], weight_maps[i], dst_16s, cuda::StreamAccessor::getStream(stream));
-    dst_16s.convertTo(dst, CV_8UC3, 1.0 / imgs.size(), stream);
+    for(int i = 0 ; i < imgs.size() ; i += 1) {
+        cuda::GpuMat target_dst = dst_16s(rois[i] - result_roi.tl());
+        cuda::device::vr_add_multiply<uchar4>(imgs[i], weight_maps[i], target_dst, cuda::StreamAccessor::getStream(stream));
+    }
+    cuda::GpuMat dst_roi = dst(result_roi);
+    dst_16s.convertTo(dst_roi, CV_8UC3, 1.0 / imgs.size(), stream);
     stream.waitForCompletion();
 }
 
 
-MultiBandGPUBlender::MultiBandGPUBlender(const std::vector<cuda::GpuMat> & masks, int num_bands_): GPUStaticBlender(masks) {
+MultiBandGPUBlender::MultiBandGPUBlender(const std::vector<cuda::GpuMat> & masks, 
+                                         std::vector<cv::Rect> _rois,
+                                         int num_bands_): GPUStaticBlender(masks) {
+
+    for(auto & roi: rois)
+        CV_Assert(roi.empty());
+
     this->num_bands = num_bands_;
     CV_Assert(num_bands >= 1);
 
