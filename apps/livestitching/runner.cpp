@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2016-02-23
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-02-26
+* @Last Modified time: 2016-03-05
 */
 
 #include <iostream>
@@ -63,7 +63,7 @@ void Runner::start(QJsonDocument json_doc, int width,
 }
 
 void Runner::stop() {
-    ffmpeg_proc.terminate();
+    ffmpeg_proc.kill();
 }
 
 void Runner::onDumperProcessFinished(int exitCode, QProcess::ExitStatus status) {
