@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-20
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-03-01
+* @Last Modified time: 2016-03-05
 */
 
 #include "./camera.hpp"
@@ -59,11 +59,20 @@ Camera::Camera(const rapidjson::Value & options) {
 
     this->rotate_matrix = (rotate_x * rotate_z) * rotate_y;
 
-    if(options.HasMember("selection")) {
+    auto prepare_exclude_mask = [&, this](cv::Scalar initial_val) {
         int width = options["width"].GetInt();
         int height = options["height"].GetInt();
-        this->exclude_mask = cv::Mat(height, width, CV_8U);
-        this->exclude_mask.setTo(255); // exclude all
+        if(this->exclude_mask.empty()) {
+            this->exclude_mask = cv::Mat(height, width, CV_8U);
+            this->exclude_mask.setTo(initial_val);
+        } else {
+            CV_Assert(this->exclude_mask.cols == width);
+            CV_Assert(this->exclude_mask.rows == height);
+        }
+    };
+
+    if(options.HasMember("selection")) {
+        prepare_exclude_mask(255);  // exclude all
 
         int left = options["selection"][0].GetInt();
         int right = options["selection"][1].GetInt();
@@ -81,12 +90,7 @@ Camera::Camera(const rapidjson::Value & options) {
     }
 
     if(options.HasMember("exclude_masks")) {
-        int width = options["width"].GetInt();
-        int height = options["height"].GetInt();
-        if(this->exclude_mask.empty()) {
-            this->exclude_mask = cv::Mat(height, width, CV_8U);
-            this->exclude_mask.setTo(0);
-        }
+        prepare_exclude_mask(0);  // exclude all
         this->drawExcludeMask(options["exclude_masks"]);
     }
 }
@@ -94,16 +98,30 @@ Camera::Camera(const rapidjson::Value & options) {
 void Camera::drawExcludeMask(const rapidjson::Value & masks) {
     for(auto area = masks.Begin() ; area != masks.End() ; area ++) {
         std::string area_type = (*area)["type"].GetString();
-        std::vector<double> args;
-        for(auto x = (*area)["args"].Begin() ; x != (*area)["args"].End() ; x ++)
-            args.push_back(x->GetDouble());
         if(area_type == "polygonal") {
+            std::vector<double> args;
+            for(auto x = (*area)["args"].Begin() ; x != (*area)["args"].End() ; x ++)
+                args.push_back(x->GetDouble());
             std::cerr << "Drawing polygonal mask... " << args.size() / 2 << " points" << std::endl;
             std::vector<cv::Point2i> points;
             for(int i = 0 ; i < args.size() ; i += 2)
                 points.emplace_back(int(args[i]), int(args[i+1]));
             cv::fillPoly(this->exclude_mask, 
                          std::vector<std::vector<cv::Point2i>>({points}), 255);
+        }
+        else if(area_type == "png") {
+            std::cerr << "Drawing PNG image mask... " << std::endl;
+            std::vector<unsigned char> args;
+            for(auto x = (*area)["args"].Begin() ; x != (*area)["args"].End() ; x ++)
+                args.push_back(static_cast<unsigned char>(x->GetInt()));
+            cv::Mat mask_img = cv::imdecode(args, 1);
+            CV_Assert(mask_img.size() == this->exclude_mask.size());
+            CV_Assert(mask_img.type() == CV_8UC3);
+
+            std::vector<cv::Mat> mask_img_channels;
+            cv::split(mask_img, mask_img_channels);
+
+            this->exclude_mask.setTo(255, mask_img_channels[2]); // RED channel
         }
         else
             assert(false);
