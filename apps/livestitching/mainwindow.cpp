@@ -88,6 +88,17 @@ void MainWindow::run() {
                     << this->ui->decklink_device->text();
         output_count += 1;
     }
+    if(this->ui->rtmp_enable->checkState() == Qt::Checked && 
+       !this->ui->rtmp_url->text().isEmpty()) {
+        output_args << "-map" << QString("[o%1]").arg(output_count);
+        output_args << "-c:v"  << ui->rtmp_codec->currentText()
+                    << "-pix_fmt" << "yuv420p"
+                    << "-b:v" << QString("%1M").arg(ui->rtmp_bitrate->value())
+                    << "-g" << QString::number(ui->rtmp_gopsize->value())
+                    << "-f" << "flv"
+                    << "-y" << ui->rtmp_url->text();
+        output_count += 1;
+    }
 
     if(output_count == 0) {
         output_args << "-map" << QString("[o%1]").arg(output_count);
