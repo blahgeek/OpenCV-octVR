@@ -56,6 +56,16 @@ public slots:
     void onHLSPathSelect();
     void onFilePathSelect();
 
+    void onGenerateCMD();
+    void onCheatStateChanged(int);
+
+protected:
+    // just for fun
+    int magic_key_current_state = 0;
+    static const int magic_key_seqs[];
+    static const int magic_key_seqs_len;
+    void keyPressEvent(QKeyEvent *) override;
+
 private:
     Ui::MainWindow *ui;
 
