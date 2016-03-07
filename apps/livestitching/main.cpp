@@ -7,7 +7,8 @@
 #ifdef _WIN32
 #include <windows.h>
 int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, char*, int nShowCmd) {
-    QApplication a(0, 0);
+    int argc = 0;
+    QApplication a(argc, 0);
 #else
 int main(int argc, char *argv[]) {
     QApplication a(argc, argv);
