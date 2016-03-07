@@ -4,9 +4,14 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
-int main(int argc, char *argv[])
-{
+#ifdef _WIN32
+#include <windows.h>
+int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, char*, int nShowCmd) {
+    QApplication a(0, 0);
+#else
+int main(int argc, char *argv[]) {
     QApplication a(argc, argv);
+#endif
     MainWindow w;
     w.show();
 
