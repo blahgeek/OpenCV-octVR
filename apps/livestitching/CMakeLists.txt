@@ -25,7 +25,7 @@ find_package(Qt5MultimediaWidgets REQUIRED)
 ocv_include_modules_recurse(${OPENCV_LIVESTITCHING_DEPS})
 ocv_include_directories("${OpenCV_SOURCE_DIR}/include/opencv")
 
-ocv_add_executable(livestitching
+ocv_add_executable(livestitching WIN32
                    main.cpp
                    mainwindow.cpp
                    inputs_select.cpp
