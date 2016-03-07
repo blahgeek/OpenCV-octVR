@@ -38,5 +38,5 @@ ocv_add_executable(livestitching WIN32
                    style.qrc
                    )
 
-ocv_target_link_libraries(livestitching ${OPENCV_LIVESTITCHING_DEPS})
+ocv_target_link_libraries(livestitching ${OPENCV_LIVESTITCHING_DEPS} ${QT_QTMAIN_LIBRARY})
 target_link_libraries(livestitching Qt5::Widgets Qt5::Multimedia Qt5::MultimediaWidgets)
