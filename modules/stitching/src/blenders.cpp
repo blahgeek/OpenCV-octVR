@@ -586,23 +586,6 @@ void FeatherGPUBlender::do_blend(std::vector<cuda::GpuMat> & imgs, cuda::GpuMat 
 MultiBandGPUBlender::MultiBandGPUBlender(const std::vector<cuda::GpuMat> & masks, 
                                          std::vector<cv::Rect> _rois,
                                          int num_bands_): GPUStaticBlender(masks, _rois) {
-    auto round_down = [&](int x){ return (x >> num_bands_) << num_bands_; };
-    auto round_up = [&](int x){ return x + ((1 << num_bands_) - (x % (1 << num_bands_))) % (1 << num_bands_); };
-
-    this->align_result_roi = cv::Rect(cv::Point(round_down(result_roi.x), round_down(result_roi.y)),
-                                      cv::Point(round_up(result_roi.br().x), round_up(result_roi.br().y)));
-    int gap = 3 * (1 << num_bands_);
-    for(auto & roi: rois) {
-        int left = std::max(align_result_roi.x, round_down(roi.x) - gap);
-        int top = std::max(align_result_roi.y, round_down(roi.y) - gap);
-        int right = std::min(align_result_roi.br().x, round_up(roi.br().x) + gap);
-        int bottom = std::min(align_result_roi.br().y, round_up(roi.br().y) + gap);
-        this->align_rois.emplace_back(cv::Point(left, top),
-                                      cv::Point(right, bottom));
-    }
-
-    double max_len = static_cast<double>(std::max(align_result_roi.width, align_result_roi.height));
-    CV_Assert(num_bands <= static_cast<int>(ceil(std::log(max_len) / std::log(2.0))));
 
     this->num_bands = num_bands_;
     CV_Assert(num_bands >= 1);
@@ -611,10 +594,34 @@ MultiBandGPUBlender::MultiBandGPUBlender(const std::vector<cuda::GpuMat> & masks
               << ", number of bands = " << this->num_bands
               << ", number of images = " << this->num_images << std::endl;
 
+    auto round_down = [&](int x){ return (x >> num_bands_) << num_bands_; };
+    auto round_up = [&](int x){ return x + ((1 << num_bands_) - (x % (1 << num_bands_))) % (1 << num_bands_); };
+
+    this->align_result_roi = cv::Rect(cv::Point(round_down(result_roi.x), round_down(result_roi.y)),
+                                      cv::Point(round_up(result_roi.br().x), round_up(result_roi.br().y)));
+
+    std::cerr << "Align result ROI: " << align_result_roi << std::endl;
+    int gap = 3 * (1 << num_bands_);
+    for(auto & roi: rois) {
+        int left = std::max(align_result_roi.x, round_down(roi.x) - gap);
+        int top = std::max(align_result_roi.y, round_down(roi.y) - gap);
+        int right = std::min(align_result_roi.br().x, round_up(roi.br().x) + gap);
+        int bottom = std::min(align_result_roi.br().y, round_up(roi.br().y) + gap);
+        this->align_rois.emplace_back(cv::Point(left, top),
+                                      cv::Point(right, bottom));
+        CV_Assert(((right - left) >> num_bands_) > 0 );
+        CV_Assert(((bottom - top) >> num_bands_) > 0 );
+        std::cerr << align_rois.back() << std::endl;
+    }
+
+    double max_len = static_cast<double>(std::max(align_result_roi.width, align_result_roi.height));
+    CV_Assert(num_bands <= static_cast<int>(ceil(std::log(max_len) / std::log(2.0))));
+
     dst_pyr_laplace.resize(num_bands + 1);
     dst_band_weights.resize(num_bands + 1);
     for(int i = 0 ; i <= num_bands ; i += 1) {
         Size new_size(align_result_roi.width >> i, align_result_roi.height >> i);
+        CV_Assert(new_size.area() > 0);
         dst_pyr_laplace[i].create(new_size, CV_16SC3);
         // dst_pyr_laplace[i].setTo(Scalar::all(0)); // set by blend() every time
         dst_band_weights[i].create(new_size, CV_32F);
@@ -624,14 +631,19 @@ MultiBandGPUBlender::MultiBandGPUBlender(const std::vector<cuda::GpuMat> & masks
     for(int n = 0 ; n < num_images ; n += 1) {
         std::vector<cuda::GpuMat> weight_pyr_gauss(num_bands + 1);
 
-        weight_pyr_gauss[0].create(align_rois.size(), CV_32F);
+        weight_pyr_gauss[0].create(align_rois[n].size(), CV_32F);
         weight_pyr_gauss[0].setTo(0);
 
         masks[n].convertTo(weight_pyr_gauss[0](rois[n] - align_rois[n].tl()), CV_32F, 1./255);
         for(int i = 0 ; i < num_bands ; i += 1)
             cuda::pyrDown(weight_pyr_gauss[i], weight_pyr_gauss[i+1]);
-        for(int i = 0 ; i <= num_bands ; i += 1)
-            cuda::add(dst_band_weights[i], weight_pyr_gauss[i], dst_band_weights[i]);
+        for(int i = 0 ; i <= num_bands ; i += 1) {
+            cv::Rect scale_roi((align_rois[n].x - align_result_roi.x) >> i,
+                               (align_rois[n].y - align_result_roi.y) >> i,
+                               (align_rois[n].width >> i),
+                               (align_rois[n].height >> i));
+            cuda::add(dst_band_weights[i](scale_roi), weight_pyr_gauss[i], dst_band_weights[i](scale_roi));
+        }
         weight_pyr_gauss_lists.push_back(weight_pyr_gauss);
     }
 
@@ -640,7 +652,7 @@ MultiBandGPUBlender::MultiBandGPUBlender(const std::vector<cuda::GpuMat> & masks
     this->src_pyr_laplaces.resize(num_images);
     for(int n = 0 ; n < num_images ; n += 1) {
         src_pyr_laplaces[n].resize(num_bands + 1);
-        src_pyr_laplaces[n][0].create(align_rois.size(), CV_8UC4);
+        src_pyr_laplaces[n][0].create(align_rois[n].size(), CV_8UC4);
         src_pyr_laplaces[n][0].setTo(0);
         for(int i = 0 ; i < num_bands ;i += 1) {
             tmps[n + i * num_images].create(weight_pyr_gauss_lists[n][i].size(), CV_8UC4);
@@ -653,6 +665,8 @@ MultiBandGPUBlender::MultiBandGPUBlender(const std::vector<cuda::GpuMat> & masks
 }
 
 void MultiBandGPUBlender::do_blend(std::vector<cuda::GpuMat> & imgs, cuda::GpuMat & dst) {
+    CV_Assert(dst.cols >= align_result_roi.x + align_result_roi.width);
+    CV_Assert(dst.rows >= align_result_roi.y + align_result_roi.height);
 
     for(int n = 0 ; n < num_images ; n += 1)
         imgs[n].copyTo(src_pyr_laplaces[n][0](rois[n] - align_rois[n].tl()), streams[n]);
@@ -675,13 +689,15 @@ void MultiBandGPUBlender::do_blend(std::vector<cuda::GpuMat> & imgs, cuda::GpuMa
                                (align_rois[n].y - align_result_roi.y) >> i,
                                (align_rois[n].width >> i),
                                (align_rois[n].height >> i));
+
+            auto target_dst = dst_pyr_laplace[i](scale_roi);
             if(i != num_bands)
                 cuda::device::vr_add_sub_and_multiply<uchar4>(src_pyr_laplaces[n][i], tmps[n + i * num_images],
-                                                              weight_pyr_gauss_lists[n][i], dst_pyr_laplace[i](scale_roi),
+                                                              weight_pyr_gauss_lists[n][i], target_dst,
                                                               cuda::StreamAccessor::getStream(streams[i]));
             else
                 cuda::device::vr_add_multiply<uchar4>(src_pyr_laplaces[n][num_bands], weight_pyr_gauss_lists[n][num_bands],
-                                                      dst_pyr_laplace[num_bands](scale_roi),
+                                                      target_dst,
                                                       cuda::StreamAccessor::getStream(streams[i]));
         }
         cuda::divide(dst_pyr_laplace[i], dst_band_weights[i], dst_pyr_laplace[i], 
