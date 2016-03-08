@@ -162,6 +162,9 @@ private:
 
     std::vector<std::vector<cuda::GpuMat> > weight_pyr_gauss_lists;
 
+    std::vector<cv::Rect> align_rois;
+    cv::Rect align_result_roi;
+
 private:
     std::vector<cuda::Stream> streams;
     std::vector<cuda::GpuMat> tmps;

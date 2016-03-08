@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-03-01
+* @Last Modified time: 2016-03-08
 */
 
 #include <iostream>
@@ -149,11 +149,11 @@ Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes,
     timer.tick("Allocating internal mats");
 
     if(blend > 0) {
-        // FIXME
         int blend_bands = int(ceil(log(blend)/log(2.)) - 1.);
         std::cerr << "Using MultiBandBlender with band number = " << blend_bands << std::endl;
-        CV_Assert(false);
-        //this->blender.reset(new cv::detail::MultiBandGPUBlender(seam_masks, blend_bands));
+        this->blender.reset(new cv::detail::MultiBandGPUBlender(seam_masks, 
+                                                                std::vector<cv::Rect>(rois.begin(), rois.begin() + nonoverlay_num),
+                                                                blend_bands));
     } else if(blend < 0) {
         //float sharpness = 1.0 / float(-blend);
         std::cerr << "Using FeatherBlender with border = " << -blend << std::endl;
