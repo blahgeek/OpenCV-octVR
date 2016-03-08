@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2016-02-23
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-02-26
+* @Last Modified time: 2016-03-06
 */
 
 #ifndef LIVESTITCHING_RUNNER_H__
@@ -18,7 +18,7 @@ class Runner : public QObject {
 
 private:
     QProcess dumper_proc, ffmpeg_proc;
-    QStringList ffmpeg_args;
+    QString ffmpeg_args;
 
     QTemporaryDir temp_dir;
 
@@ -27,7 +27,7 @@ public:
 
     enum RunningStatus status() const;
     void start(QJsonDocument json_doc, int width,
-               QStringList ffmpeg_args);
+               QString _ffmpeg_args);
 
     Runner();
 

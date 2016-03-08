@@ -14,23 +14,28 @@
 #include <QCameraInfo>
 #include <QProcess>
 #include <QDebug>
+#include <QKeyEvent>
 
 #include <cassert>
 
-void MainWindow::run() {
+void MainWindow::onGenerateCMD() {
     auto json_doc = this->pto_template->getJsonDocument();
     QJsonObject doc_obj = json_doc.object();
     QJsonArray inputs = doc_obj["inputs"].toArray();
 
     auto selected_cams = this->inputs_selector->getSelected();
 
-    if(inputs.size() != selected_cams.size()) {
-        QMessageBox::warning(this, "Bad Template", "Input count does not match");
-        return;
-    }
-    if(selected_cams.size() == 0) {
-        QMessageBox::warning(this, "", "No input selected");
-        return;
+    if(ui->check_cheat->checkState() != Qt::Checked) {
+        if(inputs.size() != selected_cams.size()) {
+            QMessageBox::warning(this, "Bad Template", "Input count does not match");
+            this->ui->line_cmd->setText("");
+            return;
+        }
+        if(selected_cams.size() == 0) {
+            QMessageBox::warning(this, "", "No input selected");
+            this->ui->line_cmd->setText("");
+            return;
+        }
     }
 
     // BEGIN input args
@@ -88,6 +93,17 @@ void MainWindow::run() {
                     << this->ui->decklink_device->text();
         output_count += 1;
     }
+    if(this->ui->rtmp_enable->checkState() == Qt::Checked && 
+       !this->ui->rtmp_url->text().isEmpty()) {
+        output_args << "-map" << QString("[o%1]").arg(output_count);
+        output_args << "-c:v"  << ui->rtmp_codec->currentText()
+                    << "-pix_fmt" << "yuv420p"
+                    << "-b:v" << QString("%1M").arg(ui->rtmp_bitrate->value())
+                    << "-g" << QString::number(ui->rtmp_gopsize->value())
+                    << "-f" << "flv"
+                    << "-y" << ui->rtmp_url->text();
+        output_count += 1;
+    }
 
     if(output_count == 0) {
         output_args << "-map" << QString("[o%1]").arg(output_count);
@@ -101,6 +117,23 @@ void MainWindow::run() {
 
     args << "-filter_complex" << filter_complex;
     args += output_args;
+
+    QString args_line;
+    for(int i = 0 ; i < args.size() ; i += 1) {
+        if(i != 0)
+            args_line += " ";
+        args_line += "\"" + args[i].replace("\"", "\"\"\"") + "\"";
+    }
+    this->ui->line_cmd->setText(args_line);
+}
+
+void MainWindow::run() {
+    auto json_doc = this->pto_template->getJsonDocument();
+    if(ui->check_cheat->checkState() != Qt::Checked)
+        this->onGenerateCMD();
+    QString args = this->ui->line_cmd->text();
+    if(args.isEmpty())
+        return;
 
     this->runner->start(json_doc, ui->paranoma_width->value(), args);
 }
@@ -172,6 +205,32 @@ void MainWindow::onFilePathSelect() {
         this->ui->file_path->setText(filename);
 }
 
+const int MainWindow::magic_key_seqs[] = {
+    Qt::Key_Up, Qt::Key_Up, Qt::Key_Down, Qt::Key_Down,
+    Qt::Key_Left, Qt::Key_Right, Qt::Key_Left, Qt::Key_Right,
+    Qt::Key_B, Qt::Key_A,
+};
+const int MainWindow::magic_key_seqs_len = 10;
+
+void MainWindow::keyPressEvent(QKeyEvent * event) {
+    if(event->key() == magic_key_seqs[magic_key_current_state]) {
+        magic_key_current_state += 1;
+        if (magic_key_current_state >= magic_key_seqs_len) {
+            qDebug() << "Magic!";
+            this->ui->groupBox_magic->show();
+            magic_key_current_state = 0;
+        }
+    }
+    else {
+        magic_key_current_state = 0;
+    }
+    QMainWindow::keyPressEvent(event);
+}
+
+void MainWindow::onCheatStateChanged(int state) {
+    this->ui->line_cmd->setReadOnly(state != Qt::Checked);
+}
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
@@ -210,6 +269,9 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->template_load, &QPushButton::clicked, this->pto_template.get(), &PTOTemplate::loadPTO);
     connect(this->pto_template.get(), &PTOTemplate::dataChanged, this, &MainWindow::onTemplateChanged);
 
+    connect(ui->pushButton_gen_cmd, &QPushButton::clicked, this, &MainWindow::onGenerateCMD);
+    connect(ui->check_cheat, &QCheckBox::stateChanged, this, &MainWindow::onCheatStateChanged);
+
     this->onInputsSelectChanged();
     this->onTemplateChanged();
     this->onRunningStatusChanged();
@@ -217,6 +279,7 @@ MainWindow::MainWindow(QWidget *parent) :
     this->ui->hls_path->setText(QDir::toNativeSeparators(QDir::homePath() + "/vr.m3u8"));
     this->ui->file_path->setText(QDir::toNativeSeparators(QDir::homePath() + "/vr.ts"));
 
+    this->ui->groupBox_magic->hide();
     this->ui->tabWidget->setCurrentIndex(0);
 }
 

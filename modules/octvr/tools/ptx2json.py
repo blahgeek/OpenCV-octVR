@@ -6,6 +6,7 @@ import logging
 import sys
 import re
 import json
+import base64
 
 
 deg_to_rad = lambda s: float(s) / 180.0 * 3.1415926
@@ -42,8 +43,7 @@ class PTXParser:
             return
         assert match.group(2) == '0', "Currently only support negative hugin mask"
         img = self.inputs[int(match.group(1))]
-        if 'exclude_masks' not in img:
-            img['exclude_masks'] = list()
+        img.setdefault('exclude_masks', list())
         img['exclude_masks'].append({
             'type': 'polygonal',
             'args': list(map(float, match.group(3).split(' ')))
@@ -63,6 +63,14 @@ class PTXParser:
             assert x == 0, 'Only circle crop is supported now'
         assert len(fields) == 8
         self.processing_input["circular_crop"] = fields[5:]
+
+    def process_input_meta_sourcemask(self, args):
+        mask_src = base64.decodebytes(args.strip().encode('ascii'))
+        self.processing_input.setdefault('exclude_masks', list())
+        self.processing_input['exclude_masks'].append({
+            'type': 'png',
+            'args': list(map(int, mask_src))
+        })
 
     def process_input_meta_viewpoint(self, args):
         for viewpoint in map(float, args.strip().split(' ')):
