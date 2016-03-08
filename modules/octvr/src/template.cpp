@@ -207,7 +207,7 @@ MapperTemplate::MapperTemplate(std::ifstream & f) {
     char read_magic[16];
     f.read(read_magic, strlen(DUMP_MAGIC));
     if(strncmp(read_magic, DUMP_MAGIC, strlen(DUMP_MAGIC)) != 0)
-        throw std::string("Invalid data file");
+        throw std::string("Invalid data file (version does not match)");
 
     auto R64i = [&]() -> int64_t {
         int64_t _ret = 0;
