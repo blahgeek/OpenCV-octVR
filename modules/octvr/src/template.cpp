@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-12-07
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-02-21
+* @Last Modified time: 2016-03-08
 */
 
 #include "octvr.hpp"
@@ -37,7 +37,8 @@ out_type(to), out_opts(&to_opts) {
 
 void MapperTemplate::add_input(const std::string & from,
                                const rapidjson::Value & from_opts,
-                               bool overlay) {
+                               bool overlay,
+                               bool use_roi) {
     std::unique_ptr<Camera> out_camera = Camera::New(out_type, *out_opts);
     std::unique_ptr<Camera> cam = Camera::New(from, from_opts);
     if(!cam)
@@ -51,6 +52,10 @@ void MapperTemplate::add_input(const std::string & from,
     auto output_map_points = out_camera->image_to_obj(out_points);
 
     auto tmp = cam->obj_to_image(output_map_points);
+
+    int min_h = out_size.height, max_h = 0;
+    int min_w = out_size.width, max_w = 0;
+
     cv::Mat map1(out_size, CV_32FC1), map2(out_size, CV_32FC1);
     cv::Mat mask(out_size, CV_8U);
     for(int h = 0 ; h < out_size.height ; h += 1) {
@@ -71,14 +76,27 @@ void MapperTemplate::add_input(const std::string & from,
                 mask_row[w] = 255;
                 map1_row[w] = x;
                 map2_row[w] = y;
+
+                // update ROI
+                if(h < min_h) min_h = h;
+                if(h > max_h) max_h = h;
+                if(w < min_w) min_w = w;
+                if(w > max_w) max_w = w;
             }
         }
     }
+    CV_Assert(min_h <= max_h && min_w <= max_w);
+    cv::Rect roi(min_w, min_h, max_w + 1 - min_w, max_h + 1 - min_h);
+    if(!use_roi)
+        roi = cv::Rect(0, 0, out_size.width, out_size.height);
 
     MapperTemplate::Input input;
-    input.map1 = map1;
-    input.map2 = map2;
-    input.mask = mask;
+    input.map1 = map1(roi);
+    input.map2 = map2(roi);
+    input.mask = mask(roi);
+    input.roi = roi;
+
+    std::cerr << "ROI: " << roi << std::endl;
 
     if(overlay)
         this->overlay_inputs.push_back(input);
@@ -89,29 +107,38 @@ void MapperTemplate::add_input(const std::string & from,
 void MapperTemplate::create_masks(const std::vector<cv::Mat> & imgs) {
     std::vector<cv::UMat> srcs(inputs.size()), umasks(inputs.size());
 
-    cv::Size scaled_size = this->out_size;
-    double scale = std::min(1.0, 800.0 / out_size.width);
-    scaled_size.width *= scale;
-    scaled_size.height *= scale;
-    std::cerr << "Scaled size: " << scaled_size << std::endl;
+    double scale = std::min(1.0, 960.0 / out_size.width);
+    std::cerr << "Scale for creating mask: " << scale << std::endl;
+
+    std::vector<cv::Rect> scaled_rois;
+    std::vector<cv::Point> scaled_corners;
 
     for(size_t i = 0 ; i < inputs.size() ; i += 1) {
+        cv::Rect scaled_roi(inputs[i].roi.x * scale,
+                            inputs[i].roi.y * scale,
+                            inputs[i].roi.width * scale,
+                            inputs[i].roi.height * scale);
+        scaled_rois.push_back(scaled_roi);
+        scaled_corners.push_back(scaled_roi.tl());
+
         if(i < imgs.size()) {
             cv::Mat tmp0, tmp1;
-            cv::remap(imgs[i], tmp0, inputs[i].map1, inputs[i].map2, cv::INTER_LINEAR);
+            cv::remap(imgs[i], tmp0,
+                      inputs[i].map1 * imgs[i].cols,
+                      inputs[i].map2 * imgs[i].rows, cv::INTER_LINEAR);
             tmp0.convertTo(tmp1, CV_32FC3, 1.0/255.0);
-            cv::resize(tmp1, srcs[i], scaled_size);
+            cv::resize(tmp1, srcs[i], scaled_roi.size());
+        } else {
+            srcs[i].create(scaled_roi.size(), CV_8UC3);
         }
-        else
-            srcs[i].create(scaled_size, CV_8UC3);
-        cv::resize(inputs[i].mask, umasks[i], scaled_size);
+        cv::resize(inputs[i].mask, umasks[i], scaled_roi.size());
     }
 
     cv::detail::SeamFinder * seam_finder = nullptr;
     if(imgs.empty()) {
         // VoronoiSeamFinder do not care about image content
-        //std::cerr << "Using voronoi seam finder..." << std::endl;
-        //seam_finder = new cv::detail::VoronoiSeamFinder();
+        // std::cerr << "Using voronoi seam finder..." << std::endl;
+        // seam_finder = new cv::detail::VoronoiSeamFinder();
         std::cerr << "Using BFS seam finder..." << std::endl;
         seam_finder = new cv::detail::BFSSeamFinder();
     }
@@ -119,18 +146,16 @@ void MapperTemplate::create_masks(const std::vector<cv::Mat> & imgs) {
         std::cerr << "Using graph cut seam finder..." << std::endl;
         seam_finder = new cv::detail::GraphCutSeamFinder();
     }
-    seam_finder->find(srcs,
-                      std::vector<cv::Point2i>(inputs.size(), cv::Point2i(0, 0)),
-                      umasks);
+    seam_finder->find(srcs, scaled_corners, umasks);
 
     this->seam_masks.resize(inputs.size());
     for(size_t i = 0 ; i < inputs.size() ; i += 1)
-        cv::resize(umasks[i], seam_masks[i], this->out_size);
+        cv::resize(umasks[i], seam_masks[i], inputs[i].roi.size());
 
     delete seam_finder;
 }
 
-static const char * DUMP_MAGIC = "VRv03";
+static const char * DUMP_MAGIC = "VRv10";
 
 void MapperTemplate::dump(std::ofstream & f) {
     if(this->seam_masks.empty())
@@ -140,6 +165,10 @@ void MapperTemplate::dump(std::ofstream & f) {
 
     auto W64i = [&](int64_t x) {
         f.write(reinterpret_cast<char *>(&x), sizeof(int64_t));
+    };
+
+    auto WRect = [&](cv::Rect r) {
+        W64i(r.x); W64i(r.y); W64i(r.width); W64i(r.height);
     };
 
     auto Wmat = [&](cv::Mat & m) {
@@ -156,6 +185,7 @@ void MapperTemplate::dump(std::ofstream & f) {
 
     W64i(inputs.size());
     for(auto & input: inputs) {
+        WRect(input.roi);
         Wmat(input.map1);
         Wmat(input.map2);
         Wmat(input.mask);
@@ -166,6 +196,7 @@ void MapperTemplate::dump(std::ofstream & f) {
 
     W64i(overlay_inputs.size());
     for(auto & input: overlay_inputs) {
+        WRect(input.roi);
         Wmat(input.map1);
         Wmat(input.map2);
         Wmat(input.mask);
@@ -176,12 +207,20 @@ MapperTemplate::MapperTemplate(std::ifstream & f) {
     char read_magic[16];
     f.read(read_magic, strlen(DUMP_MAGIC));
     if(strncmp(read_magic, DUMP_MAGIC, strlen(DUMP_MAGIC)) != 0)
-        throw std::string("Invalid data file");
+        throw std::string("Invalid data file (version does not match)");
 
     auto R64i = [&]() -> int64_t {
         int64_t _ret = 0;
         f.read(reinterpret_cast<char *>(&_ret), sizeof(int64_t));
         return _ret;
+    };
+
+    auto RRect = [&]() -> cv::Rect {
+        auto x = R64i();
+        auto y = R64i();
+        auto width = R64i();
+        auto height = R64i();
+        return cv::Rect(x, y, width, height);
     };
 
     auto Rmat = [&]() -> cv::Mat {
@@ -200,6 +239,7 @@ MapperTemplate::MapperTemplate(std::ifstream & f) {
 
     this->inputs.resize(R64i());
     for(auto & input: inputs) {
+        input.roi = RRect();
         input.map1 = Rmat();
         input.map2 = Rmat();
         input.mask = Rmat();
@@ -210,6 +250,7 @@ MapperTemplate::MapperTemplate(std::ifstream & f) {
 
     this->overlay_inputs.resize(R64i());
     for(auto & input: overlay_inputs) {
+        input.roi = RRect();
         input.map1 = Rmat();
         input.map2 = Rmat();
         input.mask = Rmat();

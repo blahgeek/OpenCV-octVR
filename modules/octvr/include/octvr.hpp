@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-02-25
+* @Last Modified time: 2016-03-08
 */
 
 #ifndef VR_LIBMAP_BASE_H
@@ -45,6 +45,7 @@ public:
     cv::Size out_size;
 
     typedef struct {
+        cv::Rect roi; // related to out_size
         cv::Mat map1, map2;
         cv::Mat mask;
     } Input;
@@ -62,7 +63,8 @@ public:
                    int width, int height);
     void add_input(const std::string & from, 
                    const rapidjson::Value & from_opts, 
-                   bool overlay=false);
+                   bool overlay=false,
+                   bool use_roi=true);
     // Prepare seam masks with provided images (optional)
     void create_masks(const std::vector<cv::Mat> & imgs = std::vector<cv::Mat>());
     void dump(std::ofstream & f);
