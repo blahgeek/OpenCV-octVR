@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-12-07
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-02-21
+* @Last Modified time: 2016-03-08
 */
 
 #include "octvr.hpp"
@@ -37,7 +37,8 @@ out_type(to), out_opts(&to_opts) {
 
 void MapperTemplate::add_input(const std::string & from,
                                const rapidjson::Value & from_opts,
-                               bool overlay) {
+                               bool overlay,
+                               bool use_roi) {
     std::unique_ptr<Camera> out_camera = Camera::New(out_type, *out_opts);
     std::unique_ptr<Camera> cam = Camera::New(from, from_opts);
     if(!cam)
@@ -86,6 +87,8 @@ void MapperTemplate::add_input(const std::string & from,
     }
     CV_Assert(min_h <= max_h && min_w <= max_w);
     cv::Rect roi(min_w, min_h, max_w + 1 - min_w, max_h + 1 - min_h);
+    if(!use_roi)
+        roi = cv::Rect(0, 0, out_size.width, out_size.height);
 
     MapperTemplate::Input input;
     input.map1 = map1(roi);
