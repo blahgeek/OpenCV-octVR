@@ -89,22 +89,29 @@ Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes,
     this->masks.resize(mt.inputs.size() + mt.overlay_inputs.size());
 
     this->seam_masks.resize(mt.inputs.size());
+    this->rois.resize(mt.inputs.size() + mt.overlay_inputs.size());
 
     this->working_scale = std::min(1.0, sqrt(WORKING_MEGAPIX * 1e6 / stitch_size.area()));
+    for(auto & in: mt.inputs)
+        this->working_scaled_rois.emplace_back(in.roi.x * working_scale, 
+                                               in.roi.y * working_scale,
+                                               in.roi.width * working_scale,
+                                               in.roi.height * working_scale);
 
     for(int i = 0 ; i < nonoverlay_num ; i += 1) {
         map1s[i].upload(mt.inputs[i].map1);
         map2s[i].upload(mt.inputs[i].map2);
         masks[i].upload(mt.inputs[i].mask);
         seam_masks[i].upload(mt.seam_masks[i]);
+        rois[i] = mt.inputs[i].roi;
         if(enable_gain_compensator)
-            cv::cuda::resize(masks[i], scaled_masks[i],
-                             cv::Size(), working_scale, working_scale);
+            cv::cuda::resize(masks[i], scaled_masks[i], working_scaled_rois[i].size());
     }
     for(int i = 0 ; i < mt.overlay_inputs.size() ; i += 1) {
         map1s[i + nonoverlay_num].upload(mt.overlay_inputs[i].map1);
         map2s[i + nonoverlay_num].upload(mt.overlay_inputs[i].map2);
         masks[i + nonoverlay_num].upload(mt.overlay_inputs[i].mask);
+        rois[i + nonoverlay_num] = mt.overlay_inputs[i].roi;
     }
 
     timer.tick("Uploading mats");
@@ -119,20 +126,19 @@ Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes,
     for(int i = 0 ; i < mt.inputs.size() ; i += 1) {
         rgb_inputs[i].create(in_sizes[i], CV_8UC3);
         rgba_inputs[i].create(in_sizes[i], CV_8UC4);
-        warped_imgs[i].create(stitch_size, CV_8UC4);
+        warped_imgs[i].create(rois[i].size(), CV_8UC4);
         if(enable_gain_compensator)
             cv::cuda::resize(warped_imgs[i], warped_imgs_scale[i],
-                             cv::Size(), working_scale, working_scale,
-                             cv::INTER_NEAREST);
+                             working_scaled_rois[i].size(), 0, 0, cv::INTER_NEAREST);
         if(blend == 0)
-            warped_imgs_rgb[i].create(stitch_size, CV_8UC3);
+            warped_imgs_rgb[i].create(rois[i].size(), CV_8UC3);
     }
 
     for(int i = mt.inputs.size() ; i < mt.inputs.size() + mt.overlay_inputs.size() ; i += 1) {
         rgb_inputs[i].create(in_sizes[i], CV_8UC3);
         rgba_inputs[i].create(in_sizes[i], CV_8UC4);
-        warped_imgs[i].create(stitch_size, CV_8UC4);
-        warped_imgs_rgb[i].create(stitch_size, CV_8UC3);
+        warped_imgs[i].create(rois[i].size(), CV_8UC4);
+        warped_imgs_rgb[i].create(rois[i].size(), CV_8UC3);
     }
 
     this->result.create(stitch_size, CV_8UC3);
@@ -142,13 +148,16 @@ Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes,
     timer.tick("Allocating internal mats");
 
     if(blend > 0) {
+        // FIXME
         int blend_bands = int(ceil(log(blend)/log(2.)) - 1.);
         std::cerr << "Using MultiBandBlender with band number = " << blend_bands << std::endl;
-        this->blender.reset(new cv::detail::MultiBandGPUBlender(seam_masks, blend_bands));
+        CV_Assert(false);
+        //this->blender.reset(new cv::detail::MultiBandGPUBlender(seam_masks, blend_bands));
     } else if(blend < 0) {
         //float sharpness = 1.0 / float(-blend);
         std::cerr << "Using FeatherBlender with border = " << -blend << std::endl;
         this->blender.reset(new cv::detail::FeatherGPUBlender(std::vector<GpuMat>(masks.begin(), masks.begin() + nonoverlay_num), 
+                                                              std::vector<cv::Rect>(rois.begin(), rois.begin() + nonoverlay_num),
                                                               -blend));
     } else {
         std::cerr << "Do not use blender" << std::endl;
@@ -158,7 +167,7 @@ Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes,
     timer.tick("Blender initialize");
 
     if(enable_gain_compensator)
-        this->compensator.reset(new cv::detail::GainCompensatorGPU(scaled_masks));
+        this->compensator.reset(new cv::detail::GainCompensatorGPU(scaled_masks, working_scaled_rois));
     else {
         std::cerr << "Do not enable gain compensator" << std::endl;
         this->compensator = nullptr;
@@ -189,7 +198,7 @@ void Mapper::stitch(std::vector<GpuMat> & inputs,
         assert(inputs[i].type() == CV_8UC2); // UYVY422
     assert(output.type() == CV_8UC2 && output.size() == this->scaled_output_size);
 
-    int swap_orders[] = {1, 0, 3, 2};
+    const int swap_orders[] = {1, 0, 3, 2};
     
     for(int i = 0 ; i < nonoverlay_num ; i += 1) {
         if(mix_input_channels) {
@@ -201,7 +210,7 @@ void Mapper::stitch(std::vector<GpuMat> & inputs,
         cv::cuda::fastRemap(rgba_inputs[i], warped_imgs[i], map1s[i], map2s[i], true, streams[i]);
         if(this->compensator)
             cv::cuda::resize(warped_imgs[i], warped_imgs_scale[i],
-                             cv::Size(), working_scale, working_scale,
+                             working_scaled_rois[i].size(), 0, 0,
                              cv::INTER_NEAREST, streams[i]);
     }
 
@@ -244,14 +253,14 @@ void Mapper::stitch(std::vector<GpuMat> & inputs,
     } else {
         for(int i = 0 ; i < nonoverlay_num ; i += 1) {
             cv::cuda::cvtColor(warped_imgs[i], warped_imgs_rgb[i], cv::COLOR_RGBA2RGB, 3, stream_final);
-            warped_imgs_rgb[i].copyTo(result, masks[i], stream_final);
+            warped_imgs_rgb[i].copyTo(result(rois[i]), masks[i], stream_final);
         }
         timer.tick("No blend copy");
     }
 
     for(int i = nonoverlay_num ; i < inputs.size() ; i += 1) {
         streams[i].waitForCompletion();
-        warped_imgs_rgb[i].copyTo(result, masks[i], stream_final);
+        warped_imgs_rgb[i].copyTo(result(rois[i]), masks[i], stream_final);
     }
     CV_Assert(result.type() == CV_8UC3);
 

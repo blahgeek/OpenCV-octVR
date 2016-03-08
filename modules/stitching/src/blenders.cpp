@@ -482,7 +482,8 @@ GPUStaticBlender::GPUStaticBlender(const std::vector<cuda::GpuMat> & masks,
     CV_Assert(masks.size() >= 1);
 
     this->rois = _rois;
-    this->result_roi = resultRoi(this->rois);
+    for(auto & roi: rois)
+        this->result_roi |= roi;
     this->num_images = masks.size();
 
     for(size_t i = 0 ; i < num_images ; i += 1) {
@@ -584,15 +585,16 @@ void FeatherGPUBlender::do_blend(std::vector<cuda::GpuMat> & imgs, cuda::GpuMat 
 
 MultiBandGPUBlender::MultiBandGPUBlender(const std::vector<cuda::GpuMat> & masks, 
                                          std::vector<cv::Rect> _rois,
-                                         int num_bands_): GPUStaticBlender(masks) {
+                                         int num_bands_): GPUStaticBlender(masks, _rois) {
 
     for(auto & roi: rois)
-        CV_Assert(roi.empty());
+        CV_Assert(roi.area() == 0);
+    cv::Size image_size = result_roi.size();
 
     this->num_bands = num_bands_;
     CV_Assert(num_bands >= 1);
 
-    std::cerr << "Initializing MultiBandGPUBlender with size = " << this->image_size
+    std::cerr << "Initializing MultiBandGPUBlender with size = " << this->result_roi.size()
               << ", number of bands = " << this->num_bands
               << ", number of images = " << this->num_images << std::endl;
 

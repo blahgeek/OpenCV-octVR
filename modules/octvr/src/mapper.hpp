@@ -42,6 +42,7 @@ private:
     std::vector<GpuMat> map2s;
     std::vector<GpuMat> masks; 
     std::vector<GpuMat> seam_masks;
+    std::vector<cv::Rect> rois;
 
 #ifdef WITH_OCTVR_LOGO
     GpuMat logo_data, logo_mask;
@@ -52,6 +53,7 @@ private:
     std::unique_ptr<cv::detail::GPUStaticBlender> blender;
 
     double working_scale;
+    std::vector<cv::Rect> working_scaled_rois;
 
 private:
     std::vector<cv::cuda::Stream> streams;
