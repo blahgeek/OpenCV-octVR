@@ -181,6 +181,8 @@ void bitMat(const GpuMat& src1, const GpuMat& src2, GpuMat& dst, const GpuMat& m
     {
         const int bcols = (int) (src1.cols * src1.elemSize());
 
+// cause alighment error for submatrix
+#if 0
         if ((bcols & 3) == 0)
         {
             const int vcols = bcols >> 2;
@@ -203,12 +205,15 @@ void bitMat(const GpuMat& src1, const GpuMat& src2, GpuMat& dst, const GpuMat& m
         }
         else
         {
+#endif
             GpuMat vsrc1(src1.rows, bcols, CV_8UC1, src1.data, src1.step);
             GpuMat vsrc2(src1.rows, bcols, CV_8UC1, src2.data, src2.step);
             GpuMat vdst(src1.rows, bcols, CV_8UC1, dst.data, dst.step);
 
             funcs8[op](vsrc1, vsrc2, vdst, GpuMat(), stream);
+#if 0
         }
+#endif
     }
     else
     {

@@ -97,6 +97,7 @@ Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes,
                                                in.roi.y * working_scale,
                                                in.roi.width * working_scale,
                                                in.roi.height * working_scale);
+    scaled_masks.resize(mt.inputs.size());
 
     for(int i = 0 ; i < nonoverlay_num ; i += 1) {
         map1s[i].upload(mt.inputs[i].map1);
