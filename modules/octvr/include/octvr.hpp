@@ -37,7 +37,7 @@
 namespace vr {
 
 // Multiple input -> single output
-class MapperTemplate {
+class CV_EXPORTS_W MapperTemplate {
 public:
     std::string out_type;
     const rapidjson::Value * out_opts = nullptr;
@@ -76,13 +76,13 @@ public:
 #define OCTVR_PREVIEW_DATA1_MEMORY_KEY "opencv_octvr_preview_1"
 #define OCTVR_PREVIEW_DATA_META_MEMORY_KEY "opencv_octvr_preview_meta"
 
-struct PreviewDataHeader {
+struct CV_EXPORTS_W PreviewDataHeader {
     int width, height;
     int step;
     double fps;
 };
 
-class AsyncMultiMapper {
+class CV_EXPORTS_W AsyncMultiMapper {
 public:
     static AsyncMultiMapper * New(const std::vector<MapperTemplate> & mts, std::vector<cv::Size> in_sizes, 
                                   int blend=128, bool enable_gain_compensator=true,
@@ -107,7 +107,7 @@ public:
     virtual ~AsyncMultiMapper() {}
 };
 
-class FastMapper {
+class CV_EXPORTS_W FastMapper {
 
 private:
     std::vector<cv::Size> in_sizes;
@@ -130,7 +130,7 @@ public:
     void stitch_nv12(const std::vector<cv::UMat> & inputs, cv::UMat & output);
 };
 
-class Timer {
+class CV_EXPORTS_W Timer {
 protected:
     int64_t t;
     std::string name;
@@ -146,7 +146,7 @@ public:
 };
 
 template <class T>
-class Queue {
+class CV_EXPORTS_W Queue {
 private:
     std::queue<T> q;
     std::mutex mtx;
