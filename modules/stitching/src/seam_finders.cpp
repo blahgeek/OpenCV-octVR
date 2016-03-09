@@ -86,28 +86,26 @@ void PairwiseSeamFinder::run()
 void BFSSeamFinder::find(const std::vector<UMat> &, 
                          const std::vector<Point> & corners,
                          std::vector<UMat> & umasks) {
-    for(auto & c: corners)
-        CV_Assert(c == Point(0, 0));
-    for(int i = 1 ; i < umasks.size() ; i += 1)
-        CV_Assert(umasks[i].size() == umasks[i-1].size());
-    auto size = umasks[0].size();
+
+    cv::Rect roi = resultRoi(corners, umasks);
     auto count = umasks.size();
 
     std::vector<Mat> masks;
     for(auto & umask: umasks)
         masks.push_back(umask.getMat(ACCESS_RW));
 
-    Mat bits(size, CV_32SC1);
+    CV_Assert(count < 32);
+
+    Mat bits(roi.size(), CV_32SC1);
     bits.setTo(0);
     for(int n = 0 ; n < count ; n += 1) {
         Mat & m = masks[n];
         for(int y = 0 ; y < m.rows ; y += 1) {
             unsigned char * row = m.ptr<unsigned char>(y);
-            int32_t * bits_row = bits.ptr<int32_t>(y);
-            for(int x = 0 ; x < m.cols ; x += 1) {
+            int32_t * bits_row = bits.ptr<int32_t>(y + (corners[n].y - roi.y));
+            for(int x = 0 ; x < m.cols ; x += 1)
                 if(row[x])
-                    bits_row[x] |= (1 << n);
-            }
+                    bits_row[x + (corners[n].x - roi.x)] |= (1 << n);
         }
     }
 
@@ -120,7 +118,7 @@ void BFSSeamFinder::find(const std::vector<UMat> &,
                 unsigned char * last_row = (y == 0 ? NULL : m.ptr<unsigned char>(y - 1));
                 unsigned char * row = m.ptr<unsigned char>(y);
                 unsigned char * next_row = (y == m.rows - 1 ? NULL : m.ptr<unsigned char>(y+1));
-                int32_t * bits_row = bits.ptr<int32_t>(y);
+                int32_t * bits_row = bits.ptr<int32_t>(y + (corners[n].y - roi.y));
 
                 for(int x = 0 ; x < m.cols ; x += 1) {
                     if(row[x] == 0)
@@ -136,9 +134,9 @@ void BFSSeamFinder::find(const std::vector<UMat> &,
                     if(x == m.cols - 1 || row[x+1] == 0)
                         in_border = true;
 
-                    if(in_border && (bits_row[x] & ~(1 << n))) {
+                    if(in_border && (bits_row[x + (corners[n].x - roi.x)] & ~(1 << n))) {
                         row[x] = 42;
-                        bits_row[x] &= ~(1 << n);
+                        bits_row[x + (corners[n].x - roi.x)] &= ~(1 << n);
                         changed += 1;
                     }
                 }

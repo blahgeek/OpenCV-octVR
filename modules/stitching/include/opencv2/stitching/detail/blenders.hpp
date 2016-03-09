@@ -145,9 +145,10 @@ private:
 class CV_EXPORTS GPUStaticBlender {
 protected:
     int num_images;
-    cv::Size image_size;
+    std::vector<cv::Rect> rois;
+    cv::Rect result_roi;
 public:
-    GPUStaticBlender(const std::vector<cuda::GpuMat> & masks);
+    GPUStaticBlender(const std::vector<cuda::GpuMat> & masks, std::vector<cv::Rect> _rois);
     void blend(std::vector<cuda::GpuMat> &, cuda::GpuMat & dst);
     virtual ~GPUStaticBlender() {}
 protected:
@@ -161,6 +162,9 @@ private:
 
     std::vector<std::vector<cuda::GpuMat> > weight_pyr_gauss_lists;
 
+    std::vector<cv::Rect> align_rois;
+    cv::Rect align_result_roi;
+
 private:
     std::vector<cuda::Stream> streams;
     std::vector<cuda::GpuMat> tmps;
@@ -168,7 +172,9 @@ private:
     std::vector<std::vector<cuda::GpuMat> > src_pyr_laplaces;
 
 public:
-    MultiBandGPUBlender(const std::vector<cuda::GpuMat> & masks, int num_bands_=5);
+    MultiBandGPUBlender(const std::vector<cuda::GpuMat> & masks, 
+                        std::vector<cv::Rect> _rois,
+                        int num_bands_=5);
     void do_blend(std::vector<cuda::GpuMat> & imgs, cuda::GpuMat & dst) override;
 };
 
@@ -178,7 +184,9 @@ private:
     std::vector<cuda::GpuMat> weight_maps;
     cuda::GpuMat dst_16s;
 public:
-    FeatherGPUBlender(const std::vector<cuda::GpuMat> & masks, int border);
+    FeatherGPUBlender(const std::vector<cuda::GpuMat> & masks, 
+                      std::vector<cv::Rect> _rois, 
+                      int border);
     void do_blend(std::vector<cuda::GpuMat> & imgs, cuda::GpuMat & dst) override;
 };
 

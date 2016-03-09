@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-02-22
+* @Last Modified time: 2016-03-08
 */
 
 #include <iostream>
@@ -46,6 +46,9 @@ FastMapper::FastMapper(const MapperTemplate & mt,
         cv::UMat mask;
         in.mask.copyTo(mask);
         this->masks.push_back(mask);
+
+        // does not support ROI yet // TODO
+        CV_Assert(in.roi.tl() == cv::Point(0, 0) && in.roi.size() == mask.size());
     }
 
     for(int i = 0 ; i < mt.inputs.size() ; i += 1) {

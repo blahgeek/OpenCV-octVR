@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-11-09
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-02-21
+* @Last Modified time: 2016-03-08
 */
 
 #include <iostream>
@@ -35,20 +35,23 @@ int main(int argc, char * const argv[]){
                          "    -w X:    Set output width, default to 0\n"
                          "    -h X:    Set output height, default to 0 (do not set width and height both)\n"
                          "    -d X:    Save masks to debug directory\n"
+                         "    -n:      Do not use ROI based stitching\n"
                          "";
 
     int opt_width = 0;
     int opt_height = 0;
     char * opt_debug = NULL;
     char * opt_outfile = NULL;
+    bool opt_roi = true;
 
     int opt_ret;
-    while((opt_ret = getopt(argc, argv, "w:h:o:d:")) != -1) {
+    while((opt_ret = getopt(argc, argv, "w:h:o:d:n")) != -1) {
         switch(opt_ret) {
             case 'w': opt_width = atoi(optarg); break;
             case 'h': opt_height = atoi(optarg); break;
             case 'o': opt_outfile = optarg; break;
             case 'd': opt_debug = optarg; break;
+            case 'n': opt_roi = false; break;
             default:
                 fprintf(stderr, usage, argv[0]);
                 return 0;
@@ -77,12 +80,12 @@ int main(int argc, char * const argv[]){
 
     for(auto i = options["inputs"].Begin() ; i != options["inputs"].End() ; i ++ ) {
         fprintf(stderr, "Input: %s\n", (*i)["type"].GetString());
-        mt.add_input((*i)["type"].GetString(), (*i)["options"]);
+        mt.add_input((*i)["type"].GetString(), (*i)["options"], false, opt_roi);
     }
     if(options.HasMember("overlays")) {
         for(auto i = options["overlays"].Begin() ; i != options["overlays"].End() ; i ++) {
             fprintf(stderr, "Overlay input: %s\n", (*i)["type"].GetString());
-            mt.add_input((*i)["type"].GetString(), (*i)["options"], true);
+            mt.add_input((*i)["type"].GetString(), (*i)["options"], true, opt_roi);
         }
     }
     

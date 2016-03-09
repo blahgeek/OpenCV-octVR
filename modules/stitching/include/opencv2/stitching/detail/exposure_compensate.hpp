@@ -112,6 +112,7 @@ class CV_EXPORTS GainCompensatorGPU {
 private:
     int num_images;
     std::vector<cv::cuda::GpuMat> intersects;
+    std::vector<cv::Rect> intersect_roi, intersect_roi_img0, intersect_roi_img1;
     Mat_<int> N;
 
 private:
@@ -119,11 +120,11 @@ private:
     int intersect_count;
     std::vector<cv::cuda::Stream> streams;
     std::vector<cv::cuda::GpuMat> sum1_results, sum2_results;
-    std::vector<cv::cuda::HostMem> sum1_results_host, 
-                                   sum2_results_host;
+    std::vector<cv::cuda::HostMem> sum1_results_host, sum2_results_host;
 
 public:
-    GainCompensatorGPU(const std::vector<cv::cuda::GpuMat> &masks);
+    GainCompensatorGPU(const std::vector<cv::cuda::GpuMat> &masks,
+                       std::vector<cv::Rect> rois);
 public:
     void feed(const std::vector<cv::cuda::GpuMat> &images);
     void apply(std::vector<cv::cuda::GpuMat> & imgs, std::vector<cv::cuda::GpuMat> & masks);
