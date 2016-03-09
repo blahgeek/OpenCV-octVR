@@ -6,6 +6,10 @@ import logging
 import sys
 import re
 import json
+import base64
+
+
+deg_to_rad = lambda s: float(s) / 180.0 * 3.1415926
 
 # Support .pts(PTGui project file) and .pto(Hugin project file)
 class PTXParser:
@@ -25,6 +29,10 @@ class PTXParser:
                 val = self.inputs[int(val[1:])][key]
             self.processing_input[key] = val
 
+        if 'S' in self.processing_input:  # selection from hugin
+            self.processing_input['selection'] = list(map(int, self.processing_input['S'].split(',')))
+            del self.processing_input['S']
+
         self.inputs.append(self.processing_input)
         self.processing_input = dict()
         logging.info("New input added")
@@ -35,8 +43,7 @@ class PTXParser:
             return
         assert match.group(2) == '0', "Currently only support negative hugin mask"
         img = self.inputs[int(match.group(1))]
-        if 'exclude_masks' not in img:
-            img['exclude_masks'] = list()
+        img.setdefault('exclude_masks', list())
         img['exclude_masks'].append({
             'type': 'polygonal',
             'args': list(map(float, match.group(3).split(' ')))
@@ -56,6 +63,14 @@ class PTXParser:
             assert x == 0, 'Only circle crop is supported now'
         assert len(fields) == 8
         self.processing_input["circular_crop"] = fields[5:]
+
+    def process_input_meta_sourcemask(self, args):
+        mask_src = base64.decodebytes(args.strip().encode('ascii'))
+        self.processing_input.setdefault('exclude_masks', list())
+        self.processing_input['exclude_masks'].append({
+            'type': 'png',
+            'args': list(map(int, mask_src))
+        })
 
     def process_input_meta_viewpoint(self, args):
         for viewpoint in map(float, args.strip().split(' ')):
@@ -81,32 +96,49 @@ class PTXParser:
         elif line.startswith('k'):
             self.process_mask_line(line)
 
+    def dump_equirectangular_options(self, img):
+        assert float(img['v']) == 360, 'FOV must be 360 degree for equirectangular'
+        assert int(img['w']) == int(img['h']) * 2, 'Width must be twice of height for equirectangular'
+        return 'equirectangular', {}
+
+    def dump_fisheye_options(self, img):
+        return 'fullframe_fisheye', {
+            "hfov": deg_to_rad(img["v"]) / (img.get('fov_ratio', 0.5) * 2),
+            "center_dx": float(img["d"]),
+            "center_dy": float(img["e"]),
+            "radial": [float(img["a"]), float(img["b"]), float(img["c"])],
+        }
+
     def dump(self):
-        deg_to_rad = lambda s: float(s) / 180.0 * 3.1415926
         for img in self.inputs:
             if 'dummyimage' in img:
                 continue
-            assert img['f'] == '3' or img['f'] == '2', "Currently only support fisheye"
-            options = {
-                "rotation": {
-                    "roll": deg_to_rad(img["r"]),
-                    "yaw": -deg_to_rad(img["y"]),
-                    "pitch": -deg_to_rad(img["p"]),
-                },
+
+            if img['f'] == '3' or img['f'] == '2':
+                typ, options = self.dump_fisheye_options(img)
+            elif img['f'] == '4':
+                typ, options = self.dump_equirectangular_options(img)
+            else:
+                assert False, 'Only fisheye and equirectangular is supported'
+
+            options.update({
                 "width": int(img["w"]),
                 "height": int(img["h"]),
-                "hfov": deg_to_rad(img["v"]) / (img.get('fov_ratio', 0.5) * 2),
-                "center_dx": float(img["d"]),
-                "center_dy": float(img["e"]),
-                "radial": [float(img["a"]), float(img["b"]), float(img["c"])],
-            }
-            for key in ('circular_crop', 'exclude_masks', ):
+                "rotation": {
+                   "roll": deg_to_rad(img["r"]),
+                   "yaw": -deg_to_rad(img["y"]),
+                   "pitch": -deg_to_rad(img["p"]),
+                }
+            })
+
+            for key in ('circular_crop', 'exclude_masks', 'selection'):
                 if key in img:
                     options[key] = img[key]
             yield {
-                "type": "fullframe_fisheye",
+                "type": typ,
                 "options": options
             }
+
 
 if __name__ == '__main__':
     parser = PTXParser()

@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2016-02-23
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-02-26
+* @Last Modified time: 2016-03-06
 */
 
 #include <iostream>
@@ -37,7 +37,7 @@ enum Runner::RunningStatus Runner::status() const {
 }
 
 void Runner::start(QJsonDocument json_doc, int width,
-                   QStringList _ffmpeg_args) {
+                   QString _ffmpeg_args) {
     this->ffmpeg_args = _ffmpeg_args;
 
     if(this->status() != Runner::NOT_RUNNING) {
@@ -63,7 +63,7 @@ void Runner::start(QJsonDocument json_doc, int width,
 }
 
 void Runner::stop() {
-    ffmpeg_proc.terminate();
+    ffmpeg_proc.kill();
 }
 
 void Runner::onDumperProcessFinished(int exitCode, QProcess::ExitStatus status) {
@@ -75,9 +75,10 @@ void Runner::onDumperProcessFinished(int exitCode, QProcess::ExitStatus status) 
     }
     // run ffmpeg
 
-    qDebug() << "Running ffmpeg: " << ffmpeg_args;
-    ffmpeg_proc.start(QCoreApplication::applicationDirPath() + "/ffmpeg",
-                      ffmpeg_args);
+    QString _run = "\"" + QCoreApplication::applicationDirPath() + "/ffmpeg\""
+                      + " " + ffmpeg_args;
+    qDebug() << "Running ffmpeg: " << _run;
+    ffmpeg_proc.start(_run);
 
     emit statusChanged();
 }
