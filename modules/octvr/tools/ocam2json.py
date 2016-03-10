@@ -15,7 +15,7 @@ lines = list(lines)
 S = lambda n: [float(x) for x in lines[n].split(' ')]
 
 opts['pol'] = S(0)[1:]
-opts['inv_pol'] = S(1)[1:]
+opts['invpol'] = S(1)[1:]
 opts['xc'], opts['yc'] = S(2)
 opts['c'], opts['d'], opts['e'] = S(3)
 opts['height'], opts['width'] = [int(x) for x in lines[4].split(' ')]
