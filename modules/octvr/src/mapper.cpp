@@ -258,6 +258,7 @@ void Mapper::stitch(std::vector<GpuMat> & inputs,
         blender->blend(partial_warped_imgs, result);
         timer.tick("Blender blend");
     } else {
+        result.setTo(0, stream_final);
         for(int i = 0 ; i < nonoverlay_num ; i += 1) {
             cv::cuda::cvtColor(warped_imgs[i], warped_imgs_rgb[i], cv::COLOR_RGBA2RGB, 3, stream_final);
             warped_imgs_rgb[i].copyTo(result(rois[i]), masks[i], stream_final);

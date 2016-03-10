@@ -151,7 +151,7 @@ static void world2cam(double point2D[2], double point3D[3], struct OCamFisheyeCa
 
 cv::Point2d OCamFisheyeCamera::obj_to_image_single(const cv::Point2d & lonlat) {
     auto xyz = this->sphere_lonlat_to_xyz(lonlat);
-    double p_xyz[] = {xyz.x, xyz.y, xyz.z};
+    double p_xyz[] = {-xyz.y, xyz.z, -xyz.x};
     double p_xy[2];
 
     world2cam(p_xy, p_xyz, &(this->model));
@@ -165,5 +165,5 @@ cv::Point2d OCamFisheyeCamera::image_to_obj_single(const cv::Point2d & xy) {
 
     cam2world(p_xyz, p_xy, &(this->model));
 
-    return this->sphere_xyz_to_lonlat(cv::Point3d(p_xyz[0], p_xyz[1], p_xyz[2]));
+    return this->sphere_xyz_to_lonlat(cv::Point3d(-p_xyz[2], -p_xyz[0], p_xyz[1]));
 }
