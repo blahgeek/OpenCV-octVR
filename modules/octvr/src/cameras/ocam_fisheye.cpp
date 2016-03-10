@@ -11,7 +11,82 @@
 
 using namespace vr;
 
+#define CMV_MAX_BUF 1024
+/*------------------------------------------------------------------------------
+ This function reads the parameters of the omnidirectional camera model from 
+ a given TXT file
+------------------------------------------------------------------------------*/
+static int get_ocam_model(struct OCamFisheyeCamera::ocam_model *myocam_model, const char *filename)
+{
+ double *pol        = myocam_model->pol;
+ double *invpol     = myocam_model->invpol; 
+ double *xc         = &(myocam_model->xc);
+ double *yc         = &(myocam_model->yc); 
+ double *c          = &(myocam_model->c);
+ double *d          = &(myocam_model->d);
+ double *e          = &(myocam_model->e);
+ int    *width      = &(myocam_model->width);
+ int    *height     = &(myocam_model->height);
+ int *length_pol    = &(myocam_model->length_pol);
+ int *length_invpol = &(myocam_model->length_invpol);
+ FILE *f;
+ char buf[CMV_MAX_BUF];
+ int i;
+ 
+ //Open file
+ if(!(f=fopen(filename,"r")))
+ {
+   printf("File %s cannot be opened\n", filename);                
+   return -1;
+ }
+ 
+ //Read polynomial coefficients
+ fgets(buf,CMV_MAX_BUF,f);
+ fscanf(f,"\n");
+ fscanf(f,"%d", length_pol);
+ for (i = 0; i < *length_pol; i++)
+ {
+     fscanf(f," %lf",&pol[i]);
+ }
+
+ //Read inverse polynomial coefficients
+ fscanf(f,"\n");
+ fgets(buf,CMV_MAX_BUF,f);
+ fscanf(f,"\n");
+ fscanf(f,"%d", length_invpol);
+ for (i = 0; i < *length_invpol; i++)
+ {
+     fscanf(f," %lf",&invpol[i]);
+ }
+ 
+ //Read center coordinates
+ fscanf(f,"\n");
+ fgets(buf,CMV_MAX_BUF,f);
+ fscanf(f,"\n");
+ fscanf(f,"%lf %lf\n", xc, yc);
+
+ //Read affine coefficients
+ fgets(buf,CMV_MAX_BUF,f);
+ fscanf(f,"\n");
+ fscanf(f,"%lf %lf %lf\n", c,d,e);
+
+ //Read image size
+ fgets(buf,CMV_MAX_BUF,f);
+ fscanf(f,"\n");
+ fscanf(f,"%d %d", height, width);
+
+ fclose(f);
+ return 0;
+}
+
 OCamFisheyeCamera::OCamFisheyeCamera(const rapidjson::Value & options): Camera(options) {
+
+    if(options.HasMember("file")) {
+        int ret = get_ocam_model(&(this->model), options["file"].GetString());
+        CV_Assert(ret == 0);
+        return;
+    }
+    
     auto opt_pols = options["pol"].GetArray();
     this->model.length_pol = opt_pols.Size();
     CV_Assert(this->model.length_pol > 0);
