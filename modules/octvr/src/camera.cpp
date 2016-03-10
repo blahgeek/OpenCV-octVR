@@ -61,6 +61,12 @@ Camera::Camera(const rapidjson::Value & options) {
 
     this->rotate_matrix = (rotate_x * rotate_z) * rotate_y;
 
+    if(options.HasMember("rotation-matrix")) {
+        for(int h = 0 ; h < 3 ; h += 1)
+            for(int w = 0 ; w < 3 ; w += 1)
+                this->rotate_matrix.at<double>(h, w) = options["rotation-matrix"][h * 3 + w].GetDouble();
+    }
+
     auto prepare_exclude_mask = [&, this](cv::Scalar initial_val) {
         int width = options["width"].GetInt();
         int height = options["height"].GetInt();
