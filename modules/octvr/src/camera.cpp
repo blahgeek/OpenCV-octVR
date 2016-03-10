@@ -138,7 +138,7 @@ void Camera::drawExcludeMask(const rapidjson::Value & masks) {
 
 cv::Point2d Camera::sphere_xyz_to_lonlat(const cv::Point3d & xyz) {
     auto p = xyz * (1.0 / cv::norm(xyz));
-    return cv::Point2d(-atan2(p.z, p.x), asin(p.y));
+    return cv::Point2d(atan2(p.z, p.x), asin(p.y));
 }
 
 cv::Point3d Camera::sphere_lonlat_to_xyz(const cv::Point2d & lonlat) {
@@ -146,7 +146,7 @@ cv::Point3d Camera::sphere_lonlat_to_xyz(const cv::Point2d & lonlat) {
     auto lat = lonlat.y;
     return cv::Point3d(cos(lon) * cos(lat),
                        sin(lat),
-                       -sin(lon) * cos(lat));
+                       sin(lon) * cos(lat));
 }
 
 void Camera::sphere_rotate(std::vector<cv::Point3d> & points, bool reverse) {

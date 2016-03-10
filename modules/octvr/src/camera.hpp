@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-20
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-02-21
+* @Last Modified time: 2016-03-10
 */
 
 #ifndef VR_LIBMAP_CAMERA_H
@@ -25,6 +25,12 @@
 namespace vr {
 
 class NotImplemented: std::exception {};
+
+// x轴向右
+// y轴向上
+// z轴向外
+// 从里向外看
+// x轴指向为equirectangular图像中心
 
 /**
  * Camera model
