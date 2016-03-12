@@ -1,8 +1,8 @@
 /* 
 * @Author: BlahGeek
 * @Date:   2015-10-20
-* @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-03-10
+* @Last Modified by:   StrayWarrior
+* @Last Modified time: 2016-03-12
 */
 
 #ifndef VR_LIBMAP_CAMERA_H
@@ -40,6 +40,7 @@ protected:
     std::vector<double> rotate_vector;
     cv::Mat rotate_matrix;
     cv::Mat exclude_mask;
+    cv::Mat visible_mask;
 
 protected:
     cv::Point2d sphere_xyz_to_lonlat(const cv::Point3d & xyz);
@@ -47,7 +48,7 @@ protected:
 
     void sphere_rotate(std::vector<cv::Point3d> & points, bool reverse);
 
-    void drawExcludeMask(const rapidjson::Value & masks);
+    void draw_exclude_mask(const rapidjson::Value & masks);
 
 public:
     /**
@@ -87,6 +88,12 @@ public:
      * Map object points to image points
      */
     virtual std::vector<cv::Point2d> obj_to_image(const std::vector<cv::Point2d> & lonlats);
+    
+    /**
+     * Get points that are forced to be visible after blending.
+     * TODO: I cannot think out a more elegant way to do this...
+     */
+    virtual std::vector<bool> get_visible_mask(const std::vector<cv::Point2d> & lonlats);
 
     /**
      * Map image points to object points

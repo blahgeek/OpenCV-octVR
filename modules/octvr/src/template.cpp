@@ -33,6 +33,7 @@ out_type(to), out_opts(&to_opts) {
         width = int(double(height) * output_aspect_ratio);
     std::cerr << "Output type: " << to << ", Size: " << width << "x" << height << std::endl;
     this->out_size = cv::Size(width, height);
+    this->visible_mask = std::vector<bool>(width * height, false);
 }
 
 void MapperTemplate::add_input(const std::string & from,
@@ -52,6 +53,7 @@ void MapperTemplate::add_input(const std::string & from,
     auto output_map_points = out_camera->image_to_obj(out_points);
 
     auto tmp = cam->obj_to_image(output_map_points);
+    auto visible_tmp = cam->get_visible_mask(output_map_points);
 
     int min_h = out_size.height, max_h = 0;
     int min_w = out_size.width, max_w = 0;
@@ -68,9 +70,11 @@ void MapperTemplate::add_input(const std::string & from,
             float x = tmp[index].x;
             float y = tmp[index].y;
             if(isnan(x) || isnan(y) ||
-               x < 0 || x >= 1.0f || y < 0 || y >= 1.0f) {
+               x < 0 || x >= 1.0f || y < 0 || y >= 1.0f ||  // out of border, should be black when doing remap()
+               visible_mask[index])                         // or this point has been selected to be visible by other image (not override)
+            {
                 mask_row[w] = 0;
-                map1_row[w] = map2_row[w] = -1.0; // out of border, should be black when doing remap()
+                map1_row[w] = map2_row[w] = -1.0;
             }
             else {
                 mask_row[w] = 255;
@@ -83,6 +87,13 @@ void MapperTemplate::add_input(const std::string & from,
                 if(w < min_w) min_w = w;
                 if(w > max_w) max_w = w;
             }
+            // Update visible_mask and other inputs' masks.
+            if (!visible_mask[index] && visible_tmp[index])
+                for (auto & prior_input : this->inputs) {
+                     unsigned char * prior_mask_row = prior_input.mask.ptr(h);
+                     prior_mask_row[w] = 0;
+                }
+            visible_mask[index] = visible_mask[index] || visible_tmp[index];
         }
     }
     CV_Assert(min_h <= max_h && min_w <= max_w);

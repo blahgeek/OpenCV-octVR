@@ -77,6 +77,13 @@ Camera::Camera(const rapidjson::Value & options) {
             CV_Assert(this->exclude_mask.cols == width);
             CV_Assert(this->exclude_mask.rows == height);
         }
+        if(this->visible_mask.empty()) {
+            this->visible_mask = cv::Mat(height, width, CV_8U);
+            this->visible_mask.setTo(0);
+        } else {
+            CV_Assert(this->visible_mask.cols == width);
+            CV_Assert(this->visible_mask.rows == height);
+        }
     };
 
     if(options.HasMember("selection")) {
@@ -99,11 +106,11 @@ Camera::Camera(const rapidjson::Value & options) {
 
     if(options.HasMember("exclude_masks")) {
         prepare_exclude_mask(0);  // exclude all
-        this->drawExcludeMask(options["exclude_masks"]);
+        this->draw_exclude_mask(options["exclude_masks"]);
     }
 }
 
-void Camera::drawExcludeMask(const rapidjson::Value & masks) {
+void Camera::draw_exclude_mask(const rapidjson::Value & masks) {
     for(auto area = masks.Begin() ; area != masks.End() ; area ++) {
         std::string area_type = (*area)["type"].GetString();
         if(area_type == "polygonal") {
@@ -130,6 +137,7 @@ void Camera::drawExcludeMask(const rapidjson::Value & masks) {
             cv::split(mask_img, mask_img_channels);
 
             this->exclude_mask.setTo(255, mask_img_channels[2]); // RED channel
+            this->visible_mask.setTo(255, mask_img_channels[1]); // GREEN channel
         }
         else
             assert(false);
@@ -184,6 +192,37 @@ std::vector<cv::Point2d> Camera::obj_to_image(const std::vector<cv::Point2d> & l
             }
         }
         ret.push_back(p);
+    }
+
+    return ret;
+}
+
+std::vector<bool> Camera::get_visible_mask(const std::vector<cv::Point2d> & lonlats) {
+    // convert lon/lat to xyz in sphere
+    std::vector<cv::Point3d> xyzs;
+    xyzs.reserve(lonlats.size());
+    for(auto & ll: lonlats)
+        xyzs.push_back(sphere_lonlat_to_xyz(ll));
+    // rotate it
+    sphere_rotate(xyzs, false);
+
+    // prepare for return value
+    std::vector<bool> ret;
+    ret.reserve(lonlats.size());
+
+    // compute
+    for(auto & xyz: xyzs) {
+        auto p = obj_to_image_single(sphere_xyz_to_lonlat(xyz));
+        bool p_visible = false;
+        if(p.x >= 0 && p.x < 1 && p.y >= 0 && p.y < 1) {
+            if(!this->exclude_mask.empty()) {
+                int W = p.x * this->exclude_mask.cols;
+                int H = p.y * this->exclude_mask.rows;
+                if(this->visible_mask.at<unsigned char>(H, W))
+                    p_visible = true;
+            }
+        }
+        ret.push_back(p_visible);
     }
 
     return ret;
