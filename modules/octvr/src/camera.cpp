@@ -48,7 +48,7 @@ Camera::Camera(const rapidjson::Value & options) {
     this->rotate_vector = std::vector<double>({0, 0, 0});
     if(options.HasMember("rotation")) {
         this->rotate_vector[0] =   options["rotation"]["roll"].GetDouble();
-        this->rotate_vector[1] =   options["rotation"]["yaw"].GetDouble();
+        this->rotate_vector[1] = - options["rotation"]["yaw"].GetDouble();
         this->rotate_vector[2] = - options["rotation"]["pitch"].GetDouble();
     }
 
