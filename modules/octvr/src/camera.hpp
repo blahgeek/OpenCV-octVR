@@ -24,6 +24,8 @@
 
 namespace vr {
 
+enum class MaskType {include, exclude};
+
 class NotImplemented: std::exception {};
 
 // x轴向右
@@ -40,7 +42,7 @@ protected:
     std::vector<double> rotate_vector;
     cv::Mat rotate_matrix;
     cv::Mat exclude_mask;
-    cv::Mat visible_mask;
+    cv::Mat include_mask;
 
 protected:
     cv::Point2d sphere_xyz_to_lonlat(const cv::Point3d & xyz);
@@ -48,7 +50,7 @@ protected:
 
     void sphere_rotate(std::vector<cv::Point3d> & points, bool reverse);
 
-    void draw_exclude_mask(const rapidjson::Value & masks);
+    void draw_mask(const rapidjson::Value & masks, MaskType mask_type);
 
 public:
     /**
@@ -93,7 +95,7 @@ public:
      * Get points that are forced to be visible after blending.
      * TODO: I cannot think out a more elegant way to do this...
      */
-    virtual std::vector<bool> get_visible_mask(const std::vector<cv::Point2d> & lonlats);
+    virtual std::vector<bool> get_include_mask(const std::vector<cv::Point2d> & lonlats);
 
     /**
      * Map image points to object points

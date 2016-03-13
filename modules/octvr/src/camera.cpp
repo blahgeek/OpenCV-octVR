@@ -1,8 +1,8 @@
 /* 
 * @Author: BlahGeek
 * @Date:   2015-10-20
-* @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-03-10
+* @Last Modified by:   StrayWarrior
+* @Last Modified time: 2016-03-12
 */
 
 #include "./camera.hpp"
@@ -77,12 +77,17 @@ Camera::Camera(const rapidjson::Value & options) {
             CV_Assert(this->exclude_mask.cols == width);
             CV_Assert(this->exclude_mask.rows == height);
         }
-        if(this->visible_mask.empty()) {
-            this->visible_mask = cv::Mat(height, width, CV_8U);
-            this->visible_mask.setTo(0);
+    };
+
+    auto prepare_include_mask = [&, this](cv::Scalar initial_val) {
+        int width = options["width"].GetInt();
+        int height = options["height"].GetInt();
+        if(this->include_mask.empty()) {
+            this->include_mask = cv::Mat(height, width, CV_8U);
+            this->include_mask.setTo(initial_val);
         } else {
-            CV_Assert(this->visible_mask.cols == width);
-            CV_Assert(this->visible_mask.rows == height);
+            CV_Assert(this->include_mask.cols == width);
+            CV_Assert(this->include_mask.rows == height);
         }
     };
 
@@ -105,12 +110,18 @@ Camera::Camera(const rapidjson::Value & options) {
     }
 
     if(options.HasMember("exclude_masks")) {
-        prepare_exclude_mask(0);  // exclude all
-        this->draw_exclude_mask(options["exclude_masks"]);
+        prepare_exclude_mask(0);  // exclude none
+        prepare_include_mask(0);  // include none
+        this->draw_mask(options["exclude_masks"], MaskType::exclude);  //PTGui's "exclude_mask" also has "include_mask"
+    }
+
+    if(options.HasMember("include_masks")) {
+        prepare_include_mask(0);  // include none
+        this->draw_mask(options["include_masks"], MaskType::include);  //Hugin's "include_mask"
     }
 }
 
-void Camera::draw_exclude_mask(const rapidjson::Value & masks) {
+void Camera::draw_mask(const rapidjson::Value & masks, MaskType mask_type) {
     for(auto area = masks.Begin() ; area != masks.End() ; area ++) {
         std::string area_type = (*area)["type"].GetString();
         if(area_type == "polygonal") {
@@ -121,8 +132,17 @@ void Camera::draw_exclude_mask(const rapidjson::Value & masks) {
             std::vector<cv::Point2i> points;
             for(int i = 0 ; i < args.size() ; i += 2)
                 points.emplace_back(int(args[i]), int(args[i+1]));
-            cv::fillPoly(this->exclude_mask, 
-                         std::vector<std::vector<cv::Point2i>>({points}), 255);
+            switch (mask_type)
+            {
+                case MaskType::include:
+                    cv::fillPoly(this->include_mask, 
+                                 std::vector<std::vector<cv::Point2i>>({points}), 255);
+                    break;
+                case MaskType::exclude:
+                    cv::fillPoly(this->exclude_mask, 
+                                 std::vector<std::vector<cv::Point2i>>({points}), 255);
+                    break;
+            }
         }
         else if(area_type == "png") {
             std::cerr << "Drawing PNG image mask... " << std::endl;
@@ -137,7 +157,7 @@ void Camera::draw_exclude_mask(const rapidjson::Value & masks) {
             cv::split(mask_img, mask_img_channels);
 
             this->exclude_mask.setTo(255, mask_img_channels[2]); // RED channel
-            this->visible_mask.setTo(255, mask_img_channels[1]); // GREEN channel
+            this->include_mask.setTo(255, mask_img_channels[1]); // GREEN channel
         }
         else
             assert(false);
@@ -197,7 +217,7 @@ std::vector<cv::Point2d> Camera::obj_to_image(const std::vector<cv::Point2d> & l
     return ret;
 }
 
-std::vector<bool> Camera::get_visible_mask(const std::vector<cv::Point2d> & lonlats) {
+std::vector<bool> Camera::get_include_mask(const std::vector<cv::Point2d> & lonlats) {
     // convert lon/lat to xyz in sphere
     std::vector<cv::Point3d> xyzs;
     xyzs.reserve(lonlats.size());
@@ -218,7 +238,7 @@ std::vector<bool> Camera::get_visible_mask(const std::vector<cv::Point2d> & lonl
             if(!this->exclude_mask.empty()) {
                 int W = p.x * this->exclude_mask.cols;
                 int H = p.y * this->exclude_mask.rows;
-                if(this->visible_mask.at<unsigned char>(H, W))
+                if(this->include_mask.at<unsigned char>(H, W))
                     p_visible = true;
             }
         }

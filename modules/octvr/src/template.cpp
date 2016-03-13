@@ -1,8 +1,8 @@
 /* 
 * @Author: BlahGeek
 * @Date:   2015-12-07
-* @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-03-08
+* @Last Modified by:   StrayWarrior
+* @Last Modified time: 2016-03-12
 */
 
 #include "octvr.hpp"
@@ -53,7 +53,7 @@ void MapperTemplate::add_input(const std::string & from,
     auto output_map_points = out_camera->image_to_obj(out_points);
 
     auto tmp = cam->obj_to_image(output_map_points);
-    auto visible_tmp = cam->get_visible_mask(output_map_points);
+    auto visible_tmp = cam->get_include_mask(output_map_points);
 
     int min_h = out_size.height, max_h = 0;
     int min_w = out_size.width, max_w = 0;
@@ -90,8 +90,14 @@ void MapperTemplate::add_input(const std::string & from,
             // Update visible_mask and other inputs' masks.
             if (!visible_mask[index] && visible_tmp[index])
                 for (auto & prior_input : this->inputs) {
-                     unsigned char * prior_mask_row = prior_input.mask.ptr(h);
-                     prior_mask_row[w] = 0;
+                    // When using ROI, the prior inputs' masks are not full-size
+                    // which causes overflow
+                    auto prior_roi = prior_input.roi;
+                    if (h < prior_roi.y || h > prior_roi.y + prior_roi.height ||
+                        w < prior_roi.x || w > prior_roi.x + prior_roi.width )
+                        continue;
+                    unsigned char * prior_mask_row = prior_input.mask.ptr(h - prior_roi.y);
+                    prior_mask_row[w - prior_roi.x] = 0;
                 }
             visible_mask[index] = visible_mask[index] || visible_tmp[index];
         }
