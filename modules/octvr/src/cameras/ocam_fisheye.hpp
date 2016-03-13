@@ -18,6 +18,7 @@ class OCamFisheyeCamera: public Camera {
 public:
 // from ocam_functions.h
 
+#define CMV_MAX_BUF 1024
 #define MAX_POL_LENGTH 64
 
     struct ocam_model {

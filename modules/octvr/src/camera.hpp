@@ -28,12 +28,6 @@ enum class MaskType {include, exclude};
 
 class NotImplemented: std::exception {};
 
-// x轴向右
-// y轴向上
-// z轴向外
-// 从里向外看
-// x轴指向为equirectangular图像中心
-
 /**
  * Camera model
  */

@@ -61,12 +61,6 @@ Camera::Camera(const rapidjson::Value & options) {
 
     this->rotate_matrix = (rotate_x * rotate_z) * rotate_y;
 
-    if(options.HasMember("rotation-matrix")) {
-        for(int h = 0 ; h < 3 ; h += 1)
-            for(int w = 0 ; w < 3 ; w += 1)
-                this->rotate_matrix.at<double>(h, w) = options["rotation-matrix"][h * 3 + w].GetDouble();
-    }
-
     auto prepare_exclude_mask = [&, this](cv::Scalar initial_val) {
         int width = options["width"].GetInt();
         int height = options["height"].GetInt();
@@ -166,7 +160,7 @@ void Camera::draw_mask(const rapidjson::Value & masks, MaskType mask_type) {
 
 cv::Point2d Camera::sphere_xyz_to_lonlat(const cv::Point3d & xyz) {
     auto p = xyz * (1.0 / cv::norm(xyz));
-    return cv::Point2d(atan2(p.z, p.x), asin(p.y));
+    return cv::Point2d(-atan2(p.z, p.x), asin(p.y));
 }
 
 cv::Point3d Camera::sphere_lonlat_to_xyz(const cv::Point2d & lonlat) {
@@ -174,7 +168,7 @@ cv::Point3d Camera::sphere_lonlat_to_xyz(const cv::Point2d & lonlat) {
     auto lat = lonlat.y;
     return cv::Point3d(cos(lon) * cos(lat),
                        sin(lat),
-                       sin(lon) * cos(lat));
+                       -sin(lon) * cos(lat));
 }
 
 void Camera::sphere_rotate(std::vector<cv::Point3d> & points, bool reverse) {
