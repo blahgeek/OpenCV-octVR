@@ -88,6 +88,8 @@ void MapperTemplate::add_input(const std::string & from,
                 if(w > max_w) max_w = w;
             }
             // Update visible_mask and other inputs' masks.
+            if (visible_tmp.empty())
+                continue;
             if (!visible_mask[index] && visible_tmp[index])
                 for (auto & prior_input : this->inputs) {
                     // When using ROI, the prior inputs' masks are not full-size

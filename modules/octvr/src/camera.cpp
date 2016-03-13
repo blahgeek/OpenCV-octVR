@@ -238,7 +238,7 @@ std::vector<bool> Camera::get_include_mask(const std::vector<cv::Point2d> & lonl
             if(!this->exclude_mask.empty()) {
                 int W = p.x * this->exclude_mask.cols;
                 int H = p.y * this->exclude_mask.rows;
-                if(this->include_mask.at<unsigned char>(H, W))
+                if(!this->include_mask.empty() && this->include_mask.at<unsigned char>(H, W))
                     p_visible = true;
             }
         }
