@@ -218,6 +218,8 @@ std::vector<cv::Point2d> Camera::obj_to_image(const std::vector<cv::Point2d> & l
 }
 
 std::vector<bool> Camera::get_include_mask(const std::vector<cv::Point2d> & lonlats) {
+    if (this->include_mask.empty())
+        return std::vector<bool>();
     // convert lon/lat to xyz in sphere
     std::vector<cv::Point3d> xyzs;
     xyzs.reserve(lonlats.size());
