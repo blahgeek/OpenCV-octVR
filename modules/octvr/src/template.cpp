@@ -93,8 +93,8 @@ void MapperTemplate::add_input(const std::string & from,
                     // When using ROI, the prior inputs' masks are not full-size
                     // which causes overflow
                     auto prior_roi = prior_input.roi;
-                    if (h < prior_roi.y || h > prior_roi.y + prior_roi.height ||
-                        w < prior_roi.x || w > prior_roi.x + prior_roi.width )
+                    if (h < prior_roi.y || h >= prior_roi.y + prior_roi.height ||
+                        w < prior_roi.x || w >= prior_roi.x + prior_roi.width )
                         continue;
                     unsigned char * prior_mask_row = prior_input.mask.ptr(h - prior_roi.y);
                     prior_mask_row[w - prior_roi.x] = 0;
