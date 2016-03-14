@@ -1,8 +1,8 @@
 /* 
 * @Author: BlahGeek
 * @Date:   2015-10-20
-* @Last Modified by:   StrayWarrior
-* @Last Modified time: 2016-03-12
+* @Last Modified by:   BlahGeek
+* @Last Modified time: 2016-03-14
 */
 
 #include "./camera.hpp"
@@ -19,6 +19,7 @@
 #include "./cameras/cubic.hpp"
 #include "./cameras/eqareanorthpole.hpp"
 #include "./cameras/eqareasouthpole.hpp"
+#include "./cameras/ocam_fisheye.hpp"
 
 using namespace vr;
 
@@ -33,6 +34,7 @@ std::unique_ptr<Camera> Camera::New(const std::string & type, const rapidjson::V
     X("fisheye", FisheyeCamera)
     X("equirectangular", Equirectangular)
     X("fullframe_fisheye", FullFrameFisheyeCamera)
+    X("ocam_fisheye", OCamFisheyeCamera)
     X("stupidoval", StupidOval)
     X("cubic", Cubic)
     X("eqareanorthpole", Eqareanorthpole)
@@ -45,9 +47,9 @@ std::unique_ptr<Camera> Camera::New(const std::string & type, const rapidjson::V
 Camera::Camera(const rapidjson::Value & options) {
     this->rotate_vector = std::vector<double>({0, 0, 0});
     if(options.HasMember("rotation")) {
-        this->rotate_vector[0] = options["rotation"]["roll"].GetDouble();
-        this->rotate_vector[1] = options["rotation"]["yaw"].GetDouble();
-        this->rotate_vector[2] = options["rotation"]["pitch"].GetDouble();
+        this->rotate_vector[0] =   options["rotation"]["roll"].GetDouble();
+        this->rotate_vector[1] = - options["rotation"]["yaw"].GetDouble();
+        this->rotate_vector[2] = - options["rotation"]["pitch"].GetDouble();
     }
 
     cv::Mat rotate_x, rotate_y, rotate_z;
@@ -58,6 +60,12 @@ Camera::Camera(const rapidjson::Value & options) {
     v = rotate_vector; v[0] = v[1] = 0; cv::Rodrigues(v, rotate_z);
 
     this->rotate_matrix = (rotate_x * rotate_z) * rotate_y;
+
+    if(options.HasMember("rotation-matrix")) {
+        for(int h = 0 ; h < 3 ; h += 1)
+            for(int w = 0 ; w < 3 ; w += 1)
+                this->rotate_matrix.at<double>(h, w) = options["rotation-matrix"][h * 3 + w].GetDouble();
+    }
 
     auto prepare_exclude_mask = [&, this](cv::Scalar initial_val) {
         int width = options["width"].GetInt();
@@ -158,7 +166,7 @@ void Camera::draw_mask(const rapidjson::Value & masks, MaskType mask_type) {
 
 cv::Point2d Camera::sphere_xyz_to_lonlat(const cv::Point3d & xyz) {
     auto p = xyz * (1.0 / cv::norm(xyz));
-    return cv::Point2d(-atan2(p.z, p.x), asin(p.y));
+    return cv::Point2d(atan2(-p.z, p.x), asin(p.y));
 }
 
 cv::Point3d Camera::sphere_lonlat_to_xyz(const cv::Point2d & lonlat) {

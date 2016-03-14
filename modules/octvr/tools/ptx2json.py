@@ -199,8 +199,8 @@ class PTXParser:
                 "height": int(img["h"]),
                 "rotation": {
                    "roll": deg_to_rad(img["r"]),
-                   "yaw": -deg_to_rad(img["y"]),
-                   "pitch": -deg_to_rad(img["p"]),
+                   "yaw": deg_to_rad(img["y"]),
+                   "pitch": deg_to_rad(img["p"]),
                 }
             })
 
