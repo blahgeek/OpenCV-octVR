@@ -135,7 +135,7 @@ Camera::Camera(const rapidjson::Value & options) {
 
 bool Camera::is_valid_longitude(double longitude) {
     #define BETWEEN(x) ((x) >= this->min_longitude && (x) <= this->max_longitude)
-    return BETWEEN(longitude) || BETWEEN(longitude + 2 * M_PI);
+    return BETWEEN(longitude) || BETWEEN(longitude + 2 * M_PI) || BETWEEN(longitude + 4 * M_PI);
     #undef BETWEEN
 }
 
