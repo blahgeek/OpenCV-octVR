@@ -88,13 +88,15 @@ void MapperTemplate::add_input(const std::string & from,
                 if(w > max_w) max_w = w;
             }
             // Update visible_mask and other inputs' masks.
+            if (visible_tmp.empty())
+                continue;
             if (!visible_mask[index] && visible_tmp[index])
                 for (auto & prior_input : this->inputs) {
                     // When using ROI, the prior inputs' masks are not full-size
                     // which causes overflow
                     auto prior_roi = prior_input.roi;
-                    if (h < prior_roi.y || h > prior_roi.y + prior_roi.height ||
-                        w < prior_roi.x || w > prior_roi.x + prior_roi.width )
+                    if (h < prior_roi.y || h >= prior_roi.y + prior_roi.height ||
+                        w < prior_roi.x || w >= prior_roi.x + prior_roi.width )
                         continue;
                     unsigned char * prior_mask_row = prior_input.mask.ptr(h - prior_roi.y);
                     prior_mask_row[w - prior_roi.x] = 0;
