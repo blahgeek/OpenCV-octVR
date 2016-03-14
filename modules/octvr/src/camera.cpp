@@ -209,8 +209,11 @@ std::vector<cv::Point2d> Camera::obj_to_image(const std::vector<cv::Point2d> & l
     // convert lon/lat to xyz in sphere
     std::vector<cv::Point3d> xyzs;
     xyzs.reserve(lonlats.size());
-    for(auto & ll: lonlats)
+    std::vector<bool> lonlats_valid;
+    for(auto & ll: lonlats) {
         xyzs.push_back(sphere_lonlat_to_xyz(ll));
+        lonlats_valid.push_back(is_valid_longitude(ll.x));
+    }
     // rotate it
     sphere_rotate(xyzs, false);
 
@@ -219,10 +222,10 @@ std::vector<cv::Point2d> Camera::obj_to_image(const std::vector<cv::Point2d> & l
     ret.reserve(lonlats.size());
 
     // compute
-    for(auto & xyz: xyzs) {
-        auto ll = sphere_xyz_to_lonlat(xyz);
+    for(size_t i = 0 ; i < xyzs.size() ; i += 1) {
+        auto ll = sphere_xyz_to_lonlat(xyzs[i]);
         cv::Point2d p = cv::Point2d(NAN, NAN);
-        if(is_valid_longitude(ll.x))
+        if(lonlats_valid[i])
             p = obj_to_image_single(ll);
         if(p.x >= 0 && p.x < 1 && p.y >= 0 && p.y < 1) {
             if(!this->exclude_mask.empty()) {

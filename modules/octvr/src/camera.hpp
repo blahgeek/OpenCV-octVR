@@ -53,7 +53,7 @@ protected:
     cv::Mat include_mask;
 
     // 适用于类JUMP相机的拼接，每个相机为equirectangular中的一竖条
-    // 这两个数是旋转后的参数，也就是说每个相机应该是一样的
+    // 这两个数是旋转后的参数，也就是说每个相机应该是不一样的
     double min_longitude, max_longitude;
 
     bool is_valid_longitude(double longitude);
