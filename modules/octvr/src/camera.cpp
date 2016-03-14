@@ -19,6 +19,7 @@
 #include "./cameras/cubic.hpp"
 #include "./cameras/eqareanorthpole.hpp"
 #include "./cameras/eqareasouthpole.hpp"
+#include "./cameras/ocam_fisheye.hpp"
 
 using namespace vr;
 
@@ -33,6 +34,7 @@ std::unique_ptr<Camera> Camera::New(const std::string & type, const rapidjson::V
     X("fisheye", FisheyeCamera)
     X("equirectangular", Equirectangular)
     X("fullframe_fisheye", FullFrameFisheyeCamera)
+    X("ocam_fisheye", OCamFisheyeCamera)
     X("stupidoval", StupidOval)
     X("cubic", Cubic)
     X("eqareanorthpole", Eqareanorthpole)

@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-03-08
+* @Last Modified time: 2016-03-10
 */
 
 #include <iostream>
@@ -81,6 +81,12 @@ Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes,
     
     timer.tick("Prepare logo");
 #endif
+
+    if(this->nonoverlay_num == 1) {
+        std::cerr << "Disable blend and gain compensator since input count = 1" << std::endl;
+        enable_gain_compensator = 0;
+        blend = 0;
+    }
 
     std::vector<GpuMat> scaled_masks;
 
@@ -252,6 +258,7 @@ void Mapper::stitch(std::vector<GpuMat> & inputs,
         blender->blend(partial_warped_imgs, result);
         timer.tick("Blender blend");
     } else {
+        result.setTo(0, stream_final);
         for(int i = 0 ; i < nonoverlay_num ; i += 1) {
             cv::cuda::cvtColor(warped_imgs[i], warped_imgs_rgb[i], cv::COLOR_RGBA2RGB, 3, stream_final);
             warped_imgs_rgb[i].copyTo(result(rois[i]), masks[i], stream_final);
