@@ -61,7 +61,7 @@ Camera::Camera(const rapidjson::Value & options) {
 
     this->rotate_matrix = (rotate_x * rotate_z) * rotate_y;
 
-    if(options.HasMember("rotation-matrix")) {
+    if(options.HasMember("rotation_matrix")) {
         for(int h = 0 ; h < 3 ; h += 1)
             for(int w = 0 ; w < 3 ; w += 1)
                 this->rotate_matrix.at<double>(h, w) = options["rotation-matrix"][h * 3 + w].GetDouble();
@@ -119,6 +119,24 @@ Camera::Camera(const rapidjson::Value & options) {
         prepare_include_mask(0);  // include none
         this->draw_mask(options["include_masks"], MaskType::include);  //Hugin's "include_mask"
     }
+
+    if(options.HasMember("longitude_selection")) {
+        // max_longitude can be larger than PI
+        // to allow ranges like [PI/2, M_PI] + [-PI, -PI/2]
+        // which can be [PI/2, PI/2*3]
+        this->min_longitude = options["longitude_selection"][0].GetDouble();
+        this->max_longitude = options["longitude_selection"][1].GetDouble();
+        CV_Assert(this->max_longitude > this->min_longitude);
+    } else {
+        this->min_longitude = - M_PI;
+        this->max_longitude =   M_PI;
+    }
+}
+
+bool Camera::is_valid_longitude(double longitude) {
+    #define BETWEEN(x) ((x) >= this->min_longitude && (x) <= this->max_longitude)
+    return BETWEEN(longitude) || BETWEEN(longitude + 2 * M_PI);
+    #undef BETWEEN
 }
 
 void Camera::draw_mask(const rapidjson::Value & masks, MaskType mask_type) {
@@ -202,7 +220,10 @@ std::vector<cv::Point2d> Camera::obj_to_image(const std::vector<cv::Point2d> & l
 
     // compute
     for(auto & xyz: xyzs) {
-        auto p = obj_to_image_single(sphere_xyz_to_lonlat(xyz));
+        auto ll = sphere_xyz_to_lonlat(xyz);
+        cv::Point2d p = cv::Point2d(NAN, NAN);
+        if(is_valid_longitude(ll.x))
+            p = obj_to_image_single(ll);
         if(p.x >= 0 && p.x < 1 && p.y >= 0 && p.y < 1) {
             if(!this->exclude_mask.empty()) {
                 int W = p.x * this->exclude_mask.cols;
