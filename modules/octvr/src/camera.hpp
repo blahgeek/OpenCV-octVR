@@ -1,8 +1,8 @@
 /* 
 * @Author: BlahGeek
 * @Date:   2015-10-20
-* @Last Modified by:   StrayWarrior
-* @Last Modified time: 2016-03-12
+* @Last Modified by:   BlahGeek
+* @Last Modified time: 2016-03-14
 */
 
 #ifndef VR_LIBMAP_CAMERA_H
@@ -30,9 +30,15 @@ class NotImplemented: std::exception {};
 
 // x轴向右
 // y轴向上
-// z轴向外
+// z轴向内
+// 左手坐标系
 // 从里向外看
 // x轴指向为equirectangular图像中心
+// 同hugin
+
+// (0, 0, 1) 为经纬度(-PI/2, 0)
+// (0, 1, 0) 为经纬度(*, PI/2)
+// (1, 0, 0) 为经纬度(0, 0)
 
 /**
  * Camera model

@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-11-03
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-02-28
+* @Last Modified time: 2016-03-14
 */
 
 #include "./fullframe_fisheye_cam.hpp"
@@ -189,12 +189,12 @@ cv::Point2d FullFrameFisheyeCamera::obj_to_image_single(const cv::Point2d & lonl
 
     double s = cos(lat) * cos(lon);
     double v1 = sin(lat);
-    double v0 = cos(lat) * sin(lon);
+    double v0 = - cos(lat) * sin(lon);
     double r = sqrt(v0 * v0 + v1 * v1);
     double theta = atan2(r, s);
     double distance = double(this->size.width) / (this->hfov);
 
-    double x = (theta * v0 / r) * distance;
+    double x = - (theta * v0 / r) * distance;
     double y = - (theta * v1 / r) * distance;
     // double y = - (theta * v1 / r) / (this->hfov / double(size.width) * double(size.height) * 0.5);
 

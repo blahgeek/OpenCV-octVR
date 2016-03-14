@@ -1,8 +1,8 @@
 /* 
 * @Author: BlahGeek
 * @Date:   2015-10-20
-* @Last Modified by:   StrayWarrior
-* @Last Modified time: 2016-03-12
+* @Last Modified by:   BlahGeek
+* @Last Modified time: 2016-03-14
 */
 
 #include "./camera.hpp"
@@ -47,9 +47,9 @@ std::unique_ptr<Camera> Camera::New(const std::string & type, const rapidjson::V
 Camera::Camera(const rapidjson::Value & options) {
     this->rotate_vector = std::vector<double>({0, 0, 0});
     if(options.HasMember("rotation")) {
-        this->rotate_vector[0] = options["rotation"]["roll"].GetDouble();
-        this->rotate_vector[1] = options["rotation"]["yaw"].GetDouble();
-        this->rotate_vector[2] = options["rotation"]["pitch"].GetDouble();
+        this->rotate_vector[0] =   options["rotation"]["roll"].GetDouble();
+        this->rotate_vector[1] = - options["rotation"]["yaw"].GetDouble();
+        this->rotate_vector[2] = - options["rotation"]["pitch"].GetDouble();
     }
 
     cv::Mat rotate_x, rotate_y, rotate_z;
@@ -166,7 +166,7 @@ void Camera::draw_mask(const rapidjson::Value & masks, MaskType mask_type) {
 
 cv::Point2d Camera::sphere_xyz_to_lonlat(const cv::Point3d & xyz) {
     auto p = xyz * (1.0 / cv::norm(xyz));
-    return cv::Point2d(atan2(p.z, p.x), asin(p.y));
+    return cv::Point2d(atan2(-p.z, p.x), asin(p.y));
 }
 
 cv::Point3d Camera::sphere_lonlat_to_xyz(const cv::Point2d & lonlat) {
@@ -174,7 +174,7 @@ cv::Point3d Camera::sphere_lonlat_to_xyz(const cv::Point2d & lonlat) {
     auto lat = lonlat.y;
     return cv::Point3d(cos(lon) * cos(lat),
                        sin(lat),
-                       sin(lon) * cos(lat));
+                       -sin(lon) * cos(lat));
 }
 
 void Camera::sphere_rotate(std::vector<cv::Point3d> & points, bool reverse) {
