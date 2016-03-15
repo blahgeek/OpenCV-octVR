@@ -61,10 +61,10 @@ Camera::Camera(const rapidjson::Value & options) {
 
     this->rotate_matrix = (rotate_x * rotate_z) * rotate_y;
 
-    if(options.HasMember("rotation-matrix")) {
+    if(options.HasMember("rotation_matrix")) {
         for(int h = 0 ; h < 3 ; h += 1)
             for(int w = 0 ; w < 3 ; w += 1)
-                this->rotate_matrix.at<double>(h, w) = options["rotation-matrix"][h * 3 + w].GetDouble();
+                this->rotate_matrix.at<double>(h, w) = options["rotation_matrix"][h * 3 + w].GetDouble();
     }
 
     auto prepare_exclude_mask = [&, this](cv::Scalar initial_val) {
@@ -119,6 +119,26 @@ Camera::Camera(const rapidjson::Value & options) {
         prepare_include_mask(0);  // include none
         this->draw_mask(options["include_masks"], MaskType::include);  //Hugin's "include_mask"
     }
+
+    if(options.HasMember("longitude_selection")) {
+        // max_longitude can be larger than PI
+        // to allow ranges like [PI/2, M_PI] + [-PI, -PI/2]
+        // which can be [PI/2, PI/2*3]
+        this->min_longitude = options["longitude_selection"][0].GetDouble();
+        this->max_longitude = options["longitude_selection"][1].GetDouble();
+        CV_Assert(this->max_longitude > this->min_longitude);
+    } else {
+        this->min_longitude = - M_PI;
+        this->max_longitude =   M_PI;
+    }
+}
+
+bool Camera::is_valid_longitude(double longitude) {
+    #define BETWEEN(x) ((x) >= this->min_longitude && (x) <= this->max_longitude)
+    return BETWEEN(longitude) 
+        || BETWEEN(longitude + 2 * M_PI) || BETWEEN(longitude - 2 * M_PI) 
+        || BETWEEN(longitude + 4 * M_PI) || BETWEEN(longitude - 4 * M_PI);
+    #undef BETWEEN
 }
 
 void Camera::draw_mask(const rapidjson::Value & masks, MaskType mask_type) {
@@ -191,8 +211,11 @@ std::vector<cv::Point2d> Camera::obj_to_image(const std::vector<cv::Point2d> & l
     // convert lon/lat to xyz in sphere
     std::vector<cv::Point3d> xyzs;
     xyzs.reserve(lonlats.size());
-    for(auto & ll: lonlats)
+    std::vector<bool> lonlats_valid;
+    for(auto & ll: lonlats) {
         xyzs.push_back(sphere_lonlat_to_xyz(ll));
+        lonlats_valid.push_back(is_valid_longitude(ll.x));
+    }
     // rotate it
     sphere_rotate(xyzs, false);
 
@@ -201,8 +224,11 @@ std::vector<cv::Point2d> Camera::obj_to_image(const std::vector<cv::Point2d> & l
     ret.reserve(lonlats.size());
 
     // compute
-    for(auto & xyz: xyzs) {
-        auto p = obj_to_image_single(sphere_xyz_to_lonlat(xyz));
+    for(size_t i = 0 ; i < xyzs.size() ; i += 1) {
+        auto ll = sphere_xyz_to_lonlat(xyzs[i]);
+        cv::Point2d p = cv::Point2d(NAN, NAN);
+        if(lonlats_valid[i])
+            p = obj_to_image_single(ll);
         if(p.x >= 0 && p.x < 1 && p.y >= 0 && p.y < 1) {
             if(!this->exclude_mask.empty()) {
                 int W = p.x * this->exclude_mask.cols;

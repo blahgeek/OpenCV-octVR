@@ -47,8 +47,16 @@ class Camera {
 protected:
     std::vector<double> rotate_vector;
     cv::Mat rotate_matrix;
+
+    // masks is only used for inputs (aka obj_to_image)
     cv::Mat exclude_mask;
     cv::Mat include_mask;
+
+    // 适用于类JUMP相机的拼接，每个相机为equirectangular中的一竖条
+    // 这两个数是旋转后的参数，也就是说每个相机应该是不一样的
+    double min_longitude, max_longitude;
+
+    bool is_valid_longitude(double longitude);
 
 protected:
     cv::Point2d sphere_xyz_to_lonlat(const cv::Point3d & xyz);
