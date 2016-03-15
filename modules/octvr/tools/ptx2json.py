@@ -215,7 +215,7 @@ class PTXParser:
 
 if __name__ == '__main__':
     parser = PTXParser()
-    with open(sys.argv[1]) as f:
+    with open(sys.argv[1], encoding='utf-8') as f:
         for line in f:
             parser.process_line(line)
     parser.process_stack_masks()
