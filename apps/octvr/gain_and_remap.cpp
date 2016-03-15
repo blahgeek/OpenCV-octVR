@@ -72,7 +72,7 @@ int main(int argc, char const *argv[]) {
 
     // scale
     double working_scale = sqrt(WORKING_MEGAPIX * 1e6 / stitch_template.out_size.area());
-    if(working_scale < 1.0)
+    if(working_scale > 1.0)
         working_scale = 1.0;
     std::vector<cv::Rect> scaled_rois;
     for(auto & in: stitch_template.inputs)
