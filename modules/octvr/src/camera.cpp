@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-20
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-03-14
+* @Last Modified time: 2016-03-15
 */
 
 #include "./camera.hpp"
@@ -20,6 +20,7 @@
 #include "./cameras/eqareanorthpole.hpp"
 #include "./cameras/eqareasouthpole.hpp"
 #include "./cameras/ocam_fisheye.hpp"
+#include "./cameras/perspective.hpp"
 
 using namespace vr;
 
@@ -30,6 +31,7 @@ std::unique_ptr<Camera> Camera::New(const std::string & type, const rapidjson::V
     if(false){}
 
     X("normal", Normal)
+    X("perspective", PerspectiveCamera)
     X("pinhole", PinholeCamera)
     X("fisheye", FisheyeCamera)
     X("equirectangular", Equirectangular)
