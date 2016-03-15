@@ -71,7 +71,9 @@ int main(int argc, char const *argv[]) {
                   cv::INTER_LINEAR);
 
     // scale
-    double working_scale = std::min(1.0, sqrt(WORKING_MEGAPIX * 1e6 / stitch_template.out_size.area()));
+    double working_scale = sqrt(WORKING_MEGAPIX * 1e6 / stitch_template.out_size.area());
+    if(working_scale < 1.0)
+        working_scale = 1.0;
     std::vector<cv::Rect> scaled_rois;
     for(auto & in: stitch_template.inputs)
         scaled_rois.emplace_back(in.roi.x * working_scale, 
