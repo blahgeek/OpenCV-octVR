@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-20
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-03-05
+* @Last Modified time: 2016-03-15
 */
 
 #include "./camera.hpp"
@@ -19,6 +19,8 @@
 #include "./cameras/cubic.hpp"
 #include "./cameras/eqareanorthpole.hpp"
 #include "./cameras/eqareasouthpole.hpp"
+#include "./cameras/ocam_fisheye.hpp"
+#include "./cameras/perspective.hpp"
 
 using namespace vr;
 
@@ -29,10 +31,12 @@ std::unique_ptr<Camera> Camera::New(const std::string & type, const rapidjson::V
     if(false){}
 
     X("normal", Normal)
+    X("perspective", PerspectiveCamera)
     X("pinhole", PinholeCamera)
     X("fisheye", FisheyeCamera)
     X("equirectangular", Equirectangular)
     X("fullframe_fisheye", FullFrameFisheyeCamera)
+    X("ocam_fisheye", OCamFisheyeCamera)
     X("stupidoval", StupidOval)
     X("cubic", Cubic)
     X("eqareanorthpole", Eqareanorthpole)
@@ -45,9 +49,9 @@ std::unique_ptr<Camera> Camera::New(const std::string & type, const rapidjson::V
 Camera::Camera(const rapidjson::Value & options) {
     this->rotate_vector = std::vector<double>({0, 0, 0});
     if(options.HasMember("rotation")) {
-        this->rotate_vector[0] = options["rotation"]["roll"].GetDouble();
-        this->rotate_vector[1] = options["rotation"]["yaw"].GetDouble();
-        this->rotate_vector[2] = options["rotation"]["pitch"].GetDouble();
+        this->rotate_vector[0] =   options["rotation"]["roll"].GetDouble();
+        this->rotate_vector[1] = - options["rotation"]["yaw"].GetDouble();
+        this->rotate_vector[2] = - options["rotation"]["pitch"].GetDouble();
     }
 
     cv::Mat rotate_x, rotate_y, rotate_z;
@@ -59,6 +63,12 @@ Camera::Camera(const rapidjson::Value & options) {
 
     this->rotate_matrix = (rotate_x * rotate_z) * rotate_y;
 
+    if(options.HasMember("rotation_matrix")) {
+        for(int h = 0 ; h < 3 ; h += 1)
+            for(int w = 0 ; w < 3 ; w += 1)
+                this->rotate_matrix.at<double>(h, w) = options["rotation_matrix"][h * 3 + w].GetDouble();
+    }
+
     auto prepare_exclude_mask = [&, this](cv::Scalar initial_val) {
         int width = options["width"].GetInt();
         int height = options["height"].GetInt();
@@ -68,6 +78,18 @@ Camera::Camera(const rapidjson::Value & options) {
         } else {
             CV_Assert(this->exclude_mask.cols == width);
             CV_Assert(this->exclude_mask.rows == height);
+        }
+    };
+
+    auto prepare_include_mask = [&, this](cv::Scalar initial_val) {
+        int width = options["width"].GetInt();
+        int height = options["height"].GetInt();
+        if(this->include_mask.empty()) {
+            this->include_mask = cv::Mat(height, width, CV_8U);
+            this->include_mask.setTo(initial_val);
+        } else {
+            CV_Assert(this->include_mask.cols == width);
+            CV_Assert(this->include_mask.rows == height);
         }
     };
 
@@ -90,12 +112,38 @@ Camera::Camera(const rapidjson::Value & options) {
     }
 
     if(options.HasMember("exclude_masks")) {
-        prepare_exclude_mask(0);  // exclude all
-        this->drawExcludeMask(options["exclude_masks"]);
+        prepare_exclude_mask(0);  // exclude none
+        prepare_include_mask(0);  // include none
+        this->draw_mask(options["exclude_masks"], MaskType::exclude);  //PTGui's "exclude_mask" also has "include_mask"
+    }
+
+    if(options.HasMember("include_masks")) {
+        prepare_include_mask(0);  // include none
+        this->draw_mask(options["include_masks"], MaskType::include);  //Hugin's "include_mask"
+    }
+
+    if(options.HasMember("longitude_selection")) {
+        // max_longitude can be larger than PI
+        // to allow ranges like [PI/2, M_PI] + [-PI, -PI/2]
+        // which can be [PI/2, PI/2*3]
+        this->min_longitude = options["longitude_selection"][0].GetDouble();
+        this->max_longitude = options["longitude_selection"][1].GetDouble();
+        CV_Assert(this->max_longitude > this->min_longitude);
+    } else {
+        this->min_longitude = - M_PI;
+        this->max_longitude =   M_PI;
     }
 }
 
-void Camera::drawExcludeMask(const rapidjson::Value & masks) {
+bool Camera::is_valid_longitude(double longitude) {
+    #define BETWEEN(x) ((x) >= this->min_longitude && (x) <= this->max_longitude)
+    return BETWEEN(longitude) 
+        || BETWEEN(longitude + 2 * M_PI) || BETWEEN(longitude - 2 * M_PI) 
+        || BETWEEN(longitude + 4 * M_PI) || BETWEEN(longitude - 4 * M_PI);
+    #undef BETWEEN
+}
+
+void Camera::draw_mask(const rapidjson::Value & masks, MaskType mask_type) {
     for(auto area = masks.Begin() ; area != masks.End() ; area ++) {
         std::string area_type = (*area)["type"].GetString();
         if(area_type == "polygonal") {
@@ -106,8 +154,17 @@ void Camera::drawExcludeMask(const rapidjson::Value & masks) {
             std::vector<cv::Point2i> points;
             for(int i = 0 ; i < args.size() ; i += 2)
                 points.emplace_back(int(args[i]), int(args[i+1]));
-            cv::fillPoly(this->exclude_mask, 
-                         std::vector<std::vector<cv::Point2i>>({points}), 255);
+            switch (mask_type)
+            {
+                case MaskType::include:
+                    cv::fillPoly(this->include_mask, 
+                                 std::vector<std::vector<cv::Point2i>>({points}), 255);
+                    break;
+                case MaskType::exclude:
+                    cv::fillPoly(this->exclude_mask, 
+                                 std::vector<std::vector<cv::Point2i>>({points}), 255);
+                    break;
+            }
         }
         else if(area_type == "png") {
             std::cerr << "Drawing PNG image mask... " << std::endl;
@@ -122,6 +179,7 @@ void Camera::drawExcludeMask(const rapidjson::Value & masks) {
             cv::split(mask_img, mask_img_channels);
 
             this->exclude_mask.setTo(255, mask_img_channels[2]); // RED channel
+            this->include_mask.setTo(255, mask_img_channels[1]); // GREEN channel
         }
         else
             assert(false);
@@ -130,7 +188,7 @@ void Camera::drawExcludeMask(const rapidjson::Value & masks) {
 
 cv::Point2d Camera::sphere_xyz_to_lonlat(const cv::Point3d & xyz) {
     auto p = xyz * (1.0 / cv::norm(xyz));
-    return cv::Point2d(-atan2(p.z, p.x), asin(p.y));
+    return cv::Point2d(atan2(-p.z, p.x), asin(p.y));
 }
 
 cv::Point3d Camera::sphere_lonlat_to_xyz(const cv::Point2d & lonlat) {
@@ -155,8 +213,11 @@ std::vector<cv::Point2d> Camera::obj_to_image(const std::vector<cv::Point2d> & l
     // convert lon/lat to xyz in sphere
     std::vector<cv::Point3d> xyzs;
     xyzs.reserve(lonlats.size());
-    for(auto & ll: lonlats)
+    std::vector<bool> lonlats_valid;
+    for(auto & ll: lonlats) {
         xyzs.push_back(sphere_lonlat_to_xyz(ll));
+        lonlats_valid.push_back(is_valid_longitude(ll.x));
+    }
     // rotate it
     sphere_rotate(xyzs, false);
 
@@ -165,8 +226,11 @@ std::vector<cv::Point2d> Camera::obj_to_image(const std::vector<cv::Point2d> & l
     ret.reserve(lonlats.size());
 
     // compute
-    for(auto & xyz: xyzs) {
-        auto p = obj_to_image_single(sphere_xyz_to_lonlat(xyz));
+    for(size_t i = 0 ; i < xyzs.size() ; i += 1) {
+        auto ll = sphere_xyz_to_lonlat(xyzs[i]);
+        cv::Point2d p = cv::Point2d(NAN, NAN);
+        if(lonlats_valid[i])
+            p = obj_to_image_single(ll);
         if(p.x >= 0 && p.x < 1 && p.y >= 0 && p.y < 1) {
             if(!this->exclude_mask.empty()) {
                 int W = p.x * this->exclude_mask.cols;
@@ -176,6 +240,39 @@ std::vector<cv::Point2d> Camera::obj_to_image(const std::vector<cv::Point2d> & l
             }
         }
         ret.push_back(p);
+    }
+
+    return ret;
+}
+
+std::vector<bool> Camera::get_include_mask(const std::vector<cv::Point2d> & lonlats) {
+    if (this->include_mask.empty())
+        return std::vector<bool>();
+    // convert lon/lat to xyz in sphere
+    std::vector<cv::Point3d> xyzs;
+    xyzs.reserve(lonlats.size());
+    for(auto & ll: lonlats)
+        xyzs.push_back(sphere_lonlat_to_xyz(ll));
+    // rotate it
+    sphere_rotate(xyzs, false);
+
+    // prepare for return value
+    std::vector<bool> ret;
+    ret.reserve(lonlats.size());
+
+    // compute
+    for(auto & xyz: xyzs) {
+        auto p = obj_to_image_single(sphere_xyz_to_lonlat(xyz));
+        bool p_visible = false;
+        if(p.x >= 0 && p.x < 1 && p.y >= 0 && p.y < 1) {
+            if(!this->exclude_mask.empty()) {
+                int W = p.x * this->exclude_mask.cols;
+                int H = p.y * this->exclude_mask.rows;
+                if(this->include_mask.at<unsigned char>(H, W))
+                    p_visible = true;
+            }
+        }
+        ret.push_back(p_visible);
     }
 
     return ret;

@@ -1,8 +1,8 @@
 /* 
 * @Author: BlahGeek
 * @Date:   2015-10-13
-* @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-03-08
+* @Last Modified by:   StrayWarrior
+* @Last Modified time: 2016-03-12
 */
 
 #ifndef VR_LIBMAP_BASE_H
@@ -54,6 +54,7 @@ public:
     std::vector<Input> overlay_inputs;
 
     std::vector<cv::Mat> seam_masks;  // only for inputs (not overlay_inputs)
+    std::vector<bool> visible_mask; // only used in dumper (for green mask of PTGui)
 
 public:
     // Create new template

@@ -11,27 +11,58 @@ import base64
 
 deg_to_rad = lambda s: float(s) / 180.0 * 3.1415926
 
+# Support the concept "stack" of Hugin.
+class stack:
+    
+    def __init__(self, _member=[]):
+        self.member = _member    # numbers of the input lens
+        self.include_masks = []
+        self.exclude_masks = []
+    
+    def find(self, i):
+        if i in self.member:
+            return True
+        else:
+            return False
+    
+    def insert(self, i):
+        if not self.find(i):
+            self.member.append(i)
+
+
 # Support .pts(PTGui project file) and .pto(Hugin project file)
 class PTXParser:
 
     def __init__(self):
         self.inputs = []
         self.processing_input = dict()
+        self.input_stacks = []
 
     def process_input_line(self, line):
         fields = line.strip().split(' ')
+        refer_num = -1
         for field in fields:
             match = re.match(r'([a-zA-Z]+)(.+)', field)
             if match is None:
                 continue
             key, val = match.groups()
             if val[0] == '=':
+                if key == 'j':  # FIXME: In fact I don't know what "j" exactly means...
+                    refer_num = int(val[1:])
                 val = self.inputs[int(val[1:])][key]
             self.processing_input[key] = val
 
         if 'S' in self.processing_input:  # selection from hugin
             self.processing_input['selection'] = list(map(int, self.processing_input['S'].split(',')))
             del self.processing_input['S']
+
+        if refer_num > -1:
+            for s in self.input_stacks:
+                if (s.find(refer_num)):
+                    s.insert(len(self.inputs))
+                    break
+        else:
+            self.input_stacks.append(stack([len(self.inputs)]))
 
         self.inputs.append(self.processing_input)
         self.processing_input = dict()
@@ -41,13 +72,55 @@ class PTXParser:
         match = re.match(r'k i(\d+) t(\d+) p"(.*)"', line.strip())
         if match is None:
             return
-        assert match.group(2) == '0', "Currently only support negative hugin mask"
-        img = self.inputs[int(match.group(1))]
-        img.setdefault('exclude_masks', list())
-        img['exclude_masks'].append({
-            'type': 'polygonal',
-            'args': list(map(float, match.group(3).split(' ')))
-        })
+        #assert match.group(2) == '0', "Currently only support negative hugin mask"
+        mask_type = match.group(2)
+        img_index = int(match.group(1))
+        img = self.inputs[img_index]
+        if (mask_type == '0'):
+            # Hugin exclude mask
+            img.setdefault('exclude_masks', list())
+            img['exclude_masks'].append({
+                'type': 'polygonal',
+                'args': list(map(float, match.group(3).split(' ')))
+            })
+        elif (mask_type == '1'):
+            # Hugin include mask
+            img.setdefault('include_masks', list())
+            img['include_masks'].append({
+                'type': 'polygonal',
+                'args': list(map(float, match.group(3).split(' ')))
+            })
+        elif (mask_type == '2'):
+            # Hugin exclude-from-stack mask
+            for s in self.input_stacks:
+                if img_index in s.member:
+                    s.exclude_masks.append({
+                        'type': 'polygonal',
+                        'args': list(map(float, match.group(3).split(' ')))
+                    })
+                    break
+        elif (mask_type == '3'):
+            # Hugin include-from-stack mask
+            for s in self.input_stacks:
+                if img_index in s.member:
+                    s.include_masks.append({
+                        'type': 'polygonal',
+                        'args': list(map(float, match.group(3).split(' ')))
+                    })
+                    break
+                    
+    def process_stack_masks(self):
+        for s in self.input_stacks:
+            if len(s.include_masks) > 0:
+                for i in s.member:
+                    img = self.inputs[i]
+                    img.setdefault('include_masks', list())
+                    img['include_masks'] += s.include_masks
+            if len(s.exclude_masks) > 0:
+                for i in s.member:
+                    img = self.inputs[i]
+                    img.setdefault('exclude_masks', list())
+                    img['exclude_masks'] += s.exclude_masks
 
     def process_input_meta_dummyimage(self, args):
         self.processing_input['dummyimage'] = True
@@ -126,12 +199,12 @@ class PTXParser:
                 "height": int(img["h"]),
                 "rotation": {
                    "roll": deg_to_rad(img["r"]),
-                   "yaw": -deg_to_rad(img["y"]),
-                   "pitch": -deg_to_rad(img["p"]),
+                   "yaw": deg_to_rad(img["y"]),
+                   "pitch": deg_to_rad(img["p"]),
                 }
             })
 
-            for key in ('circular_crop', 'exclude_masks', 'selection'):
+            for key in ('circular_crop', 'exclude_masks', 'include_masks', 'selection'):
                 if key in img:
                     options[key] = img[key]
             yield {
@@ -142,9 +215,10 @@ class PTXParser:
 
 if __name__ == '__main__':
     parser = PTXParser()
-    with open(sys.argv[1]) as f:
+    with open(sys.argv[1], encoding='utf-8') as f:
         for line in f:
             parser.process_line(line)
+    parser.process_stack_masks()
     print(json.dumps({
             "output": {
                 "type": "equirectangular",

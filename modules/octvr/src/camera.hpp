@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-20
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-02-21
+* @Last Modified time: 2016-03-14
 */
 
 #ifndef VR_LIBMAP_CAMERA_H
@@ -24,7 +24,21 @@
 
 namespace vr {
 
+enum class MaskType {include, exclude};
+
 class NotImplemented: std::exception {};
+
+// x轴向右
+// y轴向上
+// z轴向内
+// 左手坐标系
+// 从里向外看
+// x轴指向为equirectangular图像中心
+// 同hugin
+
+// (0, 0, 1) 为经纬度(-PI/2, 0)
+// (0, 1, 0) 为经纬度(*, PI/2)
+// (1, 0, 0) 为经纬度(0, 0)
 
 /**
  * Camera model
@@ -33,7 +47,16 @@ class Camera {
 protected:
     std::vector<double> rotate_vector;
     cv::Mat rotate_matrix;
+
+    // masks is only used for inputs (aka obj_to_image)
     cv::Mat exclude_mask;
+    cv::Mat include_mask;
+
+    // 适用于类JUMP相机的拼接，每个相机为equirectangular中的一竖条
+    // 这两个数是旋转后的参数，也就是说每个相机应该是不一样的
+    double min_longitude, max_longitude;
+
+    bool is_valid_longitude(double longitude);
 
 protected:
     cv::Point2d sphere_xyz_to_lonlat(const cv::Point3d & xyz);
@@ -41,7 +64,7 @@ protected:
 
     void sphere_rotate(std::vector<cv::Point3d> & points, bool reverse);
 
-    void drawExcludeMask(const rapidjson::Value & masks);
+    void draw_mask(const rapidjson::Value & masks, MaskType mask_type);
 
 public:
     /**
@@ -81,6 +104,12 @@ public:
      * Map object points to image points
      */
     virtual std::vector<cv::Point2d> obj_to_image(const std::vector<cv::Point2d> & lonlats);
+    
+    /**
+     * Get points that are forced to be visible after blending.
+     * TODO: I cannot think out a more elegant way to do this...
+     */
+    virtual std::vector<bool> get_include_mask(const std::vector<cv::Point2d> & lonlats);
 
     /**
      * Map image points to object points
