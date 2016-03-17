@@ -12,4 +12,4 @@ if __name__ == '__main__':
             'inputs': [data['output'], ],
             'output': data['inputs'][i]
         }
-        json.dump(new_data, open(sys.argv[1] + '_{}.json'.format(i), 'w'), indent=4)
+        json.dump(new_data, open(sys.argv[1] + '_{}.json'.format(i + 1), 'w'), indent=4)
