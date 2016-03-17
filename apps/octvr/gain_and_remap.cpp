@@ -111,10 +111,6 @@ int main(int argc, char const *argv[]) {
                   r_template.inputs[0].map2 * stitch_template.out_size.height,
                   cv::INTER_LINEAR, cv::BORDER_WRAP);
 
-        cv::UMat orig_gain_map_uchar;
-        orig_gain_map.convertTo(orig_gain_map_uchar, CV_8U, 255.0);
-        save_image(argv[i - stitch_template.inputs.size()], ".gainmap.png", orig_gain_map_uchar);
-
         cv::Mat_<float> gain = orig_gain_map.getMat(cv::ACCESS_READ);
         cv::Mat image = src_images[i].getMat(cv::ACCESS_RW);
         for (int y = 0; y < image.rows; ++y) {
