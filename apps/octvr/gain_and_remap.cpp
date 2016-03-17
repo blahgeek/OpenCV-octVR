@@ -25,7 +25,7 @@ using namespace vr;
 
 int main(int argc, char const *argv[]) {
     if(argc < 4) {
-        std::cerr << "Usage: " << argv[0] << " stitch.dat img0.bmp ... rmap0.dat ... map0.dat ..." << std::endl;
+        std::cerr << "Usage: " << argv[0] << " stitch.dat img0.png ... rmap0.dat ... map0.dat ..." << std::endl;
         return 1;
     }
 
@@ -51,7 +51,7 @@ int main(int argc, char const *argv[]) {
     // load stitching template
     MapperTemplate stitch_template = load_template(argv[1]);
     std::cerr << stitch_template.inputs.size() << " images found" << std::endl;
-    CV_Assert(argc - 2 == stitch_template.inputs.size() / 3);
+    CV_Assert(argc - 2 == stitch_template.inputs.size() * 3);
 
     argv += 2;
 
@@ -135,7 +135,7 @@ int main(int argc, char const *argv[]) {
                   output_template.inputs[0].map1 * src_images[i].cols,
                   output_template.inputs[0].map2 * src_images[i].rows,
                   cv::INTER_LINEAR);
-        save_image(argv[i - 2 * stitch_template.inputs.size()], ".defish.bmp", remapped);
+        save_image(argv[i - 2 * stitch_template.inputs.size()], ".defish.png", remapped);
     }
 
     /* code */
