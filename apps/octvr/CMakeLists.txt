@@ -4,7 +4,7 @@ if(NOT OCV_DEPENDENCIES_FOUND)
    return()
 endif()
 
-ocv_include_modules_recurse(opencv_octvr)
+ocv_include_modules_recurse(opencv_octvr opencv_stitching)
 
 ocv_add_executable(octvr_dump dump.cpp)
 ocv_add_executable(octvr_map map.cpp)

@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2016-03-15
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-03-15
+* @Last Modified time: 2016-03-17
 */
 
 #include <iostream>
@@ -25,7 +25,7 @@ using namespace vr;
 
 int main(int argc, char const *argv[]) {
     if(argc < 4) {
-        std::cerr << "Usage: " << argv[0] << " stitch.dat img0.bmp ... map0.dat ..." << std::endl;
+        std::cerr << "Usage: " << argv[0] << " stitch.dat img0.bmp ... rmap0.dat ... map0.dat ..." << std::endl;
         return 1;
     }
 
@@ -51,7 +51,7 @@ int main(int argc, char const *argv[]) {
     // load stitching template
     MapperTemplate stitch_template = load_template(argv[1]);
     std::cerr << stitch_template.inputs.size() << " images found" << std::endl;
-    assert(argc - 2 == stitch_template.inputs.size() / 2);
+    CV_Assert(argc - 2 == stitch_template.inputs.size() / 3);
 
     argv += 2;
 
@@ -91,21 +91,55 @@ int main(int argc, char const *argv[]) {
     }
 
     // exposure!
-    auto exposure_compensator = cv::detail::ExposureCompensator::createDefault(cv::detail::ExposureCompensator::GAIN);
+    auto exposure_compensator = cv::detail::ExposureCompensator::createDefault(cv::detail::ExposureCompensator::GAIN_BLOCKS);
     exposure_compensator->feed(scaled_corners, scaled_stitch_remap_images, scaled_masks);
-    auto gains = dynamic_cast<cv::detail::GainCompensator *>(exposure_compensator.get())->gains();
+    auto gain_maps = dynamic_cast<cv::detail::BlocksGainCompensator *>(exposure_compensator.get())->getGainMaps();
+
+    // apply gains
+    for(size_t i = 0 ; i < stitch_template.inputs.size() ; i += 1) {
+        auto r_template = load_template(argv[i]);
+        CV_Assert(r_template.inputs.size() == 1);
+        CV_Assert(r_template.out_size == src_images[i].size());
+
+        cv::UMat full_gain_map(stitch_template.out_size, CV_32F);
+        full_gain_map.setTo(0);
+        cv::resize(gain_maps[i], full_gain_map(stitch_template.inputs[i].roi), 
+                   stitch_template.inputs[i].roi.size(), 0, 0, cv::INTER_LINEAR);
+        cv::UMat orig_gain_map;
+        cv::remap(full_gain_map, orig_gain_map,
+                  r_template.inputs[0].map1 * stitch_template.out_size.width,
+                  r_template.inputs[0].map2 * stitch_template.out_size.height,
+                  cv::INTER_LINEAR, cv::BORDER_WRAP);
+
+        cv::UMat orig_gain_map_uchar;
+        orig_gain_map.convertTo(orig_gain_map_uchar, CV_8U, 255.0);
+        save_image(argv[i - stitch_template.inputs.size()], ".gainmap.png", orig_gain_map_uchar);
+
+        cv::Mat_<float> gain = orig_gain_map.getMat(cv::ACCESS_READ);
+        cv::Mat image = src_images[i].getMat(cv::ACCESS_RW);
+        for (int y = 0; y < image.rows; ++y) {
+            const float* gain_row = gain.ptr<float>(y);
+            cv::Point3_<uchar>* row = image.ptr<cv::Point3_<uchar> >(y);
+            for (int x = 0; x < image.cols; ++x) {
+                row[x].x = cv::saturate_cast<uchar>(row[x].x * gain_row[x]);
+                row[x].y = cv::saturate_cast<uchar>(row[x].y * gain_row[x]);
+                row[x].z = cv::saturate_cast<uchar>(row[x].z * gain_row[x]);
+            }
+        }
+    }
+
+    argv += stitch_template.inputs.size();
 
     // output
     for(size_t i = 0 ; i < stitch_template.inputs.size() ; i += 1) {
         auto output_template = load_template(argv[i]);
-        assert(output_template.inputs.size() == 1);
+        CV_Assert(output_template.inputs.size() == 1);
         cv::UMat remapped;
         cv::remap(src_images[i], remapped,
                   output_template.inputs[0].map1 * src_images[i].cols,
                   output_template.inputs[0].map2 * src_images[i].rows,
                   cv::INTER_LINEAR);
-        exposure_compensator->apply(i, scaled_corners[i], remapped, cv::UMat());
-        save_image(argv[i - stitch_template.inputs.size()], ".defish.bmp", remapped);
+        save_image(argv[i - 2 * stitch_template.inputs.size()], ".defish.bmp", remapped);
     }
 
     /* code */

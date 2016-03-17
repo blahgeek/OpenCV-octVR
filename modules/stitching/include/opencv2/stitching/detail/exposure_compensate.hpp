@@ -146,6 +146,7 @@ public:
     void feed(const std::vector<Point> &corners, const std::vector<UMat> &images,
               const std::vector<std::pair<UMat,uchar> > &masks);
     void apply(int index, Point corner, InputOutputArray image, InputArray mask);
+    std::vector<UMat> getGainMaps() { return gain_maps_; }
 
 private:
     int bl_width_, bl_height_;
