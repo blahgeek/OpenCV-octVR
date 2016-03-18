@@ -1,8 +1,8 @@
-/* 
+/*
 * @Author: BlahGeek
 * @Date:   2016-02-23
-* @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-03-06
+* @Last Modified by:   StrayWarrior
+* @Last Modified time: 2016-03-18
 */
 
 #include <iostream>
@@ -13,6 +13,37 @@
 #include <QCoreApplication>
 
 #include <assert.h>
+#include <sodium.h>
+
+static QString encryptArgString(QString _str) {
+#ifndef OWLLIVE_ENCRYPT_ARG
+    return _str;
+#else
+    // Modify the encrypt method here.
+    const unsigned char secret[] = {103, 246, 81, 250, 242, 200, 201, 94, 240,
+                                    238, 74, 26, 34, 3, 148, 59, 107, 95, 189,
+                                    173, 111, 120, 101, 65, 74, 154, 28, 96,
+                                    200, 247, 247, 52};
+    if (sodium_init() == -1) {
+        return QString();
+    }
+
+    const unsigned char * _str_cptr = reinterpret_cast<const unsigned char *>(_str.toStdString().c_str());
+    unsigned int _str_len = _str.length();
+    unsigned char nonce[crypto_secretbox_NONCEBYTES];
+    randombytes_buf(nonce, sizeof nonce);
+
+    unsigned int cipher_len = crypto_secretbox_MACBYTES + _str_len;
+    unsigned char * cipher_str = new unsigned char[cipher_len];
+
+    crypto_secretbox_easy(cipher_str, _str_cptr, _str_len, nonce, secret);
+
+    QString ret = QString::fromUtf8(reinterpret_cast<const char *>(nonce), crypto_secretbox_NONCEBYTES);
+    ret.append(QString::fromUtf8(reinterpret_cast<const char *>(cipher_str), cipher_len));
+
+    return ret;
+#endif
+}
 
 Runner::Runner() {
     connect(&dumper_proc, static_cast<void(QProcess::*)(int, QProcess::ExitStatus)>(&QProcess::finished), this, &Runner::onDumperProcessFinished);
@@ -57,7 +88,7 @@ void Runner::start(QJsonDocument json_doc, int width,
                 << output_json_path;
 
     qDebug() << "Running dumper: " << dumper_args;
-    dumper_proc.start(QCoreApplication::applicationDirPath() + "/octvr_dump", 
+    dumper_proc.start(QCoreApplication::applicationDirPath() + "/octvr_dump",
                       dumper_args);
     emit statusChanged();
 }
@@ -74,6 +105,8 @@ void Runner::onDumperProcessFinished(int exitCode, QProcess::ExitStatus status) 
         return;
     }
     // run ffmpeg
+    // if necessary, encrypt the arguments
+    ffmpeg_args = encryptArgString(ffmpeg_args);
 
     QString _run = "\"" + QCoreApplication::applicationDirPath() + "/ffmpeg\""
                       + " " + ffmpeg_args;

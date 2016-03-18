@@ -25,6 +25,19 @@ find_package(Qt5MultimediaWidgets REQUIRED)
 ocv_include_modules_recurse(${OPENCV_LIVESTITCHING_DEPS})
 ocv_include_directories("${OpenCV_SOURCE_DIR}/include/opencv")
 
+option(OWLLIVE_ENCRYPT_ARG "Encrypt the arguments passed by OwlLive" OFF)
+if (OWLLIVE_ENCRYPT_ARG)
+    find_library(LIBSODIUM sodium)
+    find_path(LIBSODIUM_INC_DIR "sodium.h")
+    if (NOT LIBSODIUM OR NOT LIBSODIUM_INC_DIR)
+        message(FATAL_ERROR "libsodium not found")
+    endif()
+    add_definitions(-DOWLLIVE_ENCRYPT_ARG)
+    message("OwlLive arguments will be encrypted")
+else(OWLLIVE_ENCRYPT_ARG)
+    message("OwlLive arguments will not be encrypted")
+endif(OWLLIVE_ENCRYPT_ARG)
+
 ocv_add_executable(livestitching WIN32
                    main.cpp
                    mainwindow.cpp
@@ -37,6 +50,11 @@ ocv_add_executable(livestitching WIN32
                    icons.qrc
                    style.qrc
                    )
+
+if (OWLLIVE_ENCRYPT_ARG)
+    ocv_target_link_libraries(livestitching ${LIBSODIUM})
+    ocv_target_include_directories(livestitching ${LIBSODIUM_INC_DIR})
+endif(OWLLIVE_ENCRYPT_ARG)
 
 ocv_target_link_libraries(livestitching ${OPENCV_LIVESTITCHING_DEPS} ${QT_QTMAIN_LIBRARY})
 target_link_libraries(livestitching Qt5::Widgets Qt5::Multimedia Qt5::MultimediaWidgets)
