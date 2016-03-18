@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2016-03-15
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-03-17
+* @Last Modified time: 2016-03-18
 */
 
 #include <iostream>
@@ -51,9 +51,11 @@ int main(int argc, char const *argv[]) {
     // load stitching template
     MapperTemplate stitch_template = load_template(argv[1]);
     std::cerr << stitch_template.inputs.size() << " images found" << std::endl;
-    CV_Assert(argc - 2 == stitch_template.inputs.size() * 3);
+    CV_Assert(argc - 2 == stitch_template.inputs.size() * 3 ||
+              argc - 2 == stitch_template.inputs.size() * 2);
 
     argv += 2;
+    argc -= 2;
 
     // load sources
     std::vector<cv::UMat> src_images;
@@ -61,6 +63,7 @@ int main(int argc, char const *argv[]) {
         src_images.push_back(load_image(argv[i]));
 
     argv += stitch_template.inputs.size();
+    argc -= stitch_template.inputs.size();
 
     // remap
     std::vector<cv::UMat> stitch_remap_images(stitch_template.inputs.size());
@@ -125,18 +128,23 @@ int main(int argc, char const *argv[]) {
     }
 
     argv += stitch_template.inputs.size();
+    argc -= stitch_template.inputs.size();
 
     // output
-    for(size_t i = 0 ; i < stitch_template.inputs.size() ; i += 1) {
-        auto output_template = load_template(argv[i]);
-        CV_Assert(output_template.inputs.size() == 1);
-        cv::UMat remapped;
-        cv::remap(src_images[i], remapped,
-                  output_template.inputs[0].map1 * src_images[i].cols,
-                  output_template.inputs[0].map2 * src_images[i].rows,
-                  cv::INTER_LINEAR);
-        save_image(argv[i - 2 * stitch_template.inputs.size()], ".defish.png", remapped);
-    }
+    if(argc > 0)
+        for(size_t i = 0 ; i < stitch_template.inputs.size() ; i += 1) {
+            auto output_template = load_template(argv[i]);
+            CV_Assert(output_template.inputs.size() == 1);
+            cv::UMat remapped;
+            cv::remap(src_images[i], remapped,
+                      output_template.inputs[0].map1 * src_images[i].cols,
+                      output_template.inputs[0].map2 * src_images[i].rows,
+                      cv::INTER_LINEAR);
+            save_image(argv[i - 2 * stitch_template.inputs.size()], ".defish.png", remapped);
+        }
+    else
+        for(size_t i = 0 ; i < stitch_template.inputs.size() ; i += 1)
+            save_image(argv[i - 2 * stitch_template.inputs.size()], ".gain.png", src_images[i]);
 
     /* code */
     return 0;
