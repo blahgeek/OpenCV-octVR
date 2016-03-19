@@ -27,12 +27,23 @@ ocv_include_directories("${OpenCV_SOURCE_DIR}/include/opencv")
 
 option(OWLLIVE_ENCRYPT_ARG "Encrypt the arguments passed by OwlLive" OFF)
 if (OWLLIVE_ENCRYPT_ARG)
-    find_library(LIBSODIUM sodium)
-    find_path(LIBSODIUM_INC_DIR "sodium.h")
-    if (NOT LIBSODIUM OR NOT LIBSODIUM_INC_DIR)
+    # For safety, it must link to a static library.
+    if(WIN32)
+        find_library(LIBSODIUM libsodium
+                     NAMES libsodium.lib 
+                     PATHS ENV LIBPATH)
+    else()
+        find_library(LIBSODIUM sodium
+                     NAMES libsodium.a)
+    endif()
+    try_compile(HAVE_LIBSODIUM
+                "${OpenCV_BINARY_DIR}"
+                "${OpenCV_SOURCE_DIR}/cmake/checks/libsodium.cpp"
+                LINK_LIBRARIES libsodium)
+    if (NOT HAVE_LIBSODIUM)
         message(FATAL_ERROR "libsodium not found")
     endif()
-    add_definitions(-DOWLLIVE_ENCRYPT_ARG)
+    add_definitions(-DOWLLIVE_ENCRYPT_ARG -DSODIUM_STATIC)
     message("OwlLive arguments will be encrypted")
 else(OWLLIVE_ENCRYPT_ARG)
     message("OwlLive arguments will not be encrypted")
@@ -53,7 +64,7 @@ ocv_add_executable(livestitching WIN32
 
 if (OWLLIVE_ENCRYPT_ARG)
     ocv_target_link_libraries(livestitching ${LIBSODIUM})
-    ocv_target_include_directories(livestitching ${LIBSODIUM_INC_DIR})
+    #ocv_target_include_directories(livestitching ${LIBSODIUM_INC_DIR})
 endif(OWLLIVE_ENCRYPT_ARG)
 
 ocv_target_link_libraries(livestitching ${OPENCV_LIVESTITCHING_DEPS} ${QT_QTMAIN_LIBRARY})
