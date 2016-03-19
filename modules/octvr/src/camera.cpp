@@ -214,6 +214,7 @@ std::vector<cv::Point2d> Camera::obj_to_image(const std::vector<cv::Point2d> & l
     std::vector<cv::Point3d> xyzs;
     xyzs.reserve(lonlats.size());
     std::vector<bool> lonlats_valid;
+    lonlats_valid.reserve(lonlats.size());
     for(auto & ll: lonlats) {
         xyzs.push_back(sphere_lonlat_to_xyz(ll));
         lonlats_valid.push_back(is_valid_longitude(ll.x));

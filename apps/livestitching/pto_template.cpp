@@ -25,11 +25,14 @@ PTOTemplate::PTOTemplate(QTreeView * _tree): tree_view(_tree) {
 }
 
 void PTOTemplate::loadPTO() {
-    QString filename = QFileDialog::getOpenFileName(nullptr, "Open Template",
-                                                    QDir::homePath(),
-                                                    "Hugin template (*.pto);;PTGui template (*.pts);;All files(*.*)");
-    if(filename.isNull())
+    static QString filename = QDir::homePath();
+    filename = QFileDialog::getOpenFileName(nullptr, "Open Template",
+                                            filename,
+                                            "Hugin template (*.pto);;PTGui template (*.pts);;All files(*.*)");
+    if(filename.isNull()){
+        filename = QDir::homePath();
         return;
+    }
 
     QFile parser_script_file(":/scripts/ptx2json.py");
     parser_script_file.open(QFile::ReadOnly);
