@@ -39,7 +39,7 @@ if (OWLLIVE_ENCRYPT_ARG)
     try_compile(HAVE_LIBSODIUM
                 "${OpenCV_BINARY_DIR}"
                 "${OpenCV_SOURCE_DIR}/cmake/checks/libsodium.cpp"
-                LINK_LIBRARIES libsodium)
+                LINK_LIBRARIES ${LIBSODIUM})
     if (NOT HAVE_LIBSODIUM)
         message(FATAL_ERROR "libsodium not found")
     endif()
