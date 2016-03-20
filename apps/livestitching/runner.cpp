@@ -13,7 +13,9 @@
 #include <QCoreApplication>
 
 #include <assert.h>
+#ifdef OWLLIVE_ENCRYPT_ARG
 #include <sodium.h>
+#endif
 
 static QString encryptArgString(QString _str) {
 #ifndef OWLLIVE_ENCRYPT_ARG
