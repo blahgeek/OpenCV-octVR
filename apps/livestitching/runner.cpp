@@ -27,19 +27,26 @@ static QString encryptArgString(QString _str) {
     if (sodium_init() == -1) {
         return QString();
     }
-
-    const unsigned char * _str_cptr = reinterpret_cast<const unsigned char *>(_str.toStdString().c_str());
+    QByteArray _str_bytes;
+    _str_bytes.append(_str);
+    const unsigned char * _str_cptr = reinterpret_cast<const unsigned char *>(_str_bytes.data());
     unsigned int _str_len = _str.length();
+
     unsigned char nonce[crypto_secretbox_NONCEBYTES];
     randombytes_buf(nonce, sizeof nonce);
 
     unsigned int cipher_len = crypto_secretbox_MACBYTES + _str_len;
     unsigned char * cipher_str = new unsigned char[cipher_len];
 
-    crypto_secretbox_easy(cipher_str, _str_cptr, _str_len, nonce, secret);
+    if (crypto_secretbox_easy(cipher_str, _str_cptr, _str_len, nonce, secret) != 0){
+        return QString();
+    }
 
-    QString ret = QString::fromUtf8(reinterpret_cast<const char *>(nonce), crypto_secretbox_NONCEBYTES);
-    ret.append(QString::fromUtf8(reinterpret_cast<const char *>(cipher_str), cipher_len));
+    QByteArray ret_bytes = QByteArray(reinterpret_cast<const char *>(nonce), crypto_secretbox_NONCEBYTES);
+    ret_bytes.append(reinterpret_cast<const char *>(cipher_str), cipher_len);
+
+    QString ret = ret_bytes.toBase64();
+    delete cipher_str;
 
     return ret;
 #endif
