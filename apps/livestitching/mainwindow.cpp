@@ -127,6 +127,12 @@ void MainWindow::onGenerateCMD() {
     this->ui->line_cmd->setText(args_line);
 }
 
+void MainWindow::onEncryptCMD() {
+    this->ui->line_cmd_encrypted->setText(
+        Encryptor::encryptArgString(this->ui->line_cmd->text())
+        );
+}
+
 void MainWindow::run() {
     auto json_doc = this->pto_template->getJsonDocument();
     if(ui->check_cheat->checkState() != Qt::Checked)
@@ -271,6 +277,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     connect(ui->pushButton_gen_cmd, &QPushButton::clicked, this, &MainWindow::onGenerateCMD);
     connect(ui->check_cheat, &QCheckBox::stateChanged, this, &MainWindow::onCheatStateChanged);
+    connect(ui->pushButton_encrypt_cmd, &QPushButton::clicked, this, &MainWindow::onEncryptCMD);
 
     this->onInputsSelectChanged();
     this->onTemplateChanged();

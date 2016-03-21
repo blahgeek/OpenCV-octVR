@@ -58,6 +58,7 @@ ocv_add_executable(livestitching WIN32
                    runner.cpp
                    qjsonitem.cpp
                    qjsonmodel.cpp
+                   encryptor.cpp
                    icons.qrc
                    style.qrc
                    )
