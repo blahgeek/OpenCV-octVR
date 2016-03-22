@@ -88,6 +88,7 @@ void MainWindow::onGenerateCMD() {
         output_args << "-map" << QString("[o%1]").arg(output_count);
         output_args << "-pix_fmt" << "uyvy422"
                     << "-f" << "decklink"
+                    << "-r" << ui->decklink_output_fps->text()
                     << "-vsync" << "drop"
                     << "-preroll" << "0.5"
                     << this->ui->decklink_device->text();
