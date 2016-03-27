@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2016-02-21
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-02-26
+* @Last Modified time: 2016-03-27
 */
 
 #include <iostream>
@@ -67,6 +67,11 @@ void InputsSelector::stop() {
         c->stop();
 }
 
+void InputsSelector::onInputsFpsChanged(int _fps) {
+    qDebug() << "Inputs FPS is set to " << _fps;
+    this->fps = _fps;
+}
+
 std::vector<QCameraInfo> InputsSelector::getSelected() {
     std::vector<QCameraInfo> ret;
     for(int i = 0 ; i < this->camera_infos.size() ; i += 1)
@@ -99,13 +104,13 @@ QStringList InputsSelector::getInputArgs() {
         }
         args << "-f" << "dshow" << "-pixel_format" << "uyvy422"
              << "-video_device_number" << QString::number(device_name_dup)
-             << "-framerate" << "30" 
+             << "-framerate" << QString::number(this->fps)
              << "-i" << QString("video=%1").arg(input.description());
     }
 #else
     for(auto & input: selected_cams)
         args << "-f" << "v4l2" << "-pixel_format" << "uyvy422"
-             << "-framerate" << "30" << "-i" << input.deviceName();
+             << "-framerate" << QString::number(this->fps) << "-i" << input.deviceName();
 #endif
 
     return args;

@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2016-02-21
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-02-26
+* @Last Modified time: 2016-03-27
 */
 
 #ifndef LIVESTITCHING_INPUTS_SELECT_H__
@@ -33,6 +33,11 @@ private:
 
     QGridLayout * grid = nullptr;
     std::vector<std::unique_ptr<QCheckBox>> check_boxs;
+
+    int fps = 30;
+
+public slots:
+    void onInputsFpsChanged(int _fps);
 
 signals:
     void selectedChanged();

@@ -263,6 +263,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->tabWidget, &QTabWidget::currentChanged, this, &MainWindow::onTabChanged);
     connect(ui->inputs_action_save, &QPushButton::clicked, this, &MainWindow::onInputSaveButtonClicked);
     connect(this->inputs_selector.get(), &InputsSelector::selectedChanged, this, &MainWindow::onInputsSelectChanged);
+    connect(ui->inputs_fps, static_cast<void(QSpinBox::*)(int)>(&QSpinBox::valueChanged), this->inputs_selector.get(), &InputsSelector::onInputsFpsChanged);
 
     connect(ui->hls_path_select, &QPushButton::clicked, this, &MainWindow::onHLSPathSelect);
     connect(ui->file_path_select, &QPushButton::clicked, this, &MainWindow::onFilePathSelect);
