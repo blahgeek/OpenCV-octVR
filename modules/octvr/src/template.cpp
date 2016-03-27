@@ -104,7 +104,14 @@ void MapperTemplate::add_input(const std::string & from,
             visible_mask[index] = visible_mask[index] || visible_tmp[index];
         }
     }
+
     CV_Assert(min_h <= max_h && min_w <= max_w);
+
+    if(min_w > 0) min_w -= 1;
+    if(min_h > 0) min_h -= 1;
+    if(max_w < out_size.width - 1) max_w += 1;
+    if(max_h < out_size.height - 1) max_h += 1;
+
     cv::Rect roi(min_w, min_h, max_w + 1 - min_w, max_h + 1 - min_h);
     if(!use_roi)
         roi = cv::Rect(0, 0, out_size.width, out_size.height);

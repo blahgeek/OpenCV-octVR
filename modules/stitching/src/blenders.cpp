@@ -601,7 +601,7 @@ MultiBandGPUBlender::MultiBandGPUBlender(const std::vector<cuda::GpuMat> & masks
                                       cv::Point(round_up(result_roi.br().x), round_up(result_roi.br().y)));
 
     std::cerr << "Align result ROI: " << align_result_roi << std::endl;
-    int gap = 3 * (1 << num_bands_);
+    int gap = 5 * (1 << num_bands_);
     for(auto & roi: rois) {
         int left = std::max(align_result_roi.x, round_down(roi.x) - gap);
         int top = std::max(align_result_roi.y, round_down(roi.y) - gap);

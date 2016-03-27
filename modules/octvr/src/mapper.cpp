@@ -151,6 +151,7 @@ Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes,
     this->result.create(stitch_size, CV_8UC3);
     if(this->stitch_size != this->scaled_output_size)
         this->result_scaled.create(this->scaled_output_size, CV_8UC3);
+    this->result.setTo(0);
 
     timer.tick("Allocating internal mats");
 
@@ -258,7 +259,6 @@ void Mapper::stitch(std::vector<GpuMat> & inputs,
         blender->blend(partial_warped_imgs, result);
         timer.tick("Blender blend");
     } else {
-        result.setTo(0, stream_final);
         for(int i = 0 ; i < nonoverlay_num ; i += 1) {
             cv::cuda::cvtColor(warped_imgs[i], warped_imgs_rgb[i], cv::COLOR_RGBA2RGB, 3, stream_final);
             warped_imgs_rgb[i].copyTo(result(rois[i]), masks[i], stream_final);
