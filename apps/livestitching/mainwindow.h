@@ -26,6 +26,7 @@
 #include "./pto_template.hpp"
 #include "./preview_video.hpp"
 #include "./runner.hpp"
+#include "./encryptor.hpp"
 
 namespace Ui {
 class MainWindow;
@@ -58,6 +59,7 @@ public slots:
 
     void onGenerateCMD();
     void onCheatStateChanged(int);
+    void onEncryptCMD();
 
 protected:
     // just for fun

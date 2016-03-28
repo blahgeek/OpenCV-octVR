@@ -1,4 +1,5 @@
 cmake -G "Visual Studio 12 2013 Win64" ^
+    -Wno-dev ^
     -D CMAKE_BUILD_TYPE=Release ^
     -D CMAKE_PREFIX_PATH="C:\Qt\Qt5.5.1\5.5\msvc2013_64\lib\cmake" ^
     -D CMAKE_INSTALL_PREFIX=%cd%\..\..\.. ^

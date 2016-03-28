@@ -1,13 +1,14 @@
-/* 
+/*
 * @Author: BlahGeek
 * @Date:   2016-02-23
-* @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-03-06
+* @Last Modified by:   StrayWarrior
+* @Last Modified time: 2016-03-18
 */
 
 #include <iostream>
 
 #include "./runner.hpp"
+#include "./encryptor.hpp"
 #include <QDebug>
 #include <QMessageBox>
 #include <QCoreApplication>
@@ -57,7 +58,7 @@ void Runner::start(QJsonDocument json_doc, int width,
                 << output_json_path;
 
     qDebug() << "Running dumper: " << dumper_args;
-    dumper_proc.start(QCoreApplication::applicationDirPath() + "/octvr_dump", 
+    dumper_proc.start(QCoreApplication::applicationDirPath() + "/octvr_dump",
                       dumper_args);
     emit statusChanged();
 }
@@ -74,6 +75,8 @@ void Runner::onDumperProcessFinished(int exitCode, QProcess::ExitStatus status) 
         return;
     }
     // run ffmpeg
+    // if necessary, encrypt the arguments
+    ffmpeg_args = Encryptor::encryptArgString(ffmpeg_args);
 
     QString _run = "\"" + QCoreApplication::applicationDirPath() + "/ffmpeg\""
                       + " " + ffmpeg_args;
