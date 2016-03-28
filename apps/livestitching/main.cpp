@@ -4,7 +4,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
-#ifdef _WIN32
+#if defined(_WIN32) && defined(OWLLIVE_DISABLE_CONSOLE)
 #include <windows.h>
 int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, char*, int nShowCmd) {
     int argc = 0;

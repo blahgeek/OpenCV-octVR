@@ -49,19 +49,38 @@ else(OWLLIVE_ENCRYPT_ARG)
     message("OwlLive arguments will not be encrypted")
 endif(OWLLIVE_ENCRYPT_ARG)
 
-ocv_add_executable(livestitching WIN32
-                   main.cpp
-                   mainwindow.cpp
-                   inputs_select.cpp
-                   preview_video.cpp
-                   pto_template.cpp
-                   runner.cpp
-                   qjsonitem.cpp
-                   qjsonmodel.cpp
-                   encryptor.cpp
-                   icons.qrc
-                   style.qrc
-                   )
+option(OWLLIVE_DISABLE_CONSOLE "Disable windows console output" OFF)
+if (OWLLIVE_DISABLE_CONSOLE)
+    add_definitions(-DOWLLIVE_DISABLE_CONSOLE)
+    ocv_add_executable(livestitching WIN32
+                       main.cpp
+                       mainwindow.cpp
+                       inputs_select.cpp
+                       preview_video.cpp
+                       pto_template.cpp
+                       runner.cpp
+                       qjsonitem.cpp
+                       qjsonmodel.cpp
+                       encryptor.cpp
+                       icons.qrc
+                       style.qrc
+                       )
+else(OWLLIVE_DISABLE_CONSOLE)
+    ocv_add_executable(livestitching
+                       main.cpp
+                       mainwindow.cpp
+                       inputs_select.cpp
+                       preview_video.cpp
+                       pto_template.cpp
+                       runner.cpp
+                       qjsonitem.cpp
+                       qjsonmodel.cpp
+                       encryptor.cpp
+                       icons.qrc
+                       style.qrc
+                       )
+endif(OWLLIVE_DISABLE_CONSOLE)
+
 
 if (OWLLIVE_ENCRYPT_ARG)
     ocv_target_link_libraries(livestitching ${LIBSODIUM})
