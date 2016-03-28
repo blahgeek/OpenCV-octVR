@@ -21,5 +21,6 @@ cmake \
     -D BUILD_opencv_python3=OFF \
     -D WITH_DONGLE_LICENSE=ON \
     -D OWLLIVE_ENCRYPT_ARG=ON \
+    -D OWLLIVE_DISABLE_CONSOLE=ON \
     $@ \
     ..
