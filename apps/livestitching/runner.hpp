@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2016-02-23
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-03-06
+* @Last Modified time: 2016-03-30
 */
 
 #ifndef LIVESTITCHING_RUNNER_H__
@@ -26,7 +26,9 @@ public:
     enum RunningStatus { NOT_RUNNING, DUMPER_RUNNING, FFMPEG_RUNNING };
 
     enum RunningStatus status() const;
-    void start(QJsonDocument json_doc, int width,
+    void start(QJsonDocument json_doc_left, 
+               QJsonDocument json_doc_right,
+               int width, int lon_select_num,
                QString _ffmpeg_args);
 
     Runner();

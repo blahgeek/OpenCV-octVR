@@ -3,10 +3,10 @@
 # Created by i@BlahGeek.com at 2016-01-16
 
 import logging
-import sys
 import re
 import json
 import base64
+import argparse
 
 
 deg_to_rad = lambda s: float(s) / 180.0 * 3.1415926
@@ -213,12 +213,32 @@ class PTXParser:
             }
 
 
+def longitude_select(inputs, start_degree, end_degree, offset_degree, num_inputs=-1):
+    '''For google-jump-like camera rigs, select (mask) each inputs for a specific range of longitude'''
+    num_inputs = int(num_inputs)
+    for i, x in enumerate(inputs):
+        if num_inputs < 0 or i < num_inputs:
+            x['options']['longitude_selection'] = (deg_to_rad(float(start_degree) + i * float(offset_degree)), 
+                                                   deg_to_rad(float(end_degree) + i * float(offset_degree)))
+        yield x
+
+
 if __name__ == '__main__':
+    arg_parser = argparse.ArgumentParser(description="Parse Hugin/PTGui template for OwlLive")
+    arg_parser.add_argument('input', help="Input template")
+    arg_parser.add_argument('--lon_select', help="Longitude select: START,END,OFFSET[,NUM]")
+    args = arg_parser.parse_args()
+
     parser = PTXParser()
-    with open(sys.argv[1], encoding='utf-8') as f:
+    with open(args.input, encoding='utf-8') as f:
         for line in f:
             parser.process_line(line)
     parser.process_stack_masks()
+
+    result_inputs = parser.dump()
+    if args.lon_select:
+        result_inputs = longitude_select(result_inputs, *map(float, args.lon_select.split(',')))
+
     print(json.dumps({
             "output": {
                 "type": "equirectangular",
@@ -230,5 +250,5 @@ if __name__ == '__main__':
                     }
                 }
             }, 
-            "inputs": list(parser.dump()),
+            "inputs": list(result_inputs),
           }, indent=4))
