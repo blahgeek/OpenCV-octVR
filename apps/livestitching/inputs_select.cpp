@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2016-02-21
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-03-27
+* @Last Modified time: 2016-03-30
 */
 
 #include <iostream>
@@ -22,9 +22,11 @@ InputsSelector::InputsSelector(QGridLayout * _grid): grid(_grid) {
     int size_all = this->camera_infos.size();
     int size_row = std::ceil(std::sqrt(float(size_all)));
 
-//    QCameraViewfinderSettings settings;
-//    settings.setMaximumFrameRate(5);
-//    settings.setResolution(QSize(640, 480));
+#if defined(__linux__)
+   QCameraViewfinderSettings settings;
+   settings.setMaximumFrameRate(5);
+   settings.setResolution(QSize(640, 480));
+#endif
 
     int row = 0, col = 0;
     foreach(const QCameraInfo &info, camera_infos) {
