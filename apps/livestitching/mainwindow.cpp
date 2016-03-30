@@ -19,14 +19,21 @@
 #include <cassert>
 
 void MainWindow::onGenerateCMD() {
-    auto json_doc = this->pto_template->getJsonDocument();
-    QJsonObject doc_obj = json_doc.object();
-    QJsonArray inputs = doc_obj["inputs"].toArray();
+    auto get_template_inputs_count = [](std::unique_ptr<PTOTemplate> & pt) {
+        auto json_doc = pt->getJsonDocument();
+        QJsonObject doc_obj = json_doc.object();
+        QJsonArray inputs = doc_obj["inputs"].toArray();
+        return inputs.size();
+    };
+    int left_inputs_count = get_template_inputs_count(this->pto_template_left);
+    int right_inputs_count = get_template_inputs_count(this->pto_template_right);
 
     auto selected_cams = this->inputs_selector->getSelected();
+    bool is_3d = ui->template_3d_check->checkState() == Qt::Checked;
 
     if(ui->check_cheat->checkState() != Qt::Checked) {
-        if(inputs.size() != selected_cams.size()) {
+        if(left_inputs_count != selected_cams.size() || 
+           (is_3d && right_inputs_count != selected_cams.size())) {
             QMessageBox::warning(this, "Bad Template", "Input count does not match");
             this->ui->line_cmd->setText("");
             return;
@@ -45,10 +52,12 @@ void MainWindow::onGenerateCMD() {
     QString filter_complex = QString("vr_map=");
     filter_complex.append(QString("inputs=%1:outputs=%2:crop_x=%3:crop_w=%4:blend=%5")
                           .arg(selected_cams.size())
-                          .arg("vr.dat")
+                          .arg(is_3d ? "left.dat|right.dat" : "left.dat")
                           .arg(ui->inputs_crop_x->value())
                           .arg(ui->inputs_crop_w->value())
                           .arg(ui->paranoma_algorithm->currentIndex()==0?128:-5) );
+    if(is_3d)
+        filter_complex.append(":merge=1");
     if(this->preview_video->isValid())
         filter_complex.append(QString(":preview_ow=%1:preview_oh=%2")
                               .arg(PREVIEW_WIDTH)
@@ -135,14 +144,20 @@ void MainWindow::onEncryptCMD() {
 }
 
 void MainWindow::run() {
-    auto json_doc = this->pto_template->getJsonDocument();
+    auto json_doc_left = this->pto_template_left->getJsonDocument();
+    QJsonDocument json_doc_right; // empty
+    if(ui->template_3d_check->checkState() == Qt::Checked)
+        json_doc_right = this->pto_template_right->getJsonDocument();
+
     if(ui->check_cheat->checkState() != Qt::Checked)
         this->onGenerateCMD();
+
     QString args = this->ui->line_cmd->text();
     if(args.isEmpty())
         return;
 
-    this->runner->start(json_doc, ui->paranoma_width->value(), args);
+    this->runner->start(json_doc_left, json_doc_right,
+                        ui->paranoma_width->value(), args);
 }
 
 void MainWindow::onRunningStatusChanged() {
@@ -194,10 +209,37 @@ void MainWindow::onInputSaveButtonClicked() {
 }
 
 void MainWindow::onTemplateChanged() {
-    auto json_doc = this->pto_template->getJsonDocument();
-    QJsonObject doc_obj = json_doc.object();
-    QJsonArray inputs = doc_obj["inputs"].toArray();
-    this->ui->template_info->setText(QString("%1 inputs").arg(inputs.size()));
+    auto get_inputs_count = [](const QJsonDocument & doc) {
+        QJsonObject doc_obj = doc.object();
+        return doc_obj["inputs"].toArray().size();
+    };
+
+    int left_inputs_count = get_inputs_count(this->pto_template_left->getJsonDocument());
+    int right_inputs_count = get_inputs_count(this->pto_template_right->getJsonDocument());
+
+    if(this->ui->template_3d_check->checkState() == Qt::Checked) {
+        if(left_inputs_count != right_inputs_count)
+            ui->template_info->setText(QString("3D mode, left and right inputs does not match"));
+        else
+            ui->template_info->setText(QString("3D mode, %1 inputs defined").arg(left_inputs_count));
+    }
+    else
+        ui->template_info->setText(QString("non-3D mode, %1 inputs defined").arg(left_inputs_count));
+}
+
+void MainWindow::on3DModeChanged(int state) {
+    bool enable = (state == Qt::Checked);
+    ui->template_lon_select_check->setEnabled(enable);
+    ui->template_lon_select_num->setEnabled(enable);
+    ui->template_load_right->setEnabled(enable);
+    ui->template_tree_view_right->setEnabled(enable);
+
+    if(enable)
+        QMessageBox::warning(this, "", "This is an exprimental feature\n"
+                                       "Use two template for left/right eye seperately,\n"
+                                       "Or use the same template and check 'split on longitude' (for Google JUMP-like camera rigs)\n");
+
+    emit this->onTemplateChanged();
 }
 
 void MainWindow::onHLSPathSelect() {
@@ -245,7 +287,8 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
 
     inputs_selector.reset(new InputsSelector(ui->inputs_grid));
-    pto_template.reset(new PTOTemplate(ui->template_tree_view));
+    pto_template_left.reset(new PTOTemplate(ui->template_tree_view_left));
+    pto_template_right.reset(new PTOTemplate(ui->template_tree_view_right));
     preview_video.reset(new PreviewVideoWidget(this, PREVIEW_WIDTH, PREVIEW_HEIGHT));
     runner.reset(new Runner());
     this->ui->preview_layout->addWidget(preview_video.get());
@@ -274,8 +317,12 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->hls_path_select, &QPushButton::clicked, this, &MainWindow::onHLSPathSelect);
     connect(ui->file_path_select, &QPushButton::clicked, this, &MainWindow::onFilePathSelect);
 
-    connect(ui->template_load, &QPushButton::clicked, this->pto_template.get(), &PTOTemplate::loadPTO);
-    connect(this->pto_template.get(), &PTOTemplate::dataChanged, this, &MainWindow::onTemplateChanged);
+    connect(ui->template_load_left, &QPushButton::clicked, this->pto_template_left.get(), &PTOTemplate::loadPTO);
+    connect(ui->template_load_right, &QPushButton::clicked, this->pto_template_right.get(), &PTOTemplate::loadPTO);
+    connect(this->pto_template_left.get(), &PTOTemplate::dataChanged, this, &MainWindow::onTemplateChanged);
+    connect(this->pto_template_right.get(), &PTOTemplate::dataChanged, this, &MainWindow::onTemplateChanged);
+
+    connect(ui->template_3d_check, &QCheckBox::stateChanged, this, &MainWindow::on3DModeChanged);
 
     connect(ui->pushButton_gen_cmd, &QPushButton::clicked, this, &MainWindow::onGenerateCMD);
     connect(ui->check_cheat, &QCheckBox::stateChanged, this, &MainWindow::onCheatStateChanged);

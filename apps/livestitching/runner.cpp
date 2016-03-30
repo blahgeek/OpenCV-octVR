@@ -1,8 +1,8 @@
 /*
 * @Author: BlahGeek
 * @Date:   2016-02-23
-* @Last Modified by:   StrayWarrior
-* @Last Modified time: 2016-03-18
+* @Last Modified by:   BlahGeek
+* @Last Modified time: 2016-03-30
 */
 
 #include <iostream>
@@ -37,7 +37,9 @@ enum Runner::RunningStatus Runner::status() const {
     return NOT_RUNNING;
 }
 
-void Runner::start(QJsonDocument json_doc, int width,
+void Runner::start(QJsonDocument json_doc_left, 
+                   QJsonDocument json_doc_right,
+                   int width,
                    QString _ffmpeg_args) {
     this->ffmpeg_args = _ffmpeg_args;
 
@@ -46,20 +48,30 @@ void Runner::start(QJsonDocument json_doc, int width,
         return;
     }
 
-    QString output_json_path = temp_dir.path() + "/vr.json";
-    QFile output_json(output_json_path);
-    output_json.open(QIODevice::WriteOnly);
-    output_json.write(json_doc.toJson());
-    output_json.close();
+    auto dump_json = [&, this](const QJsonDocument & doc, const char * filename) {
+        QString output_json_path = temp_dir.path() + filename;
+        QFile output_json(output_json_path);
+        output_json.open(QIODevice::WriteOnly);
+        output_json.write(doc.toJson());
+        output_json.close();
+    };
 
-    QStringList dumper_args;
-    dumper_args << "-w" << QString::number(width)
-                << "-o" << "vr.dat"
-                << output_json_path;
+    QString dumper = QCoreApplication::applicationDirPath() + "/octvr_dump";
 
-    qDebug() << "Running dumper: " << dumper_args;
-    dumper_proc.start(QCoreApplication::applicationDirPath() + "/octvr_dump",
-                      dumper_args);
+    // TODO, UGLY
+    dump_json(json_doc_left, "left.json");
+    QString cmd = dumper + QString(" -w %1 -o left.dat left.json").arg(width);
+    if(!json_doc_right.isNull()) {
+        dump_json(json_doc_right, "right.json");
+        cmd += QString(" && ") + dumper + QString(" -w %1 -o right.dat right.json").arg(width);
+    }
+
+    qDebug() << "Running shell: " << cmd;
+    QStringList args;
+    args << "-c" << cmd;
+
+    dumper_proc.start("sh", args);
+
     emit statusChanged();
 }
 

@@ -54,6 +54,8 @@ public slots:
     void onTemplateChanged();
     void onRunningStatusChanged();
 
+    void on3DModeChanged(int);
+
     void onHLSPathSelect();
     void onFilePathSelect();
 
@@ -72,7 +74,7 @@ private:
     Ui::MainWindow *ui;
 
     std::unique_ptr<InputsSelector> inputs_selector;
-    std::unique_ptr<PTOTemplate> pto_template;
+    std::unique_ptr<PTOTemplate> pto_template_left, pto_template_right;
     std::unique_ptr<PreviewVideoWidget> preview_video;
     std::unique_ptr<Runner> runner;
 
