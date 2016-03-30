@@ -156,8 +156,15 @@ void MainWindow::run() {
     if(args.isEmpty())
         return;
 
+    int lon_select_num = ui->template_lon_select_num->value();
+    if(ui->template_lon_select_check->checkState() != Qt::Checked ||
+       ui->template_3d_check->checkState() != Qt::Checked)
+        lon_select_num = 0;
+
     this->runner->start(json_doc_left, json_doc_right,
-                        ui->paranoma_width->value(), args);
+                        ui->paranoma_width->value(), 
+                        lon_select_num,
+                        args);
 }
 
 void MainWindow::onRunningStatusChanged() {
@@ -242,6 +249,12 @@ void MainWindow::on3DModeChanged(int state) {
     emit this->onTemplateChanged();
 }
 
+void MainWindow::on3DLonSelectChanged(int state) {
+    if(state == Qt::Checked)
+        QMessageBox::warning(this, "", "When selected, input 0 must be in center of image (longitude 0), \n"
+                                       "input 1 must be in the left of input 0 and so on\n");
+}
+
 void MainWindow::onHLSPathSelect() {
     QString filename = QFileDialog::getSaveFileName(this);
     if(filename.size() > 0)
@@ -323,6 +336,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(this->pto_template_right.get(), &PTOTemplate::dataChanged, this, &MainWindow::onTemplateChanged);
 
     connect(ui->template_3d_check, &QCheckBox::stateChanged, this, &MainWindow::on3DModeChanged);
+    connect(ui->template_lon_select_check, &QCheckBox::stateChanged, this, &MainWindow::on3DLonSelectChanged);
 
     connect(ui->pushButton_gen_cmd, &QPushButton::clicked, this, &MainWindow::onGenerateCMD);
     connect(ui->check_cheat, &QCheckBox::stateChanged, this, &MainWindow::onCheatStateChanged);

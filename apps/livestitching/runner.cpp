@@ -39,7 +39,7 @@ enum Runner::RunningStatus Runner::status() const {
 
 void Runner::start(QJsonDocument json_doc_left, 
                    QJsonDocument json_doc_right,
-                   int width,
+                   int width, int lon_select_num,
                    QString _ffmpeg_args) {
     this->ffmpeg_args = _ffmpeg_args;
 
@@ -60,10 +60,18 @@ void Runner::start(QJsonDocument json_doc_left,
 
     // TODO, UGLY
     dump_json(json_doc_left, "left.json");
-    QString cmd = dumper + QString(" -w %1 -o left.dat left.json").arg(width);
+    QString cmd = dumper;
+    if(lon_select_num > 0 && !json_doc_right.isNull())
+        cmd += QString(" --lon_select %1,%2,%3,%4")
+               .arg(-3.0).arg(360.0 / lon_select_num + 3.0).arg(360.0 / lon_select_num).arg(lon_select_num);
+    cmd += QString(" -w %1 -o left.dat left.json").arg(width);
     if(!json_doc_right.isNull()) {
         dump_json(json_doc_right, "right.json");
-        cmd += QString(" && ") + dumper + QString(" -w %1 -o right.dat right.json").arg(width);
+        cmd += QString(" && ") + dumper;
+        if(lon_select_num > 0)
+            cmd += QString(" --lon_select %1,%2,%3,%4")
+                   .arg(- 360.0 / lon_select_num - 3.0).arg(3.0).arg(360.0 / lon_select_num).arg(lon_select_num);
+        cmd += QString(" -w %1 -o right.dat right.json").arg(width);
     }
 
     qDebug() << "Running shell: " << cmd;

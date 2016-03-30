@@ -55,6 +55,7 @@ public slots:
     void onRunningStatusChanged();
 
     void on3DModeChanged(int);
+    void on3DLonSelectChanged(int);
 
     void onHLSPathSelect();
     void onFilePathSelect();
