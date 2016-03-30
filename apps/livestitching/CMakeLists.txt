@@ -1,4 +1,5 @@
 remove_definitions(-D__OPENCV_BUILD=1)
+unset(LIBSODIUM)
 
 set(OPENCV_LIVESTITCHING_DEPS 
     opencv_core opencv_highgui opencv_photo opencv_video opencv_objdetect opencv_octvr)
@@ -33,9 +34,10 @@ if (OWLLIVE_ENCRYPT_ARG)
                      NAMES libsodium.lib 
                      PATHS ENV LIBPATH)
     else()
-        find_library(LIBSODIUM sodium
+        find_library(LIBSODIUM libsodium
                      NAMES libsodium.a)
     endif()
+    message(${LIBSODIUM})
     try_compile(HAVE_LIBSODIUM
                 "${OpenCV_BINARY_DIR}"
                 "${OpenCV_SOURCE_DIR}/cmake/checks/libsodium.cpp"
