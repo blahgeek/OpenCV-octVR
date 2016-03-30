@@ -156,14 +156,8 @@ void MainWindow::run() {
     if(args.isEmpty())
         return;
 
-    int lon_select_num = ui->template_lon_select_num->value();
-    if(ui->template_lon_select_check->checkState() != Qt::Checked ||
-       ui->template_3d_check->checkState() != Qt::Checked)
-        lon_select_num = 0;
-
     this->runner->start(json_doc_left, json_doc_right,
                         ui->paranoma_width->value(), 
-                        lon_select_num,
                         args);
 }
 
@@ -247,12 +241,24 @@ void MainWindow::on3DModeChanged(int state) {
                                        "Or use the same template and check 'split on longitude' (for Google JUMP-like camera rigs)\n");
 
     emit this->onTemplateChanged();
+    this->on3DLonSelectValueChanged();
 }
 
 void MainWindow::on3DLonSelectChanged(int state) {
     if(state == Qt::Checked)
         QMessageBox::warning(this, "", "When selected, input 0 must be in center of image (longitude 0), \n"
-                                       "input 1 must be in the left of input 0 and so on\n");
+                                       "input 1 must be in the left of input 0 and so on\n"
+                                       "This is only valid if selected before loading template\n");
+    this->on3DLonSelectValueChanged();
+}
+
+void MainWindow::on3DLonSelectValueChanged(int __unused) {
+    int value = (ui->template_lon_select_check->checkState() == Qt::Checked &&
+                 ui->template_3d_check->checkState() == Qt::Checked) ? 
+                ui->template_lon_select_num->value() : 0;
+    this->pto_template_left->setLonSelectionNumber(value);
+    this->pto_template_right->setLonSelectionNumber(value);
+    qDebug() << "Setting longitude selection number to " << value;
 }
 
 void MainWindow::onHLSPathSelect() {
@@ -300,8 +306,8 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
 
     inputs_selector.reset(new InputsSelector(ui->inputs_grid));
-    pto_template_left.reset(new PTOTemplate(ui->template_tree_view_left));
-    pto_template_right.reset(new PTOTemplate(ui->template_tree_view_right));
+    pto_template_left.reset(new PTOTemplate(ui->template_tree_view_left, true));
+    pto_template_right.reset(new PTOTemplate(ui->template_tree_view_right, false));
     preview_video.reset(new PreviewVideoWidget(this, PREVIEW_WIDTH, PREVIEW_HEIGHT));
     runner.reset(new Runner());
     this->ui->preview_layout->addWidget(preview_video.get());
@@ -337,6 +343,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     connect(ui->template_3d_check, &QCheckBox::stateChanged, this, &MainWindow::on3DModeChanged);
     connect(ui->template_lon_select_check, &QCheckBox::stateChanged, this, &MainWindow::on3DLonSelectChanged);
+    connect(ui->template_lon_select_num, static_cast<void(QSpinBox::*)(int)>(&QSpinBox::valueChanged), this, &MainWindow::on3DLonSelectValueChanged);
 
     connect(ui->pushButton_gen_cmd, &QPushButton::clicked, this, &MainWindow::onGenerateCMD);
     connect(ui->check_cheat, &QCheckBox::stateChanged, this, &MainWindow::onCheatStateChanged);

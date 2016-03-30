@@ -17,7 +17,7 @@ class Runner : public QObject {
     Q_OBJECT
 
 private:
-    QProcess dumper_proc, ffmpeg_proc;
+    QProcess dumper_proc_left, dumper_proc_right, ffmpeg_proc;
     QString ffmpeg_args;
 
     QTemporaryDir temp_dir;
@@ -28,7 +28,7 @@ public:
     enum RunningStatus status() const;
     void start(QJsonDocument json_doc_left, 
                QJsonDocument json_doc_right,
-               int width, int lon_select_num,
+               int width,
                QString _ffmpeg_args);
 
     Runner();

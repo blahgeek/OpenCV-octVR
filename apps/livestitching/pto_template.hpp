@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2016-02-22
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-02-22
+* @Last Modified time: 2016-03-30
 */
 
 #ifndef LIVESTITCHING_TEMPLATE_H__
@@ -20,9 +20,11 @@ class PTOTemplate: public QObject {
 private:
     QTreeView * tree_view;
     QJsonModel json_model;
+    int lon_select_num = 0;
+    bool left;
 
 public:
-    PTOTemplate(QTreeView * _treeview);
+    PTOTemplate(QTreeView * _treeview, bool _left);
 
 public slots:
     void loadPTO();
@@ -32,6 +34,7 @@ signals:
 
 public:
     QJsonDocument getJsonDocument();
+    void setLonSelectionNumber(int _n){ lon_select_num = _n; }
 };
 
 #endif

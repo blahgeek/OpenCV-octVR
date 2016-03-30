@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2016-02-22
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-02-26
+* @Last Modified time: 2016-03-30
 */
 
 #include <iostream>
@@ -14,7 +14,7 @@
 
 #include "./pto_template.hpp"
 
-PTOTemplate::PTOTemplate(QTreeView * _tree): tree_view(_tree) {
+PTOTemplate::PTOTemplate(QTreeView * _tree, bool _left): tree_view(_tree), left(_left) {
     this->json_model.setEditableFields(QStringList({
         "yaw", "roll", "pitch", "aspect_ratio", "cam_opt",
     }));
@@ -39,9 +39,19 @@ void PTOTemplate::loadPTO() {
     QString parser_script = parser_script_file.readAll();
     parser_script_file.close();
 
+    QStringList parser_args;
+    parser_args << "-c" << parser_script;
+    if(this->lon_select_num > 0) {
+        parser_args << "--lon_select";
+        if(this->left)
+            parser_args << QString("%1,%2,%3,%4").arg(-3.0).arg(360.0 / lon_select_num + 3.0).arg(360.0 / lon_select_num).arg(lon_select_num);
+        else
+            parser_args << QString("%1,%2,%3,%4").arg(- 360.0 / lon_select_num - 3.0).arg(3.0).arg(360.0 / lon_select_num).arg(lon_select_num);
+    }
+    parser_args << filename;
+
     QProcess parser;
-    parser.start("python3",
-                 QStringList({"-c", parser_script, filename}));
+    parser.start("python3", parser_args);
     parser.waitForFinished();
     QString parsed_json = parser.readAllStandardOutput();
     this->json_model.loadJson(parsed_json.toUtf8());
