@@ -7,7 +7,7 @@ import json
 
 if __name__ == '__main__':
     data = json.load(open(sys.argv[1]))
-    print(json.dump({
-                        "inputs": [data["output"], ],
-                        "output": data["inputs"][int(sys.argv[2])]
-                    }, indent=4))
+    print(json.dumps({
+                         "inputs": [data["output"], ],
+                         "output": data["inputs"][int(sys.argv[2])]
+                     }, indent=4))
