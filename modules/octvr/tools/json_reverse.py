@@ -7,9 +7,7 @@ import json
 
 if __name__ == '__main__':
     data = json.load(open(sys.argv[1]))
-    for i in range(len(data['inputs'])):
-        new_data = {
-            'inputs': [data['output'], ],
-            'output': data['inputs'][i]
-        }
-        json.dump(new_data, open(sys.argv[1] + '_{}.json'.format(i + 1), 'w'), indent=4)
+    print(json.dump({
+                        "inputs": [data["output"], ],
+                        "output": data["inputs"][int(sys.argv[2])]
+                    }, indent=4))
