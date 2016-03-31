@@ -52,7 +52,7 @@ void Runner::start(QJsonDocument json_doc_left,
     }
 
     auto dump_json = [&, this](const QJsonDocument & doc, const char * filename) {
-        QString output_json_path = temp_dir.path() + filename;
+        QString output_json_path = temp_dir.path() + QDir::separator() + filename;
         QFile output_json(output_json_path);
         output_json.open(QIODevice::WriteOnly);
         output_json.write(doc.toJson());
