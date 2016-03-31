@@ -17,6 +17,7 @@ class Encryptor : public QObject {
 
 public:
     static QString encryptArgString(const QString & _str);
+    static QString concatArgString(QStringList args);
 
 };
 

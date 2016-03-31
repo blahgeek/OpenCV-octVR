@@ -11,6 +11,16 @@
 #include <sodium.h>
 #endif
 
+QString Encryptor::concatArgString(QStringList args) {
+    QString ret;
+    for(int i = 0 ; i < args.size() ; i += 1) {
+        if(i != 0)
+            ret += " ";
+        ret += "\"" + args[i].replace("\"", "\"\"\"") + "\"";
+    }
+    return ret;
+}
+
 QString Encryptor::encryptArgString(const QString & _str) {
 #ifndef OWLLIVE_ENCRYPT_ARG
     return QString(_str);

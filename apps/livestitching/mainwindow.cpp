@@ -119,13 +119,7 @@ void MainWindow::onGenerateCMD() {
     args << "-filter_complex" << filter_complex;
     args += output_args;
 
-    QString args_line;
-    for(int i = 0 ; i < args.size() ; i += 1) {
-        if(i != 0)
-            args_line += " ";
-        args_line += "\"" + args[i].replace("\"", "\"\"\"") + "\"";
-    }
-    this->ui->line_cmd->setText(args_line);
+    this->ui->line_cmd->setText(Encryptor::concatArgString(args));
 }
 
 void MainWindow::onEncryptCMD() {
