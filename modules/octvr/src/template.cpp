@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include "opencv2/imgproc.hpp"
 #include "opencv2/stitching/detail/seam_finders.hpp"
+#include "tbb/tbb.h"
 
 
 using namespace vr;
@@ -60,50 +61,59 @@ void MapperTemplate::add_input(const std::string & from,
 
     cv::Mat map1(out_size, CV_32FC1), map2(out_size, CV_32FC1);
     cv::Mat mask(out_size, CV_8U);
-    for(int h = 0 ; h < out_size.height ; h += 1) {
-        unsigned char * mask_row = mask.ptr(h);
-        float * map1_row = map1.ptr<float>(h);
-        float * map2_row = map2.ptr<float>(h);
+    auto process_row_block = [&](tbb::blocked_range<int>& row_range)
+    {
+        for(int h = row_range.begin(); h < row_range.end(); h += 1) {
+            unsigned char * mask_row = mask.ptr(h);
+            float * map1_row = map1.ptr<float>(h);
+            float * map2_row = map2.ptr<float>(h);
 
-        for(int w = 0 ; w < out_size.width ; w += 1) {
-            auto index = w + out_size.width * h;
-            float x = tmp[index].x;
-            float y = tmp[index].y;
-            if(isnan(x) || isnan(y) ||
-               x < 0 || x >= 1.0f || y < 0 || y >= 1.0f ||  // out of border, should be black when doing remap()
-               visible_mask[index])                         // or this point has been selected to be visible by other image (not override)
+            auto process_point_block = [&](tbb::blocked_range<int>& r)
             {
-                mask_row[w] = 0;
-                map1_row[w] = map2_row[w] = -1.0;
-            }
-            else {
-                mask_row[w] = 255;
-                map1_row[w] = x;
-                map2_row[w] = y;
+                for (int w = r.begin(); w < r.end(); w += 1)
+                {
+                    auto index = w + out_size.width * h;
+                    float x = tmp[index].x;
+                    float y = tmp[index].y;
+                    if(isnan(x) || isnan(y) ||
+                       x < 0 || x >= 1.0f || y < 0 || y >= 1.0f ||  // out of border, should be black when doing remap()
+                       visible_mask[index])                         // or this point has been selected to be visible by other image (not override)
+                    {
+                        mask_row[w] = 0;
+                        map1_row[w] = map2_row[w] = -1.0;
+                    }
+                    else {
+                        mask_row[w] = 255;
+                        map1_row[w] = x;
+                        map2_row[w] = y;
 
-                // update ROI
-                if(h < min_h) min_h = h;
-                if(h > max_h) max_h = h;
-                if(w < min_w) min_w = w;
-                if(w > max_w) max_w = w;
-            }
-            // Update visible_mask and other inputs' masks.
-            if (visible_tmp.empty())
-                continue;
-            if (!visible_mask[index] && visible_tmp[index])
-                for (auto & prior_input : this->inputs) {
-                    // When using ROI, the prior inputs' masks are not full-size
-                    // which causes overflow
-                    auto prior_roi = prior_input.roi;
-                    if (h < prior_roi.y || h >= prior_roi.y + prior_roi.height ||
-                        w < prior_roi.x || w >= prior_roi.x + prior_roi.width )
+                        // update ROI
+                        if(h < min_h) min_h = h;
+                        if(h > max_h) max_h = h;
+                        if(w < min_w) min_w = w;
+                        if(w > max_w) max_w = w;
+                    }
+                    // Update visible_mask and other inputs' masks.
+                    if (visible_tmp.empty())
                         continue;
-                    unsigned char * prior_mask_row = prior_input.mask.ptr(h - prior_roi.y);
-                    prior_mask_row[w - prior_roi.x] = 0;
+                    if (!visible_mask[index] && visible_tmp[index])
+                        for (auto & prior_input : this->inputs) {
+                            // When using ROI, the prior inputs' masks are not full-size
+                            // which causes overflow
+                            auto prior_roi = prior_input.roi;
+                            if (h < prior_roi.y || h >= prior_roi.y + prior_roi.height ||
+                                w < prior_roi.x || w >= prior_roi.x + prior_roi.width )
+                                continue;
+                            unsigned char * prior_mask_row = prior_input.mask.ptr(h - prior_roi.y);
+                            prior_mask_row[w - prior_roi.x] = 0;
+                        }
+                    visible_mask[index] = visible_mask[index] || visible_tmp[index];
                 }
-            visible_mask[index] = visible_mask[index] || visible_tmp[index];
+            };
+            tbb::parallel_for(tbb::blocked_range<int>(0, out_size.width), process_point_block);
         }
-    }
+    };
+    tbb::parallel_for(tbb::blocked_range<int>(0, out_size.height), process_row_block);
 
     CV_Assert(min_h <= max_h && min_w <= max_w);
 
