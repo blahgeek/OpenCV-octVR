@@ -1,7 +1,7 @@
 /* * @Author: BlahGeek
 * @Date:   2015-10-20
-* @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-03-15
+* @Last Modified by:   StrayWarrior
+* @Last Modified time: 2016-04-02
 */
 
 #include "./camera.hpp"
@@ -20,7 +20,7 @@
 #include "./cameras/eqareasouthpole.hpp"
 #include "./cameras/ocam_fisheye.hpp"
 #include "./cameras/perspective.hpp"
-#include "tbb/tbb.h"
+#include "parallel_caller.hpp"
 
 using namespace vr;
 
@@ -152,7 +152,7 @@ void Camera::draw_mask(const rapidjson::Value & masks, MaskType mask_type) {
                 args.push_back(x->GetDouble());
             std::cerr << "Drawing polygonal mask... " << args.size() / 2 << " points" << std::endl;
             std::vector<cv::Point2i> points;
-            for(int i = 0 ; i < args.size() ; i += 2)
+            for(size_t i = 0 ; i < args.size() ; i += 2)
                 points.emplace_back(int(args[i]), int(args[i+1]));
             switch (mask_type)
             {
@@ -213,14 +213,14 @@ std::vector<cv::Point2d> Camera::obj_to_image(const std::vector<cv::Point2d> & l
     // convert lon/lat to xyz in sphere
     std::vector<cv::Point3d> xyzs(lonlats.size(), cv::Point3d(NAN, NAN, NAN));
     std::vector<bool> lonlats_valid(lonlats.size(), false);
-    auto convert_point_single = [&](const tbb::blocked_range<size_t>& r)
+    auto convert_point_single = [&](const cv::Range& r)
     {
-        for (size_t i = r.begin(); i < r.end(); i += 1) {
+        for (int i = r.start; i < r.end; i += 1) {
             xyzs[i] = sphere_lonlat_to_xyz(lonlats[i]);
             lonlats_valid[i] = is_valid_longitude(lonlats[i].x);
         }
     };
-    tbb::parallel_for(tbb::blocked_range<size_t>(0, lonlats.size()), convert_point_single);
+    parallel_for_caller(cv::Range(0, lonlats.size()), convert_point_single);
 
     // rotate it
     sphere_rotate(xyzs, false);
@@ -229,9 +229,9 @@ std::vector<cv::Point2d> Camera::obj_to_image(const std::vector<cv::Point2d> & l
     std::vector<cv::Point2d> ret(lonlats.size(), cv::Point2d(NAN, NAN));
 
     // compute
-    auto add_point_single = [&](const tbb::blocked_range<size_t>& r)
+    auto add_point_single = [&](const cv::Range& r)
     {
-        for(size_t i = r.begin(); i < r.end(); i += 1) {
+        for(int i = r.start; i < r.end; i += 1) {
             auto ll = sphere_xyz_to_lonlat(xyzs[i]);
             cv::Point2d p = cv::Point2d(NAN, NAN);
             if(lonlats_valid[i])
@@ -247,7 +247,7 @@ std::vector<cv::Point2d> Camera::obj_to_image(const std::vector<cv::Point2d> & l
             ret[i] = p;
         }
     };
-    tbb::parallel_for(tbb::blocked_range<size_t>(0, xyzs.size()), add_point_single);
+    parallel_for_caller(cv::Range(0, xyzs.size()), add_point_single);
 
     return ret;
 }
@@ -257,13 +257,13 @@ std::vector<bool> Camera::get_include_mask(const std::vector<cv::Point2d> & lonl
         return std::vector<bool>();
     // convert lon/lat to xyz in sphere
     std::vector<cv::Point3d> xyzs(lonlats.size(), cv::Point3d(NAN, NAN, NAN));
-    auto convert_point_single = [&](const tbb::blocked_range<size_t>& r)
+    auto convert_point_single = [&](const cv::Range& r)
     {
-        for (size_t i = r.begin(); i < r.end(); i += 1) {
+        for (int i = r.start; i < r.end; i += 1) {
             xyzs[i] = sphere_lonlat_to_xyz(lonlats[i]);
         }
     };
-    tbb::parallel_for(tbb::blocked_range<size_t>(0, lonlats.size()), convert_point_single);
+    parallel_for_caller(cv::Range(0, lonlats.size()), convert_point_single);
 
     // rotate it
     sphere_rotate(xyzs, false);
@@ -272,9 +272,9 @@ std::vector<bool> Camera::get_include_mask(const std::vector<cv::Point2d> & lonl
     std::vector<bool> ret(lonlats.size(), false);
 
     // compute
-    auto add_point_single = [&](const tbb::blocked_range<size_t>& r)
+    auto add_point_single = [&](const cv::Range& r)
     {
-        for(size_t i = r.begin(); i < r.end(); i += 1) {
+        for(int i = r.start; i < r.end; i += 1) {
             auto p = obj_to_image_single(sphere_xyz_to_lonlat(xyzs[i]));
             bool p_visible = false;
             if(p.x >= 0 && p.x < 1 && p.y >= 0 && p.y < 1) {
@@ -288,20 +288,20 @@ std::vector<bool> Camera::get_include_mask(const std::vector<cv::Point2d> & lonl
             ret[i] = p_visible;
         }
     };
-    tbb::parallel_for(tbb::blocked_range<size_t>(0, xyzs.size()), add_point_single);
+    parallel_for_caller(cv::Range(0, xyzs.size()), add_point_single);
 
     return ret;
 }
 
 std::vector<cv::Point2d> Camera::image_to_obj(const std::vector<cv::Point2d> & xys) {
     std::vector<cv::Point3d> points(xys.size(), cv::Point3d(NAN, NAN, NAN));
-    auto convert_point_single = [&](const tbb::blocked_range<size_t>& r)
+    auto convert_point_single = [&](const cv::Range& r)
     {
-        for (size_t i = r.begin(); i < r.end(); i += 1) {
+        for (int i = r.start; i < r.end; i += 1) {
             points[i] = sphere_lonlat_to_xyz(image_to_obj_single(xys[i]));
         }
     };
-    tbb::parallel_for(tbb::blocked_range<size_t>(0, xys.size()), convert_point_single);
+    parallel_for_caller(cv::Range(0, xys.size()), convert_point_single);
 
     // rotate it
     sphere_rotate(points, true);

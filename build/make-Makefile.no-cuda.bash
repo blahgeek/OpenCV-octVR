@@ -4,7 +4,7 @@ cmake \
     -D CMAKE_BUILD_TYPE=Release \
     -D CMAKE_INSTALL_PREFIX=`pwd`/../.. \
     -D WITH_IPP=OFF \
-    -D WITH_TBB=ON \
+    -D WITH_TBB=OFF \
     -D WITH_FFMPEG=OFF \
     -D CMAKE_CXX_FLAGS="-std=c++11 -DCV_OPENCL_RUN_VERBOSE" \
     -D WITH_CUDA=OFF \

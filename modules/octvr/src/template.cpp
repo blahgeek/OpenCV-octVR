@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include "opencv2/imgproc.hpp"
 #include "opencv2/stitching/detail/seam_finders.hpp"
-#include "tbb/tbb.h"
+#include "parallel_caller.hpp"
 
 
 using namespace vr;
@@ -61,16 +61,16 @@ void MapperTemplate::add_input(const std::string & from,
 
     cv::Mat map1(out_size, CV_32FC1), map2(out_size, CV_32FC1);
     cv::Mat mask(out_size, CV_8U);
-    auto process_row_block = [&](tbb::blocked_range<int>& row_range)
+    auto process_row_block = [&](const cv::Range& row_range)
     {
-        for(int h = row_range.begin(); h < row_range.end(); h += 1) {
+        for(int h = row_range.start; h < row_range.end; h += 1) {
             unsigned char * mask_row = mask.ptr(h);
             float * map1_row = map1.ptr<float>(h);
             float * map2_row = map2.ptr<float>(h);
 
-            auto process_point_block = [&](tbb::blocked_range<int>& r)
+            auto process_point_block = [&](const cv::Range& r)
             {
-                for (int w = r.begin(); w < r.end(); w += 1)
+                for (int w = r.start; w < r.end; w += 1)
                 {
                     auto index = w + out_size.width * h;
                     float x = tmp[index].x;
@@ -110,10 +110,10 @@ void MapperTemplate::add_input(const std::string & from,
                     visible_mask[index] = visible_mask[index] || visible_tmp[index];
                 }
             };
-            tbb::parallel_for(tbb::blocked_range<int>(0, out_size.width), process_point_block);
+            parallel_for_caller(cv::Range(0, out_size.width), process_point_block);
         }
     };
-    tbb::parallel_for(tbb::blocked_range<int>(0, out_size.height), process_row_block);
+    parallel_for_caller(cv::Range(0, out_size.height), process_row_block);
 
     CV_Assert(min_h <= max_h && min_w <= max_w);
 
