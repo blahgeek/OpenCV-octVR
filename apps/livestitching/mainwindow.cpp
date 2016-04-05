@@ -49,6 +49,7 @@ void MainWindow::onGenerateCMD() {
     bool preview_enable = ui->preview_enable->checkState() == Qt::Checked;
     int preview_width = preview_enable ? ui->preview_width->value() : 0;
     int preview_height = preview_enable ? ui->preview_height->value() : 0;
+    this->preview_video.reset(nullptr); // delete before constructing new shared memory
     this->preview_video.reset(new PreviewVideoWidget(this, preview_width, preview_height));
 
     // BEGIN input args

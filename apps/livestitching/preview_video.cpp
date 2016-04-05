@@ -35,7 +35,7 @@ static bool createSharedMemory(QSharedMemory & x, QString name, size_t s, bool r
 
 PreviewVideoWidget::PreviewVideoWidget(QWidget * parent, int _w, int _h): 
 QVideoWidget(parent), preview_w(_w), preview_h(_h) {
-    if(_w * _h > 0) {
+    if(_w * _h == 0) {
         qDebug() << "Preview video is disabled";
         valid_shared_memory = false;
     } else {
