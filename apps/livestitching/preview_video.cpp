@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2016-02-23
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-02-26
+* @Last Modified time: 2016-04-05
 */
 
 #include <iostream>
@@ -35,11 +35,16 @@ static bool createSharedMemory(QSharedMemory & x, QString name, size_t s, bool r
 
 PreviewVideoWidget::PreviewVideoWidget(QWidget * parent, int _w, int _h): 
 QVideoWidget(parent), preview_w(_w), preview_h(_h) {
-    valid_shared_memory &= createSharedMemory(preview_data0, OCTVR_PREVIEW_DATA0_MEMORY_KEY,
-                                              sizeof(struct PreviewDataHeader) + _w * _h * 3);
-    valid_shared_memory &= createSharedMemory(preview_data1, OCTVR_PREVIEW_DATA1_MEMORY_KEY,
-                                              sizeof(struct PreviewDataHeader) + _w * _h * 3);
-    valid_shared_memory &= createSharedMemory(preview_meta, OCTVR_PREVIEW_DATA_META_MEMORY_KEY, 1);
+    if(_w * _h > 0) {
+        qDebug() << "Preview video is disabled";
+        valid_shared_memory = false;
+    } else {
+        valid_shared_memory &= createSharedMemory(preview_data0, OCTVR_PREVIEW_DATA0_MEMORY_KEY,
+                                                  sizeof(struct PreviewDataHeader) + _w * _h * 3);
+        valid_shared_memory &= createSharedMemory(preview_data1, OCTVR_PREVIEW_DATA1_MEMORY_KEY,
+                                                  sizeof(struct PreviewDataHeader) + _w * _h * 3);
+        valid_shared_memory &= createSharedMemory(preview_meta, OCTVR_PREVIEW_DATA_META_MEMORY_KEY, 1);
+    }
 
     if(valid_shared_memory) {
         *(static_cast<char *>(preview_meta.data())) = 0;

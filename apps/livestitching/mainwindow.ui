@@ -302,7 +302,7 @@
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout">
         <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_2">
+         <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="1,2">
           <property name="leftMargin">
            <number>20</number>
           </property>
@@ -316,83 +316,152 @@
            <number>10</number>
           </property>
           <item>
-           <widget class="QGroupBox" name="group_paranoma">
-            <property name="title">
-             <string>Paranoma Settings</string>
+           <layout class="QVBoxLayout" name="verticalLayout_5" stretch="1,1">
+            <property name="rightMargin">
+             <number>0</number>
             </property>
-            <layout class="QFormLayout" name="formLayout">
-             <item row="0" column="0">
-              <widget class="QLabel" name="label_4">
-               <property name="text">
-                <string>Algorithm</string>
-               </property>
-              </widget>
-             </item>
-             <item row="0" column="1">
-              <widget class="QComboBox" name="paranoma_algorithm">
-               <item>
-                <property name="text">
-                 <string>Multi-band</string>
-                </property>
+            <property name="bottomMargin">
+             <number>0</number>
+            </property>
+            <item>
+             <widget class="QGroupBox" name="group_paranoma">
+              <property name="title">
+               <string>Paranoma Settings</string>
+              </property>
+              <layout class="QFormLayout" name="formLayout">
+               <item row="0" column="0">
+                <widget class="QLabel" name="label_4">
+                 <property name="text">
+                  <string>Algorithm</string>
+                 </property>
+                </widget>
                </item>
-               <item>
-                <property name="text">
-                 <string>Linear</string>
-                </property>
+               <item row="0" column="1">
+                <widget class="QComboBox" name="paranoma_algorithm">
+                 <item>
+                  <property name="text">
+                   <string>Multi-band</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Linear</string>
+                  </property>
+                 </item>
+                </widget>
                </item>
-              </widget>
-             </item>
-             <item row="1" column="0">
-              <widget class="QLabel" name="label_5">
-               <property name="text">
-                <string>Width</string>
-               </property>
-              </widget>
-             </item>
-             <item row="1" column="1">
-              <widget class="QSpinBox" name="paranoma_width">
-               <property name="minimum">
-                <number>2</number>
-               </property>
-               <property name="maximum">
-                <number>7680</number>
-               </property>
-               <property name="singleStep">
-                <number>2</number>
-               </property>
-               <property name="value">
-                <number>3840</number>
-               </property>
-              </widget>
-             </item>
-             <item row="2" column="0">
-              <widget class="QLabel" name="label_8">
-               <property name="text">
-                <string>Height</string>
-               </property>
-              </widget>
-             </item>
-             <item row="2" column="1">
-              <widget class="QSpinBox" name="paranoma_height">
-               <property name="minimum">
-                <number>1</number>
-               </property>
-               <property name="maximum">
-                <number>3840</number>
-               </property>
-               <property name="value">
-                <number>2160</number>
-               </property>
-              </widget>
-             </item>
-            </layout>
-            <zorder>paranoma_width</zorder>
-            <zorder>paranoma_algorithm</zorder>
-            <zorder>label_4</zorder>
-            <zorder>label_5</zorder>
-            <zorder>label_8</zorder>
-            <zorder>paranoma_height</zorder>
-           </widget>
+               <item row="1" column="0">
+                <widget class="QLabel" name="label_5">
+                 <property name="text">
+                  <string>Width</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="1">
+                <widget class="QSpinBox" name="paranoma_width">
+                 <property name="minimum">
+                  <number>2</number>
+                 </property>
+                 <property name="maximum">
+                  <number>7680</number>
+                 </property>
+                 <property name="singleStep">
+                  <number>2</number>
+                 </property>
+                 <property name="value">
+                  <number>3840</number>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="0">
+                <widget class="QLabel" name="label_8">
+                 <property name="text">
+                  <string>Height</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="1">
+                <widget class="QSpinBox" name="paranoma_height">
+                 <property name="minimum">
+                  <number>1</number>
+                 </property>
+                 <property name="maximum">
+                  <number>3840</number>
+                 </property>
+                 <property name="value">
+                  <number>2160</number>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+              <zorder>paranoma_width</zorder>
+              <zorder>paranoma_algorithm</zorder>
+              <zorder>label_4</zorder>
+              <zorder>label_5</zorder>
+              <zorder>label_8</zorder>
+              <zorder>paranoma_height</zorder>
+             </widget>
+            </item>
+            <item>
+             <widget class="QGroupBox" name="groupBox">
+              <property name="title">
+               <string>Preview Settings</string>
+              </property>
+              <layout class="QFormLayout" name="formLayout_5">
+               <item row="1" column="0">
+                <widget class="QLabel" name="label_16">
+                 <property name="text">
+                  <string>Width</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="1">
+                <widget class="QSpinBox" name="preview_width">
+                 <property name="minimum">
+                  <number>100</number>
+                 </property>
+                 <property name="maximum">
+                  <number>4096</number>
+                 </property>
+                 <property name="value">
+                  <number>1280</number>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="0">
+                <widget class="QLabel" name="label_17">
+                 <property name="text">
+                  <string>Height</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="2" column="1">
+                <widget class="QSpinBox" name="preview_height">
+                 <property name="minimum">
+                  <number>50</number>
+                 </property>
+                 <property name="maximum">
+                  <number>4096</number>
+                 </property>
+                 <property name="value">
+                  <number>640</number>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="1">
+                <widget class="QCheckBox" name="preview_enable">
+                 <property name="text">
+                  <string>Enable</string>
+                 </property>
+                 <property name="checked">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+           </layout>
           </item>
           <item>
            <widget class="QTabWidget" name="tabWidget_2">
