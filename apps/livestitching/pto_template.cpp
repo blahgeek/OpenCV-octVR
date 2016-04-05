@@ -42,13 +42,14 @@ void PTOTemplate::loadPTO() {
     QStringList parser_args;
     parser_args << "-c" << parser_script;
     if(this->lon_select_num > 0) {
-        parser_args << "--lon_select";
         if(this->left)
-            parser_args << QString("%1,%2,%3,%4").arg(-3.0).arg(360.0 / lon_select_num + 3.0).arg(360.0 / lon_select_num).arg(lon_select_num);
+            parser_args << QString("--lon_select=%1,%2,%3,%4").arg(-3.0).arg(360.0 / lon_select_num + 3.0).arg(-360.0 / lon_select_num).arg(lon_select_num);
         else
-            parser_args << QString("%1,%2,%3,%4").arg(- 360.0 / lon_select_num - 3.0).arg(3.0).arg(360.0 / lon_select_num).arg(lon_select_num);
+            parser_args << QString("--lon_select=%1,%2,%3,%4").arg(- 360.0 / lon_select_num - 3.0).arg(3.0).arg(-360.0 / lon_select_num).arg(lon_select_num);
     }
     parser_args << filename;
+
+    qDebug() << "Parser args: " << parser_args;
 
     QProcess parser;
     parser.start("python3", parser_args);
