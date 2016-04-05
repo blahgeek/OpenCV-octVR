@@ -16,6 +16,10 @@
 using vr::PreviewDataHeader;
 
 static bool createSharedMemory(QSharedMemory & x, QString name, size_t s, bool retry=true) {
+    if(x.isAttached()) {
+        qDebug() << "Detaching shared memory " << name << " before creating";
+        x.detach();
+    }
     qDebug() << "Creating shared memory with name=" << name << " and size=" << s;
     x.setKey(name);
     bool ret = x.create(s);
@@ -33,8 +37,11 @@ static bool createSharedMemory(QSharedMemory & x, QString name, size_t s, bool r
     return createSharedMemory(x, name, s, false);
 }
 
-PreviewVideoWidget::PreviewVideoWidget(QWidget * parent, int _w, int _h): 
-QVideoWidget(parent), preview_w(_w), preview_h(_h) {
+PreviewVideoWidget::PreviewVideoWidget(QWidget * p): QVideoWidget(p) {}
+
+void PreviewVideoWidget::prepare(int _w, int _h) {
+    std::lock_guard<std::mutex> lock(this->mtx);
+    valid_shared_memory = true;
     if(_w * _h == 0) {
         qDebug() << "Preview video is disabled";
         valid_shared_memory = false;
