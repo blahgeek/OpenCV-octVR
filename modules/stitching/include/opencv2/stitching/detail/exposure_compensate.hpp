@@ -142,13 +142,15 @@ class CV_EXPORTS BlocksGainCompensator : public ExposureCompensator
 {
 public:
     BlocksGainCompensator(int bl_width = 32, int bl_height = 32)
-            : bl_width_(bl_width), bl_height_(bl_height) {}
+            : do_filter(true), bl_width_(bl_width), bl_height_(bl_height) {}
     void feed(const std::vector<Point> &corners, const std::vector<UMat> &images,
               const std::vector<std::pair<UMat,uchar> > &masks);
     void apply(int index, Point corner, InputOutputArray image, InputArray mask);
     std::vector<UMat> getGainMaps() { return gain_maps_; }
+    void enableFilter(bool _x) { do_filter = _x; }
 
 private:
+    bool do_filter;
     int bl_width_, bl_height_;
     std::vector<UMat> gain_maps_;
 };

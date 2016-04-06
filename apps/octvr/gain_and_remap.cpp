@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2016-03-15
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-03-18
+* @Last Modified time: 2016-04-06
 */
 
 #include <iostream>
@@ -22,6 +22,7 @@
 using namespace vr;
 
 #define WORKING_MEGAPIX 0.1
+#define BLUR_BLOCK 16.0
 
 int main(int argc, char const *argv[]) {
     if(argc < 4) {
@@ -114,7 +115,24 @@ int main(int argc, char const *argv[]) {
                   r_template.inputs[0].map2 * stitch_template.out_size.height,
                   cv::INTER_LINEAR, cv::BORDER_WRAP);
 
+        int blur_size = ((int(BLUR_BLOCK / working_scale) >> 1) << 1) + 1;
+        // cv::GaussianBlur(orig_gain_map, orig_gain_map, cv::Size(blur_size, blur_size), 0);
+        cv::blur(orig_gain_map, orig_gain_map, cv::Size(blur_size, blur_size));
+
+#if 0
+        cv::UMat tmp_m;
+        orig_gain_map.convertTo(tmp_m, CV_8U, 255.0);
+        char tmp[128];
+        snprintf(tmp, 128, "debug/gain_%lu.png", i);
+        cv::imwrite(tmp, tmp_m);
+
+        full_gain_map.convertTo(tmp_m, CV_8U, 255.0);
+        snprintf(tmp, 128, "debug/full_%lu.png", i);
+        cv::imwrite(tmp, tmp_m);
+#endif
+
         cv::Mat_<float> gain = orig_gain_map.getMat(cv::ACCESS_READ);
+
         cv::Mat image = src_images[i].getMat(cv::ACCESS_RW);
         for (int y = 0; y < image.rows; ++y) {
             const float* gain_row = gain.ptr<float>(y);

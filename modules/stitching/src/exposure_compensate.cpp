@@ -377,8 +377,12 @@ void BlocksGainCompensator::feed(const std::vector<Point> &corners, const std::v
                     gain_map(by, bx) = static_cast<float>(gains[bl_idx]);
         }
 
-        sepFilter2D(gain_maps_[img_idx], gain_maps_[img_idx], CV_32F, ker, ker);
-        sepFilter2D(gain_maps_[img_idx], gain_maps_[img_idx], CV_32F, ker, ker);
+        if(do_filter) {
+            sepFilter2D(gain_maps_[img_idx], gain_maps_[img_idx], CV_32F, ker, ker,
+                        cv::Point(-1, -1), 0, BORDER_WRAP);
+            sepFilter2D(gain_maps_[img_idx], gain_maps_[img_idx], CV_32F, ker, ker,
+                        cv::Point(-1, -1), 0, BORDER_WRAP);
+        }
     }
 }
 
