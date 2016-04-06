@@ -56,6 +56,13 @@ class PTXParser:
             self.processing_input['selection'] = list(map(int, self.processing_input['S'].split(',')))
             del self.processing_input['S']
 
+        if 'C' in self.processing_input:  # crop from PTGui
+            self.processing_input['crop'] = {
+                "rect": list(map(int, self.processing_input['C'].split(','))),
+                "is_circular": int(self.processing_input['f']) == 2,
+            }
+            del self.processing_input['C']
+
         if refer_num > -1:
             for s in self.input_stacks:
                 if (s.find(refer_num)):
@@ -130,13 +137,6 @@ class PTXParser:
         self.processing_input['w'] = int(fields[0])
         self.processing_input['h'] = int(fields[1])
 
-    def process_input_meta_imgcrop(self, args):
-        fields = list(map(float, args.strip().split(' ')))
-        for x in fields[:5]:
-            assert x == 0, 'Only circle crop is supported now'
-        assert len(fields) == 8
-        self.processing_input["circular_crop"] = fields[5:]
-
     def process_input_meta_sourcemask(self, args):
         mask_src = base64.decodebytes(args.strip().encode('ascii'))
         self.processing_input.setdefault('exclude_masks', list())
@@ -204,7 +204,7 @@ class PTXParser:
                 }
             })
 
-            for key in ('circular_crop', 'exclude_masks', 'include_masks', 'selection'):
+            for key in ('crop', 'exclude_masks', 'include_masks', 'selection'):
                 if key in img:
                     options[key] = img[key]
             yield {

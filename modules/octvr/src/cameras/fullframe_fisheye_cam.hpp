@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-11-03
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-02-28
+* @Last Modified time: 2016-04-06
 */
 
 #ifndef VR_LIBMAP_FULLFRAME_FISHEYE_H_
@@ -14,7 +14,9 @@ namespace vr {
 
 class FullFrameFisheyeCamera: public Camera {
 protected:
-    cv::Rect circular_crop;
+    cv::Rect crop;
+    bool crop_is_circular = false;
+
     double radial_distortion[6];
     double hfov; // horizon fov
     cv::Point2d center_shift; // 0-1
