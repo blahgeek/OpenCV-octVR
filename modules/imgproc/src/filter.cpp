@@ -120,7 +120,9 @@ void FilterEngine::init( const Ptr<BaseFilter>& _filter2D,
     rowBorderType = _rowBorderType;
     columnBorderType = _columnBorderType;
 
-    CV_Assert( columnBorderType != BORDER_WRAP );
+    // CV_Assert( columnBorderType != BORDER_WRAP );
+    if(columnBorderType == BORDER_WRAP)
+        columnBorderType = BORDER_DEFAULT;
 
     if( isSeparable() )
     {

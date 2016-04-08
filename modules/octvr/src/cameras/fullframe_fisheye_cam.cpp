@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-11-03
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-03-14
+* @Last Modified time: 2016-04-06
 */
 
 #include "./fullframe_fisheye_cam.hpp"
@@ -107,22 +107,23 @@ Camera(options) {
 
     this->size.width = options["width"].GetInt();
     this->size.height = options["height"].GetInt();
-    if(options.HasMember("circular_crop")) {
-        std::vector<double> crop_args;
-        for(auto x = options["circular_crop"].Begin() ; x != options["circular_crop"].End() ; x ++)
-            crop_args.push_back(x->GetDouble());
-        circular_crop.x = - this->size.width * 0.5 
-                          - crop_args[0] * this->size.width
-                          + crop_args[2] * this->size.width;
-        circular_crop.y = - this->size.height * 0.5 
-                          - crop_args[1] * this->size.width
-                          + crop_args[2] * this->size.width;
-        circular_crop.width = this->size.width;
-        circular_crop.height = this->size.height;
 
-        this->size.height = crop_args[2] * 2 * this->size.width;
-        this->size.width = crop_args[2] * 2 * this->size.width;
+    if(options.HasMember("crop")) {
+        std::vector<int> crop_args;
+        for(auto x = options["crop"]["rect"].Begin() ; x != options["crop"]["rect"].End() ; x ++)
+            crop_args.push_back(x->GetInt());
+        crop.x = crop_args[0];
+        crop.y = crop_args[2];
+        crop.width = crop_args[1] - crop_args[0];
+        crop.height = crop_args[3] - crop_args[2];
+        crop_is_circular = options["crop"]["is_circular"].GetBool();
     }
+
+    if(crop.area() == 0) {
+        crop = cv::Rect(cv::Point(0, 0), this->size);
+        crop_is_circular = false;
+    }
+    std::cerr << "crop: " << crop << ", " << crop_is_circular << std::endl;
 
     this->hfov = options["hfov"].GetDouble();
     this->center_shift.x = options["center_dx"].GetDouble();
@@ -133,7 +134,7 @@ Camera(options) {
     this->radial_distortion[2] = _r[1].GetDouble();
     this->radial_distortion[1] = _r[2].GetDouble();
     this->radial_distortion[0] = 1.0 - _r[0].GetDouble() - _r[1].GetDouble() - _r[2].GetDouble();
-    this->radial_distortion[4] = (size.width < size.height ? size.width : size.height) / 2.0;
+    this->radial_distortion[4] = (crop.width < crop.height ? crop.width : crop.height) / 2.0;
     this->radial_distortion[5] = CalcCorrectionRadius_copy(this->radial_distortion);
 
 }
@@ -192,48 +193,46 @@ cv::Point2d FullFrameFisheyeCamera::obj_to_image_single(const cv::Point2d & lonl
     double v0 = - cos(lat) * sin(lon);
     double r = sqrt(v0 * v0 + v1 * v1);
     double theta = atan2(r, s);
-    double distance = double(this->size.width) / (this->hfov);
+    double distance = double(this->crop.width) / (this->hfov);
 
     double x = - (theta * v0 / r) * distance;
     double y = - (theta * v1 / r) * distance;
-    // double y = - (theta * v1 / r) / (this->hfov / double(size.width) * double(size.height) * 0.5);
+    // double y = - (theta * v1 / r) / (this->hfov / double(crop.width) * double(crop.height) * 0.5);
 
     auto ret = this->do_radial_distort(cv::Point2d(x, y));
     ret += this->center_shift;
 
-    ret.x /= double(this->size.width);
-    ret.y /= double(this->size.height);
+    ret.x /= double(this->crop.width);
+    ret.y /= double(this->crop.height);
 
     ret.x += 0.5;
     ret.y += 0.5;
 
-    if(this->circular_crop.area() > 0) {
-        if((ret.x - 0.5) * (ret.x - 0.5) + (ret.y - 0.5) * (ret.y - 0.5) > 0.25)
-            return cv::Point2d(NAN, NAN);
-        ret.x = (ret.x * this->size.width) - circular_crop.x;
-        ret.y = (ret.y * this->size.height) - circular_crop.y;
-        ret.x /= double(circular_crop.width);
-        ret.y /= double(circular_crop.height);
-    }
+    if(crop_is_circular && (ret.x - 0.5) * (ret.x - 0.5) + (ret.y - 0.5) * (ret.y - 0.5) > 0.25)
+        return cv::Point2d(NAN, NAN);
+    ret.x = (ret.x * this->crop.width) + crop.x;
+    ret.y = (ret.y * this->crop.height) + crop.y;
+    ret.x /= double(size.width);
+    ret.y /= double(size.height);
 
     return ret;
 }
 
 cv::Point2d FullFrameFisheyeCamera::image_to_obj_single(const cv::Point2d & _xy) {
-    CV_Assert(this->circular_crop.area() == 0);
+    CV_Assert(this->crop.size() == this->size && this->crop.tl() == cv::Point(0, 0));
 
     auto xy = _xy;
 
     xy.x -= 0.5;
     xy.y -= 0.5;
 
-    xy.x *= double(this->size.width);
-    xy.y *= double(this->size.height);
+    xy.x *= double(this->crop.width);
+    xy.y *= double(this->crop.height);
 
     xy -= this->center_shift;
     xy = this->do_reverse_radial_distort(xy);
 
-    double distance = double(this->size.width) / (this->hfov);
+    double distance = double(this->crop.width) / (this->hfov);
 
     double alpha = atan2(-xy.y, xy.x);
 

@@ -45,6 +45,12 @@ void MainWindow::onGenerateCMD() {
         }
     }
 
+    // Prepare preview video widgets
+    bool preview_enable = ui->preview_enable->checkState() == Qt::Checked;
+    int preview_width = preview_enable ? ui->preview_width->value() : 0;
+    int preview_height = preview_enable ? ui->preview_height->value() : 0;
+    this->preview_video->prepare(preview_width, preview_height);
+
     // BEGIN input args
     QStringList args = this->inputs_selector->getInputArgs();
 
@@ -60,8 +66,8 @@ void MainWindow::onGenerateCMD() {
         filter_complex.append(":merge=1");
     if(this->preview_video->isValid())
         filter_complex.append(QString(":preview_ow=%1:preview_oh=%2")
-                              .arg(PREVIEW_WIDTH)
-                              .arg(PREVIEW_HEIGHT));
+                              .arg(preview_width)
+                              .arg(preview_height));
     filter_complex.append(QString(":scale_ow=%1:scale_oh=%2")
                           .arg(ui->paranoma_width->value())
                           .arg(ui->paranoma_height->value()));
@@ -302,7 +308,7 @@ MainWindow::MainWindow(QWidget *parent) :
     inputs_selector.reset(new InputsSelector(ui->inputs_grid));
     pto_template_left.reset(new PTOTemplate(ui->template_tree_view_left, true));
     pto_template_right.reset(new PTOTemplate(ui->template_tree_view_right, false));
-    preview_video.reset(new PreviewVideoWidget(this, PREVIEW_WIDTH, PREVIEW_HEIGHT));
+    preview_video.reset(new PreviewVideoWidget(this));
     runner.reset(new Runner());
     this->ui->preview_layout->addWidget(preview_video.get());
 

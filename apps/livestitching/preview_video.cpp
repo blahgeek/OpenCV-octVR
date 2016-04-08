@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2016-02-23
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-02-26
+* @Last Modified time: 2016-04-05
 */
 
 #include <iostream>
@@ -16,6 +16,10 @@
 using vr::PreviewDataHeader;
 
 static bool createSharedMemory(QSharedMemory & x, QString name, size_t s, bool retry=true) {
+    if(x.isAttached()) {
+        qDebug() << "Detaching shared memory " << name << " before creating";
+        x.detach();
+    }
     qDebug() << "Creating shared memory with name=" << name << " and size=" << s;
     x.setKey(name);
     bool ret = x.create(s);
@@ -33,13 +37,23 @@ static bool createSharedMemory(QSharedMemory & x, QString name, size_t s, bool r
     return createSharedMemory(x, name, s, false);
 }
 
-PreviewVideoWidget::PreviewVideoWidget(QWidget * parent, int _w, int _h): 
-QVideoWidget(parent), preview_w(_w), preview_h(_h) {
-    valid_shared_memory &= createSharedMemory(preview_data0, OCTVR_PREVIEW_DATA0_MEMORY_KEY,
-                                              sizeof(struct PreviewDataHeader) + _w * _h * 3);
-    valid_shared_memory &= createSharedMemory(preview_data1, OCTVR_PREVIEW_DATA1_MEMORY_KEY,
-                                              sizeof(struct PreviewDataHeader) + _w * _h * 3);
-    valid_shared_memory &= createSharedMemory(preview_meta, OCTVR_PREVIEW_DATA_META_MEMORY_KEY, 1);
+PreviewVideoWidget::PreviewVideoWidget(QWidget * p): QVideoWidget(p) {}
+
+void PreviewVideoWidget::prepare(int _w, int _h) {
+    std::lock_guard<std::mutex> lock(this->mtx);
+    this->preview_w = _w;
+    this->preview_h = _h;
+    valid_shared_memory = true;
+    if(_w * _h == 0) {
+        qDebug() << "Preview video is disabled";
+        valid_shared_memory = false;
+    } else {
+        valid_shared_memory &= createSharedMemory(preview_data0, OCTVR_PREVIEW_DATA0_MEMORY_KEY,
+                                                  sizeof(struct PreviewDataHeader) + _w * _h * 3);
+        valid_shared_memory &= createSharedMemory(preview_data1, OCTVR_PREVIEW_DATA1_MEMORY_KEY,
+                                                  sizeof(struct PreviewDataHeader) + _w * _h * 3);
+        valid_shared_memory &= createSharedMemory(preview_meta, OCTVR_PREVIEW_DATA_META_MEMORY_KEY, 1);
+    }
 
     if(valid_shared_memory) {
         *(static_cast<char *>(preview_meta.data())) = 0;
@@ -65,19 +79,19 @@ void PreviewVideoWidget::paintEvent(QPaintEvent *) {
 
     qDebug() << "Previewing data at " << int(1 - *p_index);
 
-    QSharedMemory & data = (*p_index == 1 ? preview_data0 : preview_data1);
-    data.lock();
-    struct PreviewDataHeader * hdr = static_cast<struct PreviewDataHeader *>(data.data());
+    QSharedMemory & preview_data = (*p_index == 1 ? preview_data0 : preview_data1);
+    preview_data.lock();
+    struct PreviewDataHeader * hdr = static_cast<struct PreviewDataHeader *>(preview_data.data());
     if(hdr->width != 0) {
         CV_Assert(hdr->width == preview_w);
         CV_Assert(hdr->height == preview_h);
         qDebug() << "Drawing...";
-        QImage img(static_cast<unsigned char *>(data.data()) + sizeof(struct PreviewDataHeader), 
+        QImage img(static_cast<unsigned char *>(preview_data.data()) + sizeof(struct PreviewDataHeader), 
                    preview_w, preview_h, preview_w * 3, QImage::Format_RGB888);
         painter.drawImage(QRect(QPoint(0, 0), this->size()), img);
         painter.drawText(QPointF(5, 10), QString("FPS: %1").arg(QString::number(hdr->fps, 'g', 4)));
     }
-    data.unlock();
+    preview_data.unlock();
 }
 
 void PreviewVideoWidget::updatePreview() {

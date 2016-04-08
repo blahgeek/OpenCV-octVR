@@ -44,7 +44,7 @@ void AsyncMultiMapperImpl::run_do_mapping() {
     // split preview output for every output
     for(int i = 0 ; i < outputs.size() ; i += 1) {
         int height_per_output = preview_output.rows / outputs.size();
-        cv::Range r(height_per_output * i, height_per_output * (i * 1));
+        cv::Range r(height_per_output * i, height_per_output * (i + 1));
         auto preview_range = preview_output.rowRange(r);
         this->mappers[i]->stitch(gpumats, outputs[i], preview_range, i == 0);
     }

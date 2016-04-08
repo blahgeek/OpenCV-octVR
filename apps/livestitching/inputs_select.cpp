@@ -13,19 +13,38 @@
 #include <QMessageBox>
 #include <QCameraViewfinderSettings>
 #include <QCoreApplication>
+#include <QRegularExpression>
 
 #include "./inputs_select.hpp"
 #include "./encryptor.hpp"
 
+#include <algorithm>
+
+static long get_camera_order(const QCameraInfo & info) {
+    long ret = 0;
+
+    QRegularExpression re("([0-9]+)");
+    QRegularExpressionMatchIterator it = re.globalMatch(info.deviceName() + info.description());
+    while(it.hasNext()) {
+        ret <<= 8;
+        QRegularExpressionMatch m = it.next();
+        ret += m.captured(1).toInt();
+    }
+    return ret;
+}
+
 InputsSelector::InputsSelector(QGridLayout * _grid): grid(_grid) {
     this->camera_infos = QCameraInfo::availableCameras();
+    std::stable_sort(camera_infos.begin(), camera_infos.end(), [](const QCameraInfo & a, const QCameraInfo & b) {
+        return get_camera_order(a) < get_camera_order(b);
+    });
 
     int size_all = this->camera_infos.size();
     int size_row = std::ceil(std::sqrt(float(size_all)));
 
     int row = 0, col = 0;
     foreach(const QCameraInfo &info, camera_infos) {
-        qDebug() << "Camera info: " << info.description() << ", " << info.deviceName();
+        qDebug() << "Camera info: " << info.description() << ", " << info.deviceName() << ", " << get_camera_order(info);
 
         this->cameras.emplace_back(new QCamera(info));
         this->views.emplace_back(new QCameraViewfinder());
