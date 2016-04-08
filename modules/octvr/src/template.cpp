@@ -1,8 +1,8 @@
 /* 
 * @Author: BlahGeek
 * @Date:   2015-12-07
-* @Last Modified by:   StrayWarrior
-* @Last Modified time: 2016-03-12
+* @Last Modified by:   BlahGeek
+* @Last Modified time: 2016-04-08
 */
 
 #include "octvr.hpp"
@@ -68,9 +68,9 @@ void MapperTemplate::add_input(const std::string & from,
             float * map1_row = map1.ptr<float>(h);
             float * map2_row = map2.ptr<float>(h);
 
-            auto process_point_block = [&](const cv::Range& r)
-            {
-                for (int w = r.start; w < r.end; w += 1)
+            // auto process_point_block = [&](const cv::Range& r)
+            // {
+                for (int w = 0; w < out_size.width; w += 1)
                 {
                     auto index = w + out_size.width * h;
                     float x = tmp[index].x;
@@ -109,8 +109,8 @@ void MapperTemplate::add_input(const std::string & from,
                         }
                     visible_mask[index] = visible_mask[index] || visible_tmp[index];
                 }
-            };
-            parallel_for_caller(cv::Range(0, out_size.width), process_point_block);
+            // };
+            // parallel_for_caller(cv::Range(0, out_size.width), process_point_block);
         }
     };
     parallel_for_caller(cv::Range(0, out_size.height), process_row_block);
