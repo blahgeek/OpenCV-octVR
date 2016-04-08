@@ -52,8 +52,7 @@ int main(int argc, char const *argv[]) {
     // load stitching template
     MapperTemplate stitch_template = load_template(argv[1]);
     std::cerr << stitch_template.inputs.size() << " images found" << std::endl;
-    CV_Assert(argc - 2 == stitch_template.inputs.size() * 3 ||
-              argc - 2 == stitch_template.inputs.size() * 2);
+    CV_Assert((argc - 2) % stitch_template.inputs.size() == 0);
 
     argv += 2;
     argc -= 2;
