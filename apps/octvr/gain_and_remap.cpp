@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2016-03-15
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-04-06
+* @Last Modified time: 2016-04-09
 */
 
 #include <iostream>
@@ -26,7 +26,7 @@ using namespace vr;
 
 int main(int argc, char const *argv[]) {
     if(argc < 4) {
-        std::cerr << "Usage: " << argv[0] << " stitch.dat img0.png ... rmap0.dat ... map0.dat ..." << std::endl;
+        std::cerr << "Usage: " << argv[0] << " stitch.dat img0.png ... rmap0.dat ... defish0.dat ... [defish0.dat ...]" << std::endl;
         return 1;
     }
 
@@ -148,21 +148,33 @@ int main(int argc, char const *argv[]) {
     argv += stitch_template.inputs.size();
     argc -= stitch_template.inputs.size();
 
+    char const ** orig_filenames = argv - 2 * stitch_template.inputs.size();
+
     // output
-    if(argc > 0)
-        for(size_t i = 0 ; i < stitch_template.inputs.size() ; i += 1) {
-            auto output_template = load_template(argv[i]);
-            CV_Assert(output_template.inputs.size() == 1);
-            cv::UMat remapped;
-            cv::remap(src_images[i], remapped,
-                      output_template.inputs[0].map1 * src_images[i].cols,
-                      output_template.inputs[0].map2 * src_images[i].rows,
-                      cv::INTER_LINEAR);
-            save_image(argv[i - 2 * stitch_template.inputs.size()], ".defish.png", remapped);
+    if(argc > 0) {
+        int defish_count = 0;
+        while(argc > 0) {
+            defish_count += 1;
+            for(size_t i = 0 ; i < stitch_template.inputs.size() ; i += 1) {
+                auto output_template = load_template(argv[i]);
+                CV_Assert(output_template.inputs.size() == 1);
+                cv::UMat remapped;
+                cv::remap(src_images[i], remapped,
+                          output_template.inputs[0].map1 * src_images[i].cols,
+                          output_template.inputs[0].map2 * src_images[i].rows,
+                          cv::INTER_LINEAR);
+                char suffix[128];
+                snprintf(suffix, 128, ".defish-%d.png", defish_count);
+                save_image(orig_filenames[i], suffix, remapped);
+            }
+
+            argc -= stitch_template.inputs.size();
+            argv += stitch_template.inputs.size();
         }
+    }
     else
         for(size_t i = 0 ; i < stitch_template.inputs.size() ; i += 1)
-            save_image(argv[i - 2 * stitch_template.inputs.size()], ".gain.png", src_images[i]);
+            save_image(orig_filenames[i], ".gain.png", src_images[i]);
 
     /* code */
     return 0;
