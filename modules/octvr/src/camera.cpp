@@ -212,7 +212,7 @@ void Camera::sphere_rotate(std::vector<cv::Point3d> & points, bool reverse) {
 std::vector<cv::Point2d> Camera::obj_to_image(const std::vector<cv::Point2d> & lonlats) {
     // convert lon/lat to xyz in sphere
     std::vector<cv::Point3d> xyzs(lonlats.size(), cv::Point3d(NAN, NAN, NAN));
-    std::vector<bool> lonlats_valid(lonlats.size(), false);
+    std::vector<char> lonlats_valid(lonlats.size(), 0);  // setting operation of std::vector<bool> is NOT atomic
     auto convert_point_single = [&](const cv::Range& r)
     {
         for (int i = r.start; i < r.end; i += 1) {
