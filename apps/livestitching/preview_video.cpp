@@ -41,6 +41,8 @@ PreviewVideoWidget::PreviewVideoWidget(QWidget * p): QVideoWidget(p) {}
 
 void PreviewVideoWidget::prepare(int _w, int _h) {
     std::lock_guard<std::mutex> lock(this->mtx);
+    this->preview_w = _w;
+    this->preview_h = _h;
     valid_shared_memory = true;
     if(_w * _h == 0) {
         qDebug() << "Preview video is disabled";
@@ -77,19 +79,19 @@ void PreviewVideoWidget::paintEvent(QPaintEvent *) {
 
     qDebug() << "Previewing data at " << int(1 - *p_index);
 
-    QSharedMemory & data = (*p_index == 1 ? preview_data0 : preview_data1);
-    data.lock();
-    struct PreviewDataHeader * hdr = static_cast<struct PreviewDataHeader *>(data.data());
+    QSharedMemory & preview_data = (*p_index == 1 ? preview_data0 : preview_data1);
+    preview_data.lock();
+    struct PreviewDataHeader * hdr = static_cast<struct PreviewDataHeader *>(preview_data.data());
     if(hdr->width != 0) {
         CV_Assert(hdr->width == preview_w);
         CV_Assert(hdr->height == preview_h);
         qDebug() << "Drawing...";
-        QImage img(static_cast<unsigned char *>(data.data()) + sizeof(struct PreviewDataHeader), 
+        QImage img(static_cast<unsigned char *>(preview_data.data()) + sizeof(struct PreviewDataHeader), 
                    preview_w, preview_h, preview_w * 3, QImage::Format_RGB888);
         painter.drawImage(QRect(QPoint(0, 0), this->size()), img);
         painter.drawText(QPointF(5, 10), QString("FPS: %1").arg(QString::number(hdr->fps, 'g', 4)));
     }
-    data.unlock();
+    preview_data.unlock();
 }
 
 void PreviewVideoWidget::updatePreview() {

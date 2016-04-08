@@ -21,9 +21,9 @@ class PreviewVideoWidget: public QVideoWidget {
 
 private:
     QSharedMemory preview_data0, preview_data1, preview_meta;
-    int preview_w, preview_h;
+    int preview_w = 0, preview_h = 0;
 
-    bool valid_shared_memory = true;
+    bool valid_shared_memory = false;
 
     std::mutex mtx;
 
