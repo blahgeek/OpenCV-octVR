@@ -340,7 +340,17 @@
                 <widget class="QComboBox" name="paranoma_algorithm">
                  <item>
                   <property name="text">
-                   <string>Multi-band</string>
+                   <string>Multi-band 128</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Multi-band 64</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Multi-band 32</string>
                   </property>
                  </item>
                  <item>

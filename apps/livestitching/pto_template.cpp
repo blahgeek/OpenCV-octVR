@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2016-02-22
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-03-30
+* @Last Modified time: 2016-04-11
 */
 
 #include <iostream>
@@ -42,10 +42,11 @@ void PTOTemplate::loadPTO() {
     QStringList parser_args;
     parser_args << "-c" << parser_script;
     if(this->lon_select_num > 0) {
+        double arc_per_cam = 360.0 / lon_select_num;
         if(this->left)
-            parser_args << QString("--lon_select=%1,%2,%3,%4").arg(-3.0).arg(360.0 / lon_select_num + 3.0).arg(-360.0 / lon_select_num).arg(lon_select_num);
+            parser_args << QString("--lon_select=%1,%2,%3,%4").arg(-arc_per_cam * 0.2).arg(arc_per_cam * 1.2).arg(-arc_per_cam).arg(lon_select_num);
         else
-            parser_args << QString("--lon_select=%1,%2,%3,%4").arg(- 360.0 / lon_select_num - 3.0).arg(3.0).arg(-360.0 / lon_select_num).arg(lon_select_num);
+            parser_args << QString("--lon_select=%1,%2,%3,%4").arg(-arc_per_cam * 1.2).arg(arc_per_cam * 0.2).arg(-arc_per_cam).arg(lon_select_num);
     }
     parser_args << filename;
 

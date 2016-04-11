@@ -55,13 +55,14 @@ void MainWindow::onGenerateCMD() {
     QStringList args = this->inputs_selector->getInputArgs();
 
     // BEGIN filter args
+    int _blend_presets[] = {128, 64, 32, -1};
     QString filter_complex = QString("vr_map=");
     filter_complex.append(QString("inputs=%1:outputs=%2:crop_x=%3:crop_w=%4:blend=%5")
                           .arg(selected_cams.size())
                           .arg(is_3d ? "left.dat|right.dat" : "left.dat")
                           .arg(ui->inputs_crop_x->value())
                           .arg(ui->inputs_crop_w->value())
-                          .arg(ui->paranoma_algorithm->currentIndex()==0?128:-5) );
+                          .arg(_blend_presets[ui->paranoma_algorithm->currentIndex()]) );
     if(is_3d)
         filter_complex.append(":merge=1");
     if(this->preview_video->isValid())
