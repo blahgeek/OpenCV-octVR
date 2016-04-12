@@ -32,6 +32,7 @@ class Mapper {
 private:
     license_t lic_t;
     int lic_cnt;
+    bool with_logo;
 #endif
 
 private:
