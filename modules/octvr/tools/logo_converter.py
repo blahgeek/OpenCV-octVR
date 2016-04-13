@@ -23,8 +23,14 @@ fout.write('// From ' + sys.argv[1] + '\n')
 fout.write('extern const unsigned char OCTVR_LOGO_DATA[];\n')
 fout.write('extern const int OCTVR_LOGO_DATA_LEN;\n')
 fout.write('const unsigned char OCTVR_LOGO_DATA[] = {\n')
+
+if sys.version[0] == '3':
+    byte_to_ascii = lambda x : x
+else:
+    byte_to_ascii = lambda x : ord(x)
+
 for i, c in enumerate(img):
-    fout.write('{}, '.format(c))
+    fout.write('{}, '.format(byte_to_ascii(c)))
     if i % 20 == 0:
         fout.write('\n')
 fout.write('}; \n')
