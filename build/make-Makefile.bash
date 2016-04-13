@@ -19,5 +19,9 @@ cmake \
     -D BUILD_PERF_TESTS=OFF \
     -D BUILD_opencv_python2=OFF \
     -D BUILD_opencv_python3=OFF \
+    -D WITH_DONGLE_LICENSE=OFF \
+    -D OWLLIVE_ENCRYPT_ARG=OFF \
+    -D OWLLIVE_DISABLE_CONSOLE=OFF \
+    -D WITH_OCTVR_LOGO=ON \
     $@ \
     ..
