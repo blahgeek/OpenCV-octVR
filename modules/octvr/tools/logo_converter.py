@@ -4,6 +4,7 @@
 
 import sys
 import os
+import io
 
 if len(sys.argv) < 3:
     print('Usage:', sys.argv[0], '<IMG> <OUTPUT>')
@@ -11,7 +12,7 @@ if len(sys.argv) < 3:
 
 sys.stderr.write("Converting {} to {}...\n".format(sys.argv[1], sys.argv[2]))
 
-img = open(sys.argv[1]).read()
+img = io.open(sys.argv[1], 'rb').read()
 if not os.path.exists(os.path.dirname(sys.argv[2])):
     os.makedirs(os.path.dirname(sys.argv[2]))
 fout = open(sys.argv[2], 'w')
@@ -23,7 +24,7 @@ fout.write('extern const unsigned char OCTVR_LOGO_DATA[];\n')
 fout.write('extern const int OCTVR_LOGO_DATA_LEN;\n')
 fout.write('const unsigned char OCTVR_LOGO_DATA[] = {\n')
 for i, c in enumerate(img):
-    fout.write('{}, '.format(ord(c)))
+    fout.write('{}, '.format(c))
     if i % 20 == 0:
         fout.write('\n')
 fout.write('}; \n')
