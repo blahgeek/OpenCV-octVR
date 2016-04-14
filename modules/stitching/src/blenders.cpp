@@ -579,6 +579,9 @@ void FeatherGPUBlender::do_blend(std::vector<cuda::GpuMat> & imgs, cuda::GpuMat 
     }
     cuda::GpuMat dst_roi = dst(result_roi);
     dst_16s.convertTo(dst_roi, CV_8UC3, 1.0 / imgs.size(), stream);
+#if defined(_WIN32)
+    stream.queryIfComplete();
+#endif
     stream.waitForCompletion();
 }
 
@@ -679,6 +682,11 @@ void MultiBandGPUBlender::do_blend(std::vector<cuda::GpuMat> & imgs, cuda::GpuMa
         for(int n = 0 ; n < num_images ; n += 1)
             cuda::pyrUp(src_pyr_laplaces[n][i+1], tmps[n + i * num_images], streams[n]);
 
+#if defined(_WIN32)
+    for(int n = 0 ; n < num_images ; n += 1)
+        streams[n].queryIfComplete();
+#endif
+
     for(int n = 0 ; n < num_images ; n += 1)
         streams[n].waitForCompletion();
 
@@ -704,6 +712,11 @@ void MultiBandGPUBlender::do_blend(std::vector<cuda::GpuMat> & imgs, cuda::GpuMa
                      1, -1, streams[i]);
     }
 
+#if defined(_WIN32)
+    for(int i = 0 ; i <= num_bands ; i += 1)
+        streams[i].queryIfComplete();
+#endif
+
     for(int i = 0 ; i <= num_bands ; i += 1)
         streams[i].waitForCompletion();
 
@@ -714,6 +727,9 @@ void MultiBandGPUBlender::do_blend(std::vector<cuda::GpuMat> & imgs, cuda::GpuMa
     }
     dst_pyr_laplace[0].convertTo(dst(align_result_roi), CV_8UC3, streams[0]);
 
+#if defined(_WIN32)
+    streams[0].queryIfComplete();
+#endif
     streams[0].waitForCompletion();
 }
 

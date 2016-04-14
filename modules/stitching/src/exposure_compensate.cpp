@@ -228,6 +228,12 @@ void GainCompensatorGPU::feed(const std::vector<cv::cuda::GpuMat> & images) {
         CV_Assert(images[i].size() == this->norm_images[i].size());
         images[i].elementNorm(norm_images[i], CV_32F, streams[i]);
     }
+
+#if defined(_WIN32)
+    for(int i = 0 ; i < num_images ; i += 1)
+        streams[i].queryIfComplete();
+#endif
+
     for(int i = 0 ; i < num_images ; i += 1)
         streams[i].waitForCompletion();
 
@@ -249,6 +255,11 @@ void GainCompensatorGPU::feed(const std::vector<cv::cuda::GpuMat> & images) {
             }
         }
     }
+
+#if defined(_WIN32)
+    for(auto & s: streams)
+        s.queryIfComplete();
+#endif
 
     index = -1;
     for(int i = 0 ; i < images.size() ; i += 1) {
@@ -291,6 +302,10 @@ void GainCompensatorGPU::apply(std::vector<cv::cuda::GpuMat> & imgs, std::vector
     for(int i = 0 ; i < num_images ; i += 1)
         cv::cuda::device::mul_scalar_with_mask(imgs[i], gains_(i, 0), masks[i], imgs[i], 
                                                cuda::StreamAccessor::getStream(streams[i]));
+#if defined(_WIN32)
+    for(int i = 0 ; i < num_images ; i += 1)
+        streams[i].queryIfComplete();
+#endif
     for(int i = 0 ; i < num_images ; i += 1)
         streams[i].waitForCompletion();
 }

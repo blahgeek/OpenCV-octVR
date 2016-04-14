@@ -251,6 +251,11 @@ void Mapper::stitch(std::vector<GpuMat> & inputs,
                         //cv::INTER_LINEAR, cv::BORDER_CONSTANT, cv::Scalar(), streams[i]);
     }
 
+#if defined(_WIN32)
+    for(int i = 0 ; i < nonoverlay_num ; i += 1)
+        streams[i].queryIfComplete();
+#endif
+
     for(int i = 0 ; i < nonoverlay_num ; i += 1)
         streams[i].waitForCompletion();
     timer.tick("Uploading and remapping and resizing images");
@@ -281,6 +286,11 @@ void Mapper::stitch(std::vector<GpuMat> & inputs,
         timer.tick("No blend copy");
     }
 
+#if defined(_WIN32)
+    for(int i = nonoverlay_num ; i < inputs.size() ; i += 1)
+        streams[i].queryIfComplete();
+#endif
+
     for(int i = nonoverlay_num ; i < inputs.size() ; i += 1) {
         streams[i].waitForCompletion();
         warped_imgs_rgb[i].copyTo(result(rois[i]), masks[i], stream_final);
@@ -308,6 +318,9 @@ void Mapper::stitch(std::vector<GpuMat> & inputs,
                          0, 0, cv::INTER_LINEAR, stream_final);
     }
 
+#if defined(_WIN32)
+    stream_final.queryIfComplete();
+#endif
     stream_final.waitForCompletion();
     timer.tick("Convert output");
 
