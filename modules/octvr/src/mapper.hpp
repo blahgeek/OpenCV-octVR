@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-20
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-03-01
+* @Last Modified time: 2016-04-14
 */
 
 #ifndef VR_LIBMAP_IMPL_H
@@ -32,8 +32,8 @@ class Mapper {
 private:
     license_t lic_t;
     int lic_cnt;
-    bool with_logo;
 #endif
+    bool with_logo = true;
 
 private:
     cv::Size stitch_size, scaled_output_size;
