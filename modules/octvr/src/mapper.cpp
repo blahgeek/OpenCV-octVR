@@ -6,6 +6,8 @@
 */
 
 #include <iostream>
+#include <algorithm>
+#include <utility>
 #include "./mapper.hpp"
 
 #include "opencv2/core.hpp"
@@ -77,6 +79,8 @@ Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes,
         cv::split(logo_png, logo_channels);
         logo_mask_mat = logo_channels[3];
         logo_channels.pop_back();
+
+        std::swap(logo_channels[0], logo_channels[2]);
         cv::merge(logo_channels, logo_data_mat);
 
         GpuMat logo_data_tmp, logo_mask_tmp;
