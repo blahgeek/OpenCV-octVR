@@ -235,6 +235,9 @@ void Mapper::stitch(std::vector<GpuMat> & inputs,
             cv::cuda::resize(warped_imgs[i], warped_imgs_scale[i],
                              working_scaled_rois[i].size(), 0, 0,
                              cv::INTER_NEAREST, streams[i]);
+    #if defined(_WIN32)
+        streams[i].queryIfComplete();
+    #endif
     }
 
     for(int i = nonoverlay_num ; i < inputs.size() ; i += 1) {
@@ -249,12 +252,10 @@ void Mapper::stitch(std::vector<GpuMat> & inputs,
         // FIXME
         //cv::cuda::remap(inputs[i], warped_imgs_scale[i], map1s[i], map2s[i], 
                         //cv::INTER_LINEAR, cv::BORDER_CONSTANT, cv::Scalar(), streams[i]);
-    }
-
-#if defined(_WIN32)
-    for(int i = 0 ; i < nonoverlay_num ; i += 1)
+    #if defined(_WIN32)
         streams[i].queryIfComplete();
-#endif
+    #endif
+    }
 
     for(int i = 0 ; i < nonoverlay_num ; i += 1)
         streams[i].waitForCompletion();
@@ -282,14 +283,12 @@ void Mapper::stitch(std::vector<GpuMat> & inputs,
         for(int i = 0 ; i < nonoverlay_num ; i += 1) {
             cv::cuda::cvtColor(warped_imgs[i], warped_imgs_rgb[i], cv::COLOR_RGBA2RGB, 3, stream_final);
             warped_imgs_rgb[i].copyTo(result(rois[i]), masks[i], stream_final);
+        #if defined(_WIN32)
+            stream_final.queryIfComplete();
+        #endif
         }
         timer.tick("No blend copy");
     }
-
-#if defined(_WIN32)
-    for(int i = nonoverlay_num ; i < inputs.size() ; i += 1)
-        streams[i].queryIfComplete();
-#endif
 
     for(int i = nonoverlay_num ; i < inputs.size() ; i += 1) {
         streams[i].waitForCompletion();

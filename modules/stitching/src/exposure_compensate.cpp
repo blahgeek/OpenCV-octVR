@@ -211,7 +211,7 @@ GainCompensatorGPU::GainCompensatorGPU(const std::vector<cv::cuda::GpuMat> & mas
         norm_images[i].create(masks[i].size(), CV_32F);
 
     this->intersect_count = (num_images * (num_images - 1)) / 2;
-    this->streams.resize(std::max(intersect_count, num_images));
+    this->streams.resize(num_images);
     for(int i = 0 ; i < intersect_count ; i += 1) {
         sum1_results_host.push_back(cv::cuda::HostMem(1, 1, CV_64FC1, cv::cuda::HostMem::SHARED));
         sum2_results_host.push_back(cv::cuda::HostMem(1, 1, CV_64FC1, cv::cuda::HostMem::SHARED));
@@ -247,26 +247,26 @@ void GainCompensatorGPU::feed(const std::vector<cv::cuda::GpuMat> & images) {
             cv::cuda::GpuMat & s1 = sum1_results[index];
             cv::cuda::GpuMat & s2 = sum2_results[index];
             if(intersect_roi[index].area() > 0) {
-                cv::cuda::calcSum(norm_images[i](intersect_roi_img0[index]), s1, intersects[index], streams[index]);
-                cv::cuda::calcSum(norm_images[j](intersect_roi_img1[index]), s2, intersects[index], streams[index]);
+                cv::cuda::calcSum(norm_images[i](intersect_roi_img0[index]), s1, intersects[index], streams[i]);
+                cv::cuda::calcSum(norm_images[j](intersect_roi_img1[index]), s2, intersects[index], streams[j]);
                 // it's shared
                 //s1.download(sum1_results_host[index], streams[index]);
                 //s2.download(sum2_results_host[index], streams[index]);
             }
         }
+    #if defined(_WIN32)
+        streams[i].queryIfComplete();
+    #endif
     }
 
-#if defined(_WIN32)
     for(auto & s: streams)
-        s.queryIfComplete();
-#endif
+        s.waitForCompletion();
 
     index = -1;
     for(int i = 0 ; i < images.size() ; i += 1) {
         for(int j = i + 1 ; j < images.size() ; j += 1) {
             index += 1;
             if(intersect_roi[index].area() > 0) {
-                streams[index].waitForCompletion();
                 int n = N(i, j);
                 I(i, j) = *(double *)sum1_results_host[index].data / n;
                 I(j, i) = *(double *)sum2_results_host[index].data / n;
