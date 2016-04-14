@@ -24,7 +24,7 @@ static long get_camera_order(const QCameraInfo & info) {
     long ret = 0;
 
     QRegularExpression re("([0-9]+)");
-    QRegularExpressionMatchIterator it = re.globalMatch(info.deviceName() + info.description());
+    QRegularExpressionMatchIterator it = re.globalMatch(info.description());
     while(it.hasNext()) {
         ret <<= 8;
         QRegularExpressionMatch m = it.next();
