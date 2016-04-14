@@ -48,8 +48,15 @@ Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes,
                int blend, bool enable_gain_compensator,
                cv::Size scale_output) {
 #ifdef WITH_DONGLE_LICENSE
-    lic_runtime_init(&(this->lic_t), 601);
-    this->lic_cnt = 0;
+    if (!lic_runtime_test(&(this->lic_t), 601)) {
+        with_logo = true;
+    }
+    else {
+        lic_runtime_init(&(this->lic_t), 601);
+        this->lic_cnt = 0;
+    }
+#else
+    with_logo = true;
 #endif
 
 #ifdef HAVE_CUDA
@@ -61,29 +68,31 @@ Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes,
     this->scaled_output_size = scale_output.area() == 0 ? mt.out_size : scale_output;
 
 #ifdef WITH_OCTVR_LOGO
-    std::vector<unsigned char> logo_data_(OCTVR_LOGO_DATA, OCTVR_LOGO_DATA + OCTVR_LOGO_DATA_LEN);
-    cv::Mat logo_png = cv::imdecode(logo_data_, -1);
-    CV_Assert(logo_png.type() == CV_8UC4);
+    if (with_logo) {
+        std::vector<unsigned char> logo_data_(OCTVR_LOGO_DATA, OCTVR_LOGO_DATA + OCTVR_LOGO_DATA_LEN);
+        cv::Mat logo_png = cv::imdecode(logo_data_, -1);
+        CV_Assert(logo_png.type() == CV_8UC4);
 
-    std::vector<cv::Mat> logo_channels(4);
-    cv::Mat logo_data_mat, logo_mask_mat;
+        std::vector<cv::Mat> logo_channels(4);
+        cv::Mat logo_data_mat, logo_mask_mat;
 
-    cv::split(logo_png, logo_channels);
-    logo_mask_mat = logo_channels[3];
-    logo_channels.pop_back();
+        cv::split(logo_png, logo_channels);
+        logo_mask_mat = logo_channels[3];
+        logo_channels.pop_back();
 
-    std::swap(logo_channels[0], logo_channels[2]);
-    cv::merge(logo_channels, logo_data_mat);
+        std::swap(logo_channels[0], logo_channels[2]);
+        cv::merge(logo_channels, logo_data_mat);
 
-    GpuMat logo_data_tmp, logo_mask_tmp;
-    logo_data_tmp.upload(logo_data_mat);
-    logo_mask_tmp.upload(logo_mask_mat);
+        GpuMat logo_data_tmp, logo_mask_tmp;
+        logo_data_tmp.upload(logo_data_mat);
+        logo_mask_tmp.upload(logo_mask_mat);
 
-    cv::cuda::resize(logo_data_tmp, this->logo_data, this->stitch_size);
-    cv::cuda::resize(logo_mask_tmp, this->logo_mask, this->stitch_size);
-    CV_Assert(this->logo_data.type() == CV_8UC3 && this->logo_mask.type() == CV_8U);
-    
-    timer.tick("Prepare logo");
+        cv::cuda::resize(logo_data_tmp, this->logo_data, this->stitch_size);
+        cv::cuda::resize(logo_mask_tmp, this->logo_mask, this->stitch_size);
+        CV_Assert(this->logo_data.type() == CV_8UC3 && this->logo_mask.type() == CV_8U);
+        
+        timer.tick("Prepare logo");
+    }
 #endif
 
     if(this->nonoverlay_num == 1) {
@@ -196,9 +205,11 @@ void Mapper::stitch(std::vector<GpuMat> & inputs,
                     GpuMat & output, GpuMat & preview_output,
                     bool mix_input_channels) {
 #ifdef WITH_DONGLE_LICENSE
-    this->lic_cnt += 1;
-    if (this->lic_cnt % 3000 == 0) {
-        lic_runtime_check(&(this->lic_t));
+    if (!with_logo){
+        this->lic_cnt += 1;
+        if (this->lic_cnt % 3000 == 0) {
+            lic_runtime_check(&(this->lic_t));
+        }
     }
 #endif
 
@@ -277,7 +288,8 @@ void Mapper::stitch(std::vector<GpuMat> & inputs,
     CV_Assert(result.type() == CV_8UC3);
 
 #ifdef WITH_OCTVR_LOGO
-    this->logo_data.copyTo(result, this->logo_mask, stream_final);
+    if (with_logo)
+        this->logo_data.copyTo(result, this->logo_mask, stream_final);
 #endif
 
     if(this->stitch_size != this->scaled_output_size)
