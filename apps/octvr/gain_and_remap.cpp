@@ -2,11 +2,15 @@
 * @Author: BlahGeek
 * @Date:   2016-03-15
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-04-09
+* @Last Modified time: 2016-04-14
 */
 
 #include <iostream>
 #include <fstream>
+
+#ifdef _MSC_VER
+#define snprintf _snprintf
+#endif
 
 #include "opencv2/core.hpp"
 #include "opencv2/imgproc.hpp"
