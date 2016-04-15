@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-04-14
+* @Last Modified time: 2016-04-15
 */
 
 #include <iostream>
@@ -54,6 +54,7 @@ Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes,
     else {
         lic_runtime_init(&(this->lic_t), 601);
         this->lic_cnt = 0;
+        with_logo = false;
     }
 #else
     with_logo = true;
