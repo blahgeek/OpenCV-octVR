@@ -1,8 +1,23 @@
 #include "mainwindow.h"
 #include <QApplication>
+#include <QSplashScreen>
+#include <QPixmap>
+#include <QPainter>
+#include <QTime>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
+
+#define OWLLIVE_VERSION "0.4.2"
+
+class OwlSpashScreen: public QSplashScreen {
+public:
+    OwlSpashScreen(): QSplashScreen(QPixmap(":/icons/splash.png")) {}
+    void drawContents(QPainter * painter) override {
+        painter->setPen(QPen(QColor(255, 255, 255)));
+        painter->drawText(288, 150, "Version: " OWLLIVE_VERSION " Starting...");
+    }
+};
 
 #if defined(_WIN32) && defined(OWLLIVE_DISABLE_CONSOLE)
 #include <windows.h>
@@ -13,8 +28,22 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, char*, int nShowCmd) {
 int main(int argc, char *argv[]) {
     QApplication a(argc, argv);
 #endif
+
+    OwlSpashScreen splash;
+    splash.show();
+    a.processEvents();
+
+    QTime t;
+    t.start();
+
     MainWindow w;
     w.show();
+
+    int elapsed = t.elapsed();
+    if (elapsed < 3000)
+        QThread::msleep(3000 - elapsed);
+
+    splash.finish(&w);
 
     return a.exec();
 }

@@ -8,6 +8,7 @@
         <file>icons/bullet_purple.png</file>
         <file>icons/bullet_red.png</file>
         <file>icons/table.png</file>
+        <file>icons/splash.png</file>
         <file alias="scripts/ptx2json.py">../../modules/octvr/tools/ptx2json.py</file>
         <file>data/sample_overlay.json</file>
     </qresource>
