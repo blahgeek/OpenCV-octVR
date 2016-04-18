@@ -37,12 +37,12 @@ int main(int argc, char *argv[]) {
     t.start();
 
     MainWindow w;
-    w.show();
 
     int elapsed = t.elapsed();
     if (elapsed < 3000)
         QThread::msleep(3000 - elapsed);
 
+    w.show();
     splash.finish(&w);
 
     return a.exec();
