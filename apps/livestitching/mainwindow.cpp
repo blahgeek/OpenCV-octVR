@@ -39,7 +39,7 @@ void MainWindow::onGenerateCMD() {
             return;
         }
         if(selected_cams.size() == 0) {
-            QMessageBox::warning(this, "", "No input selected");
+            QMessageBox::warning(this, "", "No inputs is selected");
             this->ui->line_cmd->setText("");
             return;
         }
@@ -237,8 +237,7 @@ void MainWindow::on3DModeChanged(int state) {
     ui->template_tree_view_right->setEnabled(enable);
 
     if(enable)
-        QMessageBox::warning(this, "", "This is an exprimental feature\n"
-                                       "Use two template for left/right eye seperately,\n"
+        QMessageBox::warning(this, "", "Use two templates for left/right eye seperately,\n"
                                        "Or use the same template and check 'split on longitude' (for Google JUMP-like camera rigs)\n");
 
     emit this->onTemplateChanged();
