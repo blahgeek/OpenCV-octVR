@@ -180,6 +180,8 @@ class PTXParser:
             "center_dx": float(img["d"]),
             "center_dy": float(img["e"]),
             "radial": [float(img["a"]), float(img["b"]), float(img["c"])],
+            "vignette": [float(img["Va"]), float(img["Vb"]), float(img["Vc"]), float(img["Vd"])],
+            "exposure": float(img["Eev"]),
         }
 
     def dump(self):
