@@ -38,9 +38,10 @@ int main(int argc, char *argv[]) {
 
     MainWindow w;
 
-    int elapsed = t.elapsed();
-    if (elapsed < 3000)
-        QThread::msleep(3000 - elapsed);
+    while(t.elapsed() < 3000) {
+        a.processEvents();
+        QThread::msleep(5);
+    }
 
     w.show();
     splash.finish(&w);
