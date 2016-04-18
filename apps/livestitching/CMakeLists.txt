@@ -54,6 +54,7 @@ endif(OWLLIVE_ENCRYPT_ARG)
 option(OWLLIVE_DISABLE_CONSOLE "Disable windows console output" OFF)
 if (OWLLIVE_DISABLE_CONSOLE)
     add_definitions(-DOWLLIVE_DISABLE_CONSOLE)
+    add_definitions(-DQT_NO_DEBUG_OUTPUT)
     ocv_add_executable(livestitching WIN32
                        main.cpp
                        mainwindow.cpp
