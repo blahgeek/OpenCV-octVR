@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2016-02-23
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-03-30
+* @Last Modified time: 2016-04-18
 */
 
 #include <iostream>
@@ -79,7 +79,7 @@ void Runner::stop() {
 void Runner::onDumperProcessFinished(int exitCode, QProcess::ExitStatus status) {
     if(status != QProcess::NormalExit || exitCode != 0) {
         qDebug() << "Dumper did not finish normally";
-        QMessageBox::warning(nullptr, "", "Unable to create dat file");
+        QMessageBox::warning(nullptr, "", "Unable to create dat file, bad template?");
         emit statusChanged();
         return;
     }
@@ -98,6 +98,6 @@ void Runner::onDumperProcessFinished(int exitCode, QProcess::ExitStatus status) 
 }
 
 void Runner::onFfmpegProcessFinished(int exitCode, QProcess::ExitStatus status) {
-    QMessageBox::warning(nullptr, "", QString("Stopped: %1 %2").arg(status).arg(exitCode));
+    QMessageBox::warning(nullptr, "", QString("Stitcher stopped unexpectedly (%1 %2)").arg(status).arg(exitCode));
     emit statusChanged();
 }
