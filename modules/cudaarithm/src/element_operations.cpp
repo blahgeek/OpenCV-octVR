@@ -210,7 +210,7 @@ void cv::cuda::multiply(InputArray _src1, InputArray _src2, OutputArray _dst, do
 
         syncOutput(dst, _dst, stream);
     }
-    if (_src1.type() == CV_8UC4 && _src2.type() == CV_32FC1)
+    else if (_src1.type() == CV_8UC4 && _src2.type() == CV_32FC1)
     {
         GpuMat src1 = getInputMat(_src1, stream);
         GpuMat src2 = getInputMat(_src2, stream);

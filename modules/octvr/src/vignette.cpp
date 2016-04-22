@@ -29,7 +29,7 @@ Vignette::Vignette(const rapidjson::Value & options) {
             c /= ev;
             d /= ev;
         }
-        std::cerr << "Vignette params: " << a << ", " << b << ", " << c << ", " << std::endl;
+        std::cerr << "Vignette params: " << a << ", " << b << ", " << c << ", " << d << std::endl;
     } else {
         this->valid = false;
         std::cerr << "Vignette not defined" << std::endl;
