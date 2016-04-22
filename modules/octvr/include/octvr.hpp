@@ -1,8 +1,8 @@
 /* 
 * @Author: BlahGeek
 * @Date:   2015-10-13
-* @Last Modified by:   StrayWarrior
-* @Last Modified time: 2016-03-12
+* @Last Modified by:   BlahGeek
+* @Last Modified time: 2016-04-22
 */
 
 #ifndef VR_LIBMAP_BASE_H
@@ -48,6 +48,7 @@ public:
         cv::Rect roi; // related to out_size
         cv::Mat map1, map2;
         cv::Mat mask;
+        cv::Mat vignette;
     } Input;
 
     std::vector<Input> inputs;

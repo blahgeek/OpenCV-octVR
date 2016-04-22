@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-04-15
+* @Last Modified time: 2016-04-22
 */
 
 #include <iostream>
@@ -107,6 +107,7 @@ Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes,
     this->map1s.resize(mt.inputs.size() + mt.overlay_inputs.size());
     this->map2s.resize(mt.inputs.size() + mt.overlay_inputs.size());
     this->masks.resize(mt.inputs.size() + mt.overlay_inputs.size());
+    this->vignette_maps.resize(mt.inputs.size() + mt.overlay_inputs.size());
 
     this->seam_masks.resize(mt.inputs.size());
     this->rois.resize(mt.inputs.size() + mt.overlay_inputs.size());
@@ -125,6 +126,11 @@ Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes,
         masks[i].upload(mt.inputs[i].mask);
         seam_masks[i].upload(mt.seam_masks[i]);
         rois[i] = mt.inputs[i].roi;
+        if(!mt.inputs[i].vignette.empty()) {
+            cv::cuda::GpuMat vignette;
+            vignette.upload(mt.inputs[i].vignette);
+            cv::cuda::resize(vignette, this->vignette_maps[i], in_sizes[i]);
+        }
         if(enable_gain_compensator)
             cv::cuda::resize(masks[i], scaled_masks[i], working_scaled_rois[i].size());
     }
@@ -133,6 +139,12 @@ Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes,
         map2s[i + nonoverlay_num].upload(mt.overlay_inputs[i].map2);
         masks[i + nonoverlay_num].upload(mt.overlay_inputs[i].mask);
         rois[i + nonoverlay_num] = mt.overlay_inputs[i].roi;
+        if(!mt.overlay_inputs[i].vignette.empty()) {
+            cv::cuda::GpuMat vignette;
+            vignette.upload(mt.overlay_inputs[i].vignette);
+            cv::cuda::resize(vignette, this->vignette_maps[i + nonoverlay_num], 
+                             in_sizes[i + nonoverlay_num]);
+        }
     }
 
     timer.tick("Uploading mats");
@@ -223,16 +235,20 @@ void Mapper::stitch(std::vector<GpuMat> & inputs,
     assert(output.type() == CV_8UC2 && output.size() == this->scaled_output_size);
 
     const int swap_orders[] = {1, 0, 3, 2};
-    
-    for(int i = 0 ; i < nonoverlay_num ; i += 1) {
+
+    for(size_t i = 0 ; i < inputs.size() ; i += 1) {
+        bool is_overlay = (i >= nonoverlay_num);
+
         if(mix_input_channels) {
             cv::cuda::GpuMat input_c4 = inputs[i].reshape(4);
             cv::cuda::swapChannels(input_c4, swap_orders, streams[i]);
         }
         cv::cuda::cvtYUYV422toRGB24(inputs[i], rgb_inputs[i], streams[i]);
+        if(!this->vignette_maps[i].empty())
+            cv::cuda::multiply(rgb_inputs[i], this->vignette_maps[i], rgb_inputs[i], 1, -1, streams[i]);
         cv::cuda::cvtColor(rgb_inputs[i], rgba_inputs[i], cv::COLOR_RGB2RGBA, 4, streams[i]);
-        cv::cuda::fastRemap(rgba_inputs[i], warped_imgs[i], map1s[i], map2s[i], true, streams[i]);
-        if(this->compensator)
+        cv::cuda::fastRemap(rgba_inputs[i], warped_imgs[i], map1s[i], map2s[i], !is_overlay, streams[i]);
+        if(this->compensator && !is_overlay)
             cv::cuda::resize(warped_imgs[i], warped_imgs_scale[i],
                              working_scaled_rois[i].size(), 0, 0,
                              cv::INTER_NEAREST, streams[i]);
@@ -240,24 +256,7 @@ void Mapper::stitch(std::vector<GpuMat> & inputs,
         streams[i].queryIfComplete();
     #endif
     }
-
-    for(int i = nonoverlay_num ; i < inputs.size() ; i += 1) {
-        if(mix_input_channels) {
-            cv::cuda::GpuMat input_c4 = inputs[i].reshape(4);
-            cv::cuda::swapChannels(input_c4, swap_orders, streams[i]);
-        }
-        cv::cuda::cvtYUYV422toRGB24(inputs[i], rgb_inputs[i], streams[i]);
-        cv::cuda::cvtColor(rgb_inputs[i], rgba_inputs[i], cv::COLOR_RGB2RGBA, 4, streams[i]);
-        cv::cuda::fastRemap(rgba_inputs[i], warped_imgs[i], map1s[i], map2s[i], false, streams[i]);
-        cv::cuda::cvtColor(warped_imgs[i], warped_imgs_rgb[i], cv::COLOR_RGBA2RGB, 3, streams[i]);
-        // FIXME
-        //cv::cuda::remap(inputs[i], warped_imgs_scale[i], map1s[i], map2s[i], 
-                        //cv::INTER_LINEAR, cv::BORDER_CONSTANT, cv::Scalar(), streams[i]);
-    #if defined(_WIN32)
-        streams[i].queryIfComplete();
-    #endif
-    }
-
+    
     for(int i = 0 ; i < nonoverlay_num ; i += 1)
         streams[i].waitForCompletion();
     timer.tick("Uploading and remapping and resizing images");

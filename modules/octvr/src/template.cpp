@@ -2,17 +2,20 @@
 * @Author: BlahGeek
 * @Date:   2015-12-07
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-04-08
+* @Last Modified time: 2016-04-22
 */
 
 #include "octvr.hpp"
 #include "./camera.hpp"
+#include "./vignette.hpp"
 #include <iostream>
 #include <stdio.h>
 #include "opencv2/imgproc.hpp"
 #include "opencv2/stitching/detail/seam_finders.hpp"
 #include "parallel_caller.hpp"
 
+#define VIG_MAP_WIDTH 512
+#define VIG_MAP_HEIGHT 512
 
 using namespace vr;
 
@@ -126,11 +129,15 @@ void MapperTemplate::add_input(const std::string & from,
     if(!use_roi)
         roi = cv::Rect(0, 0, out_size.width, out_size.height);
 
+    vr::Vignette vig(from_opts);
+    auto vig_map = vig.getMap(VIG_MAP_WIDTH, VIG_MAP_HEIGHT);
+
     MapperTemplate::Input input;
     input.map1 = map1(roi);
     input.map2 = map2(roi);
     input.mask = mask(roi);
     input.roi = roi;
+    input.vignette = vig_map;
 
     std::cerr << "ROI: " << roi << std::endl;
 
@@ -191,7 +198,7 @@ void MapperTemplate::create_masks(const std::vector<cv::Mat> & imgs) {
     delete seam_finder;
 }
 
-static const char * DUMP_MAGIC = "VRv10";
+static const char * DUMP_MAGIC = "VRv11";
 
 void MapperTemplate::dump(std::ofstream & f) {
     if(this->seam_masks.empty())
@@ -211,6 +218,8 @@ void MapperTemplate::dump(std::ofstream & f) {
         W64i(m.type());
         W64i(m.rows);
         W64i(m.cols);
+        if(m.empty())
+            return;
         int elem_size = m.elemSize();
         for(int k = 0 ; k < m.rows ; k += 1)
             f.write(m.ptr<char>(k), m.cols * elem_size);
@@ -225,6 +234,7 @@ void MapperTemplate::dump(std::ofstream & f) {
         Wmat(input.map1);
         Wmat(input.map2);
         Wmat(input.mask);
+        Wmat(input.vignette);
     }
     assert(inputs.size() == seam_masks.size());
     for(auto & m: seam_masks)
@@ -236,6 +246,7 @@ void MapperTemplate::dump(std::ofstream & f) {
         Wmat(input.map1);
         Wmat(input.map2);
         Wmat(input.mask);
+        Wmat(input.vignette);
     }
 }
 
@@ -263,6 +274,8 @@ MapperTemplate::MapperTemplate(std::ifstream & f) {
         int type = R64i();
         int rows = R64i();
         int cols = R64i();
+        if(rows * cols == 0)
+            return cv::Mat();
         cv::Mat ret(rows, cols, type);
         int elem_size = ret.elemSize();
         for(int k = 0 ; k < rows ; k += 1)
@@ -279,6 +292,7 @@ MapperTemplate::MapperTemplate(std::ifstream & f) {
         input.map1 = Rmat();
         input.map2 = Rmat();
         input.mask = Rmat();
+        input.vignette = Rmat();
     }
     this->seam_masks.resize(this->inputs.size());
     for(size_t i = 0 ; i < this->seam_masks.size() ; i += 1)
@@ -290,5 +304,6 @@ MapperTemplate::MapperTemplate(std::ifstream & f) {
         input.map1 = Rmat();
         input.map2 = Rmat();
         input.mask = Rmat();
+        input.vignette = Rmat();
     }
 }

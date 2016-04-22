@@ -189,6 +189,7 @@ void cv::cuda::subtract(InputArray src1, InputArray src2, OutputArray dst, Input
 
 void mulMat(const GpuMat& src1, const GpuMat& src2, GpuMat& dst, const GpuMat&, double scale, Stream& stream, int);
 void mulMat_8uc4_32f(const GpuMat& src1, const GpuMat& src2, GpuMat& dst, Stream& stream);
+void mulMat_8uc3_32f(const GpuMat& src1, const GpuMat& src2, GpuMat& dst, Stream& stream);
 void mulMat_16sc3_32f(const GpuMat& src1, const GpuMat& src2, GpuMat& dst, Stream& stream);
 void mulMat_16sc4_32f(const GpuMat& src1, const GpuMat& src2, GpuMat& dst, Stream& stream);
 
@@ -196,6 +197,19 @@ void mulScalar(const GpuMat& src, cv::Scalar val, bool, GpuMat& dst, const GpuMa
 
 void cv::cuda::multiply(InputArray _src1, InputArray _src2, OutputArray _dst, double scale, int dtype, Stream& stream)
 {
+    if (_src1.type() == CV_8UC3 && _src2.type() == CV_32FC1)
+    {
+        GpuMat src1 = getInputMat(_src1, stream);
+        GpuMat src2 = getInputMat(_src2, stream);
+
+        CV_Assert( src1.size() == src2.size() );
+
+        GpuMat dst = getOutputMat(_dst, src1.size(), src1.type(), stream);
+
+        mulMat_8uc3_32f(src1, src2, dst, stream);
+
+        syncOutput(dst, _dst, stream);
+    }
     if (_src1.type() == CV_8UC4 && _src2.type() == CV_32FC1)
     {
         GpuMat src1 = getInputMat(_src1, stream);
