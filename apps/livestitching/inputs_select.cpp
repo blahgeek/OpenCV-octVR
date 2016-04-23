@@ -143,6 +143,15 @@ QStringList InputsSelector::getInputArgs() {
              << "-framerate" << QString::number(this->fps) << "-i" << input.deviceName();
 #endif
 
+    if(this->audio_combo->currentIndex() != 0) {
+    #if defined(_WIN32)
+        args << "-f" << "dshow" << "-i" << QString("audio=%1").arg(this->audio_combo->currentText());
+    #else
+        args << "-f" << "alsa" << "-i" << this->audio_combo->currentText();
+    #endif
+        args << "-strict" << "-2";
+    }
+
     return args;
 }
 
