@@ -43,9 +43,11 @@ cv::Mat Vignette::getMap(int width, int height) {
     for(int j = 0 ; j < height ; j += 1) {
         float * row = ret.ptr<float>(j);
         for(int i = 0 ; i < width ; i += 1) {
-            float r = std::sqrt(std::pow(double(i) / width - 0.5, 2.0) + 
-                                std::pow(double(j) / height - 0.5, 2.0));
-            row[i] = 1.0 / (a + r * r * (b + r * r * (c + d * r * r)));
+#define P(X) (float(X) * float(X))
+            float r = std::sqrt(P(i - width / 2) + P(j - height / 2)) / 
+                        std::sqrt(P(width / 2) + P(height / 2));
+#undef P
+            row[i] = (a + r * r * (b + r * r * (c + d * r * r)));
         }
     }
     return ret;
