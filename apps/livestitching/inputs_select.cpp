@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2016-02-21
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-03-30
+* @Last Modified time: 2016-04-23
 */
 
 #include <iostream>
@@ -14,6 +14,7 @@
 #include <QCameraViewfinderSettings>
 #include <QCoreApplication>
 #include <QRegularExpression>
+#include <QAudio>
 
 #include "./inputs_select.hpp"
 #include "./encryptor.hpp"
@@ -33,7 +34,8 @@ static long get_camera_order(const QCameraInfo & info) {
     return ret;
 }
 
-InputsSelector::InputsSelector(QGridLayout * _grid): grid(_grid) {
+InputsSelector::InputsSelector(QGridLayout * _grid, QComboBox * _audio_combo): 
+grid(_grid), audio_combo(_audio_combo) {
     this->camera_infos = QCameraInfo::availableCameras();
     std::stable_sort(camera_infos.begin(), camera_infos.end(), [](const QCameraInfo & a, const QCameraInfo & b) {
         return get_camera_order(a) < get_camera_order(b);
@@ -76,6 +78,12 @@ InputsSelector::InputsSelector(QGridLayout * _grid): grid(_grid) {
             row += 1;
             col = 0;
         }
+    }
+
+    this->audio_infos = QAudioDeviceInfo::availableDevices(QAudio::AudioInput);
+    foreach(const QAudioDeviceInfo &info, audio_infos) {
+        qDebug() << "Audio info: " << info.deviceName();
+        audio_combo->addItem(info.deviceName());
     }
 }
 

@@ -305,7 +305,7 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    inputs_selector.reset(new InputsSelector(ui->inputs_grid));
+    inputs_selector.reset(new InputsSelector(ui->inputs_grid, ui->inputs_audio));
     pto_template_left.reset(new PTOTemplate(ui->template_tree_view_left, true));
     pto_template_right.reset(new PTOTemplate(ui->template_tree_view_right, false));
     preview_video.reset(new PreviewVideoWidget(this));

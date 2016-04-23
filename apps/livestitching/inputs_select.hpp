@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2016-02-21
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-03-27
+* @Last Modified time: 2016-04-23
 */
 
 #ifndef LIVESTITCHING_INPUTS_SELECT_H__
@@ -16,11 +16,13 @@
 #include <QCameraViewfinder>
 #include <QCameraInfo>
 #include <QCameraImageCapture>
+#include <QAudioDeviceInfo>
 #include <QWidget>
 #include <QImage>
 #include <QGridLayout>
 #include <QGroupBox>
 #include <QCheckBox>
+#include <QComboBox>
 
 class InputsSelector: public QObject {
 
@@ -30,8 +32,10 @@ private:
     std::vector<std::unique_ptr<QCamera>> cameras;
     std::vector<std::unique_ptr<QCameraViewfinder>> views;
     QList<QCameraInfo> camera_infos;
+    QList<QAudioDeviceInfo> audio_infos;
 
     QGridLayout * grid = nullptr;
+    QComboBox * audio_combo = nullptr;
     std::vector<std::unique_ptr<QCheckBox>> check_boxs;
 
     int fps = 30;
@@ -43,7 +47,7 @@ signals:
     void selectedChanged();
 
 public:
-    InputsSelector(QGridLayout * _grid);
+    InputsSelector(QGridLayout * _grid, QComboBox * _audio_combo);
 
     void start();
     void stop();
