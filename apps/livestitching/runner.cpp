@@ -51,29 +51,38 @@ void Runner::start(QJsonDocument json_doc_left,
         return;
     }
 
-    auto dump_json = [&, this](const QJsonDocument & doc, const char * filename) {
-        QString output_json_path = temp_dir.path() + QDir::separator() + filename;
-        QFile output_json(output_json_path);
-        output_json.open(QIODevice::WriteOnly);
-        output_json.write(doc.toJson());
-        output_json.close();
+    auto dump_json = [&, this](const QJsonDocument & doc,
+                               const char * filename,
+                               QProcess & proc) {
+        QString json_path = temp_dir.path() + QDir::separator() + filename + ".json";
+        QString dat_path = temp_dir.path() + QDir::separator() + filename + ".dat";
+        QByteArray json_content = doc.toJson();
+
+        QFile json_f(json_path);
+        if(json_f.exists() && json_f.open(QIODevice::ReadOnly)) {
+            QByteArray old_content = json_f.readAll();
+            json_f.close();
+            if(old_content == json_content && QFile::exists(dat_path))
+                return;
+        }
+
+        json_f.open(QIODevice::WriteOnly);
+        json_f.write(json_content);
+        json_f.close();
+
+        QString dumper = QCoreApplication::applicationDirPath() + "/octvr_dump";
+        proc.start(dumper, QStringList({"-w", QString::number(width), 
+                                        "-h", QString::number(height),
+                                        "-o", dat_path, json_path}));
+
     };
 
-    QString dumper = QCoreApplication::applicationDirPath() + "/octvr_dump";
-
-    dump_json(json_doc_left, "left.json");
-    dumper_proc_left.start(dumper, QStringList({"-w", QString::number(width), 
-                                                "-h", QString::number(height),
-                                                "-o", "left.dat", "left.json"}));
-
-    if(!json_doc_right.isNull()) {
-        dump_json(json_doc_right, "right.json");
-        dumper_proc_right.start(dumper, QStringList({"-w", QString::number(width), 
-                                                     "-h", QString::number(height),
-                                                     "-o", "right.dat", "right.json"}));
-    }
+    dump_json(json_doc_left, "left", dumper_proc_left);
+    if(!json_doc_right.isNull())
+        dump_json(json_doc_right, "right", dumper_proc_right);
 
     emit statusChanged();
+    this->onDumperProcessFinished(0, QProcess::NormalExit); // in case dumper is not running
 }
 
 void Runner::stop() {
