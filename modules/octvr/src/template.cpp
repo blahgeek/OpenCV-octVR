@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-12-07
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-04-22
+* @Last Modified time: 2016-04-24
 */
 
 #include "octvr.hpp"
@@ -28,7 +28,7 @@ out_type(to), out_opts(&to_opts) {
     if(!out_camera)
         throw std::string("Invalid output camera type");
 
-    if((height <= 0 && width <= 0) || (height > 0 && width > 0))
+    if(height * width <= 0)
         throw std::string("Output width/height invalid");
     double output_aspect_ratio = out_camera->get_aspect_ratio();
     if(height <= 0)

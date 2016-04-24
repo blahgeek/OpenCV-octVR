@@ -145,9 +145,11 @@ void MainWindow::onEncryptCMD() {
 }
 
 void MainWindow::run() {
+    bool is_3d = ui->template_3d_check->checkState() == Qt::Checked;
+
     auto json_doc_left = this->pto_template_left->getJsonDocument();
     QJsonDocument json_doc_right; // empty
-    if(ui->template_3d_check->checkState() == Qt::Checked)
+    if(is_3d)
         json_doc_right = this->pto_template_right->getJsonDocument();
 
     if(ui->check_cheat->checkState() != Qt::Checked)
@@ -159,6 +161,7 @@ void MainWindow::run() {
 
     this->runner->start(json_doc_left, json_doc_right,
                         ui->paranoma_width->value(), 
+                        ui->paranoma_height->value() / (is_3d ? 2 : 1),
                         args);
 }
 

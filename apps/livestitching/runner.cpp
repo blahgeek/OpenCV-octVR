@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2016-02-23
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-04-18
+* @Last Modified time: 2016-04-24
 */
 
 #include <iostream>
@@ -42,7 +42,7 @@ enum Runner::RunningStatus Runner::status() const {
 
 void Runner::start(QJsonDocument json_doc_left, 
                    QJsonDocument json_doc_right,
-                   int width,
+                   int width, int height,
                    QString _ffmpeg_args) {
     this->ffmpeg_args = _ffmpeg_args;
 
@@ -62,11 +62,15 @@ void Runner::start(QJsonDocument json_doc_left,
     QString dumper = QCoreApplication::applicationDirPath() + "/octvr_dump";
 
     dump_json(json_doc_left, "left.json");
-    dumper_proc_left.start(dumper, QStringList({"-w", QString::number(width), "-o", "left.dat", "left.json"}));
+    dumper_proc_left.start(dumper, QStringList({"-w", QString::number(width), 
+                                                "-h", QString::number(height),
+                                                "-o", "left.dat", "left.json"}));
 
     if(!json_doc_right.isNull()) {
         dump_json(json_doc_right, "right.json");
-        dumper_proc_right.start(dumper, QStringList({"-w", QString::number(width), "-o", "right.dat", "right.json"}));
+        dumper_proc_right.start(dumper, QStringList({"-w", QString::number(width), 
+                                                     "-h", QString::number(height),
+                                                     "-o", "right.dat", "right.json"}));
     }
 
     emit statusChanged();

@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-11-09
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-03-08
+* @Last Modified time: 2016-04-24
 */
 
 #include <iostream>
@@ -33,7 +33,7 @@ int main(int argc, char * const argv[]){
     const char * usage = "Usage: %s [OPTIONS] -o OUTPUT_FILE CONFIG_JSON\n"
                          "Options:\n"
                          "    -w X:    Set output width, default to 0\n"
-                         "    -h X:    Set output height, default to 0 (do not set width and height both)\n"
+                         "    -h X:    Set output height, default to 0\n"
                          "    -d X:    Save masks to debug directory\n"
                          "    -n:      Do not use ROI based stitching\n"
                          "";
