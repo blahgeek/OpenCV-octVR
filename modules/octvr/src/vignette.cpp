@@ -24,10 +24,10 @@ Vignette::Vignette(const rapidjson::Value & options) {
         d = options["vignette"][3].GetDouble();
         if(options.HasMember("exposure")) {
             float ev = std::pow(2.0, options["exposure"].GetDouble());
-            a *= ev;
-            b *= ev;
-            c *= ev;
-            d *= ev;
+            a /= ev;
+            b /= ev;
+            c /= ev;
+            d /= ev;
         }
         std::cerr << "Vignette params: " << a << ", " << b << ", " << c << ", " << d << std::endl;
     } else {
@@ -47,7 +47,7 @@ cv::Mat Vignette::getMap(int width, int height) {
             float r = std::sqrt(P(i - width / 2) + P(j - height / 2)) / 
                         std::sqrt(P(width / 2) + P(height / 2));
 #undef P
-            row[i] = (a + r * r * (b + r * r * (c + d * r * r)));
+            row[i] = 1.0 / (a + r * r * (b + r * r * (c + d * r * r)));
         }
     }
     return ret;
