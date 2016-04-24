@@ -24,10 +24,10 @@ Vignette::Vignette(const rapidjson::Value & options) {
         d = options["vignette"][3].GetDouble();
         if(options.HasMember("exposure")) {
             float ev = std::pow(2.0, options["exposure"].GetDouble());
-            a /= ev;
-            b /= ev;
-            c /= ev;
-            d /= ev;
+            a *= ev;
+            b *= ev;
+            c *= ev;
+            d *= ev;
         }
         std::cerr << "Vignette params: " << a << ", " << b << ", " << c << ", " << d << std::endl;
     } else {
