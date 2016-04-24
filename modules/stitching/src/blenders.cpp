@@ -723,8 +723,8 @@ void MultiBandGPUBlender::do_blend(std::vector<cuda::GpuMat> & imgs, cuda::GpuMa
                   cv::noArray(), -1, streams[0]);
     }
 
-    cv::Size crop_size(align_result_roi.width < dst.width ? align_result_roi.width : dst.width,
-                       align_result_roi.height < dst.height ? align_result_roi.height : dst.height);
+    cv::Size crop_size(align_result_roi.width < dst.cols ? align_result_roi.width : dst.cols,
+                       align_result_roi.height < dst.rows ? align_result_roi.height : dst.rows);
     dst_pyr_laplace[0](cv::Rect(cv::Point(0, 0), crop_size))
         .convertTo(dst(cv::Rect(align_result_roi.tl(), crop_size)), CV_8UC3, streams[0]);
 
