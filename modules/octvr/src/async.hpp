@@ -31,7 +31,7 @@ namespace vr {
 class AsyncMultiMapperImpl: public AsyncMultiMapper {
 private:
     bool do_blend = true;
-    enum PixelFormat input_pix_fmt = UYVY422;
+    int input_pix_fmt = OCTVR_UYVY422;
 private:
     Queue<std::vector<cv::Mat>> inputs_mat_q;
     Queue<std::vector<cv::cuda::HostMem>> inputs_hostmem_q, free_inputs_hostmem_q;
@@ -76,7 +76,7 @@ public:
                          int blend=128, bool enable_gain_compensator=true,
                          std::vector<cv::Size> scale_outputs=std::vector<cv::Size>(),
                          cv::Size preview_size=cv::Size(),
-                         enum PixelFormat input_pix_fmt=UYVY422); // only support first output preview
+                         int input_pix_fmt=OCTVR_UYVY422); // only support first output preview
 
     void push(std::vector<cv::Mat> & inputs, 
               std::vector<cv::Mat> & outputs) override;

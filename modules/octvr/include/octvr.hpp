@@ -85,20 +85,21 @@ struct CV_EXPORTS_W PreviewDataHeader {
     double fps;
 };
 
+#define OCTVR_UYVY422 1
+#define OCTVR_YUYV422 2
+
 class CV_EXPORTS_W AsyncMultiMapper {
 public:
-    enum PixelFormat {UYVY422, YUYV422};
-    
     static AsyncMultiMapper * New(const std::vector<MapperTemplate> & mts, std::vector<cv::Size> in_sizes, 
                                   int blend=128, bool enable_gain_compensator=true,
                                   std::vector<cv::Size> scale_outputs=std::vector<cv::Size>(),
                                   cv::Size preview_size=cv::Size(0, 0),
-                                  enum PixelFormat input_pix_fmt=UYVY422);
+                                  int input_pix_fmt=OCTVR_UYVY422);
     static AsyncMultiMapper * New(const MapperTemplate & mt, std::vector<cv::Size> in_sizes, 
                                   int blend=128, bool enable_gain_compensator=true,
                                   cv::Size scale_output=cv::Size(0, 0),
                                   cv::Size preview_size=cv::Size(0, 0),
-                                  enum PixelFormat input_pix_fmt=UYVY422);
+                                  int input_pix_fmt=OCTVR_UYVY422);
 
     /**
      * Push one frame

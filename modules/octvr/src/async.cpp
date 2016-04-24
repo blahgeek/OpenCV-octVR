@@ -47,7 +47,7 @@ void AsyncMultiMapperImpl::run_do_mapping() {
         cv::Range r(height_per_output * i, height_per_output * (i + 1));
         auto preview_range = preview_output.rowRange(r);
         this->mappers[i]->stitch(gpumats, outputs[i], preview_range, 
-                                 i == 0 && input_pix_fmt == UYVY422);
+                                 i == 0 && input_pix_fmt == OCTVR_UYVY422);
     }
 
     this->outputs_gpumat_q.push(std::move(outputs));
@@ -139,25 +139,25 @@ void AsyncMultiMapperImpl::pop() {
 AsyncMultiMapper * AsyncMultiMapper::New(const MapperTemplate & m, std::vector<cv::Size> in_sizes, 
                                          int blend, bool enable_gain_compensator, cv::Size scale_output,
                                          cv::Size preview_size,
-                                         enum AsyncMultiMapper::PixelFormat input_pix_fmt) {
+                                         int input_pix_fmt) {
     return AsyncMultiMapper::New(std::vector<MapperTemplate>({m}), in_sizes, 
                                  blend, enable_gain_compensator,
                                  std::vector<cv::Size>({scale_output}),
-                                 preview_size);
+                                 preview_size, input_pix_fmt);
 }
 AsyncMultiMapper * AsyncMultiMapper::New(const std::vector<MapperTemplate> & m, std::vector<cv::Size> in_sizes, 
                                          int blend, bool enable_gain_compensator,
                                          std::vector<cv::Size> scale_outputs,
                                          cv::Size preview_size,
-                                         enum AsyncMultiMapper::PixelFormat input_pix_fmt) {
-    return static_cast<AsyncMultiMapper *>(new AsyncMultiMapperImpl(m, in_sizes, blend, enable_gain_compensator, scale_outputs, preview_size));
+                                         int input_pix_fmt) {
+    return static_cast<AsyncMultiMapper *>(new AsyncMultiMapperImpl(m, in_sizes, blend, enable_gain_compensator, scale_outputs, preview_size, input_pix_fmt));
 }
 
 AsyncMultiMapperImpl::AsyncMultiMapperImpl(const std::vector<MapperTemplate> & mts, std::vector<cv::Size> in_sizes, 
                                            int blend, bool enable_gain_compensator, 
                                            std::vector<cv::Size> scale_outputs,
                                            cv::Size _preview_size,
-                                           enum AsyncMultiMapper::PixelFormat input_pix_fmt):
+                                           int input_pix_fmt):
 input_pix_fmt(input_pix_fmt), fps_timer("FPS Timer"){
     this->preview_size = cv::Size(0, 0);
 #ifdef HAVE_QT5
