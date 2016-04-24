@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-12-01
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-03-30
+* @Last Modified time: 2016-04-24
 */
 
 
@@ -46,7 +46,8 @@ void AsyncMultiMapperImpl::run_do_mapping() {
         int height_per_output = preview_output.rows / outputs.size();
         cv::Range r(height_per_output * i, height_per_output * (i + 1));
         auto preview_range = preview_output.rowRange(r);
-        this->mappers[i]->stitch(gpumats, outputs[i], preview_range, i == 0);
+        this->mappers[i]->stitch(gpumats, outputs[i], preview_range, 
+                                 i == 0 && input_pix_fmt == UYVY422);
     }
 
     this->outputs_gpumat_q.push(std::move(outputs));
@@ -137,7 +138,8 @@ void AsyncMultiMapperImpl::pop() {
 
 AsyncMultiMapper * AsyncMultiMapper::New(const MapperTemplate & m, std::vector<cv::Size> in_sizes, 
                                          int blend, bool enable_gain_compensator, cv::Size scale_output,
-                                         cv::Size preview_size) {
+                                         cv::Size preview_size,
+                                         enum AsyncMultiMapper::PixelFormat input_pix_fmt) {
     return AsyncMultiMapper::New(std::vector<MapperTemplate>({m}), in_sizes, 
                                  blend, enable_gain_compensator,
                                  std::vector<cv::Size>({scale_output}),
@@ -146,15 +148,17 @@ AsyncMultiMapper * AsyncMultiMapper::New(const MapperTemplate & m, std::vector<c
 AsyncMultiMapper * AsyncMultiMapper::New(const std::vector<MapperTemplate> & m, std::vector<cv::Size> in_sizes, 
                                          int blend, bool enable_gain_compensator,
                                          std::vector<cv::Size> scale_outputs,
-                                         cv::Size preview_size) {
+                                         cv::Size preview_size,
+                                         enum AsyncMultiMapper::PixelFormat input_pix_fmt) {
     return static_cast<AsyncMultiMapper *>(new AsyncMultiMapperImpl(m, in_sizes, blend, enable_gain_compensator, scale_outputs, preview_size));
 }
 
 AsyncMultiMapperImpl::AsyncMultiMapperImpl(const std::vector<MapperTemplate> & mts, std::vector<cv::Size> in_sizes, 
                                            int blend, bool enable_gain_compensator, 
                                            std::vector<cv::Size> scale_outputs,
-                                           cv::Size _preview_size):
-fps_timer("FPS Timer") {
+                                           cv::Size _preview_size,
+                                           enum AsyncMultiMapper::PixelFormat input_pix_fmt):
+input_pix_fmt(input_pix_fmt), fps_timer("FPS Timer"){
     this->preview_size = cv::Size(0, 0);
 #ifdef HAVE_QT5
     this->preview_size = _preview_size;

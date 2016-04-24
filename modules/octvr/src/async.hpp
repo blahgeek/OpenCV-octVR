@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-12-01
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-02-25
+* @Last Modified time: 2016-04-24
 */
 
 #ifndef LIBMAP_ASYNC_H_
@@ -31,6 +31,7 @@ namespace vr {
 class AsyncMultiMapperImpl: public AsyncMultiMapper {
 private:
     bool do_blend = true;
+    enum PixelFormat input_pix_fmt = UYVY422;
 private:
     Queue<std::vector<cv::Mat>> inputs_mat_q;
     Queue<std::vector<cv::cuda::HostMem>> inputs_hostmem_q, free_inputs_hostmem_q;
@@ -74,7 +75,8 @@ public:
     AsyncMultiMapperImpl(const std::vector<MapperTemplate> & mt, std::vector<cv::Size> in_sizes, 
                          int blend=128, bool enable_gain_compensator=true,
                          std::vector<cv::Size> scale_outputs=std::vector<cv::Size>(),
-                         cv::Size preview_size=cv::Size()); // only support first output preview
+                         cv::Size preview_size=cv::Size(),
+                         enum PixelFormat input_pix_fmt=UYVY422); // only support first output preview
 
     void push(std::vector<cv::Mat> & inputs, 
               std::vector<cv::Mat> & outputs) override;

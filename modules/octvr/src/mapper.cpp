@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-04-22
+* @Last Modified time: 2016-04-24
 */
 
 #include <iostream>
@@ -231,7 +231,7 @@ void Mapper::stitch(std::vector<GpuMat> & inputs,
 
     assert(inputs.size() == masks.size());
     for(int i = 0 ; i < inputs.size() ; i += 1)
-        assert(inputs[i].type() == CV_8UC2); // UYVY422
+        assert(inputs[i].type() == CV_8UC2); // UYVY422 or YUVY422
     assert(output.type() == CV_8UC2 && output.size() == this->scaled_output_size);
 
     const int swap_orders[] = {1, 0, 3, 2};

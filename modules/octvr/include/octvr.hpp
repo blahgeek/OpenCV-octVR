@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-04-22
+* @Last Modified time: 2016-04-24
 */
 
 #ifndef VR_LIBMAP_BASE_H
@@ -87,18 +87,22 @@ struct CV_EXPORTS_W PreviewDataHeader {
 
 class CV_EXPORTS_W AsyncMultiMapper {
 public:
+    enum PixelFormat {UYVY422, YUYV422};
+    
     static AsyncMultiMapper * New(const std::vector<MapperTemplate> & mts, std::vector<cv::Size> in_sizes, 
                                   int blend=128, bool enable_gain_compensator=true,
                                   std::vector<cv::Size> scale_outputs=std::vector<cv::Size>(),
-                                  cv::Size preview_size=cv::Size(0, 0));
+                                  cv::Size preview_size=cv::Size(0, 0),
+                                  enum PixelFormat input_pix_fmt=UYVY422);
     static AsyncMultiMapper * New(const MapperTemplate & mt, std::vector<cv::Size> in_sizes, 
                                   int blend=128, bool enable_gain_compensator=true,
                                   cv::Size scale_output=cv::Size(0, 0),
-                                  cv::Size preview_size=cv::Size(0, 0));
+                                  cv::Size preview_size=cv::Size(0, 0),
+                                  enum PixelFormat input_pix_fmt=UYVY422);
 
     /**
      * Push one frame
-     * @param inputs Input images, in UYVY422
+     * @param inputs Input images
      * @param output Output images, in UYVY422
      */
     virtual void push(std::vector<cv::Mat> & inputs,
