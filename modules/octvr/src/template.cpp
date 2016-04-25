@@ -28,7 +28,7 @@ out_type(to), out_opts(&to_opts) {
     if(!out_camera)
         throw std::string("Invalid output camera type");
 
-    if(height * width <= 0)
+    if(height <= 0 && width <= 0)
         throw std::string("Output width/height invalid");
     double output_aspect_ratio = out_camera->get_aspect_ratio();
     if(height <= 0)
