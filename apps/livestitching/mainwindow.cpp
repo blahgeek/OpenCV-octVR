@@ -57,8 +57,10 @@ void MainWindow::onGenerateCMD() {
 
     // BEGIN filter args
     int _blend_presets[] = {128, 64, 32, -1};
-    QString filter_complex = QString("vr_map=");
-    filter_complex.append(QString("inputs=%1:outputs=%2:crop_x=%3:crop_w=%4:blend=%5")
+    QString filter_complex = QString("[0]setpts=N/(%1*TB)[p];[p]").arg(ui->inputs_fps->value());
+    for(int i = 1 ; i < selected_cams.size() ; i += 1)
+        filter_complex.append(QString("[%1]").arg(i));
+    filter_complex.append(QString("vr_map=inputs=%1:outputs=%2:crop_x=%3:crop_w=%4:blend=%5")
                           .arg(selected_cams.size())
                           .arg(is_3d ? "left.dat|right.dat" : "left.dat")
                           .arg(ui->inputs_crop_x->value())
