@@ -166,8 +166,10 @@ QStringList InputsSelector::getInputArgs() {
 }
 
 void InputsSelector::saveImages(int crop_x, int crop_w) {
-    for(auto & c: cameras)
+    for(auto & c: cameras) {
         c->stop();
+        c->unload();
+    }
 
     QString dir = QFileDialog::getExistingDirectory(nullptr, ("Choose Directory"),
                                                     "/home", QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
