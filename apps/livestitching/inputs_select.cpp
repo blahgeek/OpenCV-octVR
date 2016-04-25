@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2016-02-21
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-04-23
+* @Last Modified time: 2016-04-25
 */
 
 #include <iostream>
@@ -53,10 +53,18 @@ grid(_grid), audio_combo(_audio_combo) {
         this->cameras.back()->setViewfinder(this->views.back().get());
 
 #if defined(__linux__)
+        this->cameras.back()->load();
+        auto supported_settings = this->cameras.back()->supportedViewfinderSettings();
         QCameraViewfinderSettings settings;
-        settings.setResolution(QSize(640, 480));
-        settings.setMaximumFrameRate(3);
-        this->cameras.back()->setViewfinderSettings(settings);
+        foreach(const QCameraViewfinderSettings &s,supported_settings) {
+            if(s.resolution().width() <= 800 && (settings.isNull() || settings.maximumFrameRate() > s.maximumFrameRate()))
+                settings = s;
+        }
+        if(!settings.isNull()) {
+            qDebug() << "Setting camera to " << settings.resolution() << "@" <<
+                settings.minimumFrameRate() << ":" << settings.maximumFrameRate();
+            this->cameras.back()->setViewfinderSettings(settings);
+        }
 #endif
         this->cameras.back()->start();
 
@@ -93,8 +101,10 @@ void InputsSelector::start() {
 }
 
 void InputsSelector::stop() {
-    for(auto & c: cameras)
+    for(auto & c: cameras) {
         c->stop();
+        c->unload();
+    }
 }
 
 void InputsSelector::onInputsFpsChanged(int _fps) {
