@@ -166,6 +166,9 @@ QStringList InputsSelector::getInputArgs() {
 }
 
 void InputsSelector::saveImages(int crop_x, int crop_w) {
+    for(auto & c: cameras)
+        c->stop();
+
     QString dir = QFileDialog::getExistingDirectory(nullptr, ("Choose Directory"),
                                                     "/home", QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
 
@@ -191,4 +194,7 @@ void InputsSelector::saveImages(int crop_x, int crop_w) {
         QMessageBox::information(nullptr, "", "Images saved");
     else
         QMessageBox::warning(nullptr, "", "Error occured while saving images");
+
+    for(auto & c: cameras)
+        c->start();
 }
