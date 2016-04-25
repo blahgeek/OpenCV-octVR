@@ -52,7 +52,8 @@ void MainWindow::onGenerateCMD() {
     this->preview_video->prepare(preview_width, preview_height);
 
     // BEGIN input args
-    QStringList args = this->inputs_selector->getInputArgs();
+    QStringList args = this->inputs_selector->getInputArgs(this->ui->inputs_width->value(),
+                                                           this->ui->inputs_height->value());
 
     // BEGIN filter args
     int _blend_presets[] = {128, 64, 32, -1};
@@ -209,7 +210,9 @@ void MainWindow::onInputsSelectChanged() {
 }
 
 void MainWindow::onInputSaveButtonClicked() {
-    this->inputs_selector->saveImages(this->ui->inputs_crop_x->value(),
+    this->inputs_selector->saveImages(this->ui->inputs_width->value(),
+                                      this->ui->inputs_height->value(),
+                                      this->ui->inputs_crop_x->value(),
                                       this->ui->inputs_crop_w->value());
 }
 

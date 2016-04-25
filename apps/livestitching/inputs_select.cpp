@@ -127,7 +127,7 @@ std::vector<QCameraInfo> InputsSelector::getAll() {
     return ret;
 }
 
-QStringList InputsSelector::getInputArgs() {
+QStringList InputsSelector::getInputArgs(int width, int height) {
     QStringList args;
 
     auto all_cams = this->getAll();
@@ -143,6 +143,7 @@ QStringList InputsSelector::getInputArgs() {
                 device_name_dup += 1;
         }
         args << "-f" << "dshow" << "-pixel_format" << "uyvy422"
+             << "-video_size" << QString("%1x%2").arg(width).arg(height)
              << "-video_device_number" << QString::number(device_name_dup)
              << "-framerate" << QString::number(this->fps)
              << "-i" << QString("video=%1").arg(input.description());
@@ -150,6 +151,7 @@ QStringList InputsSelector::getInputArgs() {
 #else
     for(auto & input: selected_cams)
         args << "-f" << "v4l2" << "-pixel_format" << "uyvy422"
+             << "-video_size" << QString("%1x%2").arg(width).arg(height)
              << "-framerate" << QString::number(this->fps) << "-i" << input.deviceName();
 #endif
 
@@ -165,7 +167,7 @@ QStringList InputsSelector::getInputArgs() {
     return args;
 }
 
-void InputsSelector::saveImages(int crop_x, int crop_w) {
+void InputsSelector::saveImages(int width, int height, int crop_x, int crop_w) {
     for(auto & c: cameras) {
         c->stop();
         c->unload();
@@ -174,7 +176,7 @@ void InputsSelector::saveImages(int crop_x, int crop_w) {
     QString dir = QFileDialog::getExistingDirectory(nullptr, ("Choose Directory"),
                                                     "/home", QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
 
-    QStringList in_args = this->getInputArgs();
+    QStringList in_args = this->getInputArgs(width, height);
     QStringList out_args;
 
     auto selected = this->getSelected();

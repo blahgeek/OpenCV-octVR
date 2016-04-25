@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2016-02-21
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-04-23
+* @Last Modified time: 2016-04-25
 */
 
 #ifndef LIVESTITCHING_INPUTS_SELECT_H__
@@ -52,12 +52,12 @@ public:
     void start();
     void stop();
 
-    void saveImages(int crop_x, int crop_w);
+    void saveImages(int width, int height, int crop_x, int crop_w);
 
     std::vector<QCameraInfo> getSelected();
     std::vector<QCameraInfo> getAll();
 
-    QStringList getInputArgs();
+    QStringList getInputArgs(int width, int height);
 
 };
 
