@@ -229,6 +229,8 @@ if __name__ == '__main__':
     arg_parser = argparse.ArgumentParser(description="Parse Hugin/PTGui template for OwlLive")
     arg_parser.add_argument('input', help="Input template")
     arg_parser.add_argument('--lon_select', help="Longitude select: START,END,OFFSET[,NUM]")
+    arg_parser.add_argument('--min_lat', help="Minimum output latitude", type=float)
+    arg_parser.add_argument('--max_lat', help="Maximum output latitude", type=float)
     args = arg_parser.parse_args()
 
     parser = PTXParser()
@@ -241,16 +243,22 @@ if __name__ == '__main__':
     if args.lon_select:
         result_inputs = longitude_select(result_inputs, *map(float, args.lon_select.split(',')))
 
-    print(json.dumps({
-            "output": {
-                "type": "equirectangular",
-                "options": {
-                    "rotation": {
-                        "roll": 0,
-                        "yaw": 0,
-                        "pitch": 0,
-                    }
+    result = {
+        "output": {
+            "type": "equirectangular",
+            "options": {
+                "rotation": {
+                    "roll": 0,
+                    "yaw": 0,
+                    "pitch": 0,
                 }
-            }, 
-            "inputs": list(result_inputs),
-          }, indent=4))
+            }
+        }, 
+        "inputs": list(result_inputs),
+    }
+    if args.min_lat:
+        result["output"]["options"]["min_lat"] = deg_to_rad(args.min_lat)
+    if args.max_lat:
+        result["output"]["options"]["max_lat"] = deg_to_rad(args.max_lat)
+
+    print(json.dumps(result, indent=4))
