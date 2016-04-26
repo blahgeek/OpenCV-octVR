@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-12-01
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-04-24
+* @Last Modified time: 2016-04-26
 */
 
 
@@ -11,6 +11,18 @@
 #include <thread>
 
 using namespace vr;
+
+static cv::Rect _rect_mul_size(cv::Rect_<double> region, cv::Size size) {
+    int x = region.x * size.width;
+    int y = region.y * size.height;
+    int w = region.width * size.width;
+    int h = region.height * size.height;
+    if(x + w >= size.width)
+        w = size.width - x;
+    if(y + h >= size.height)
+        h = size.height - y;
+    return cv::Rect(x, y, w, h);
+}
 
 void AsyncMultiMapperImpl::run_copy_inputs_mat_to_hostmem() {
     auto inputs_mat = this->inputs_mat_q.pop();
@@ -41,13 +53,15 @@ void AsyncMultiMapperImpl::run_do_mapping() {
     auto outputs = this->free_outputs_gpumat_q.pop();
     auto preview_output = this->free_previews_gpumat_q.pop();
 
+    std::vector<std::vector<double>> gains_list;
+
     // split preview output for every output
     for(int i = 0 ; i < outputs.size() ; i += 1) {
-        int height_per_output = preview_output.rows / outputs.size();
-        cv::Range r(height_per_output * i, height_per_output * (i + 1));
-        auto preview_range = preview_output.rowRange(r);
-        this->mappers[i]->stitch(gpumats, outputs[i], preview_range, 
-                                 i == 0 && input_pix_fmt == OCTVR_UYVY422);
+        auto preview = preview_output(_rect_mul_size(output_regions[i], preview_output.size()));
+        this->mappers[i]->stitch(gpumats, outputs[i], preview, 
+                                 i == 0 && input_pix_fmt == OCTVR_UYVY422,
+                                 gain_modes[i] > 0 ? gains_list[gain_modes[i]] : std::vector<double>());
+        gains_list.push_back(this->mappers[i]->gains());
     }
 
     this->outputs_gpumat_q.push(std::move(outputs));
@@ -119,59 +133,71 @@ void AsyncMultiMapperImpl::run_copy_outputs_hostmem_to_mat() {
 }
 
 void AsyncMultiMapperImpl::push(std::vector<cv::Mat> & inputs, 
-                                std::vector<cv::Mat> & outputs) {
-    assert(inputs.size() == in_sizes.size());
-    assert(outputs.size() == out_sizes.size());
+                                cv::Mat & output) {
+    CV_Assert(inputs.size() == in_sizes.size());
+    CV_Assert(output.size() == out_size);
+
+    std::vector<cv::Mat> outputs;
+
+    for(size_t i = 0 ; i < this->output_regions.size() ; i += 1)
+        outputs.push_back(output(_rect_mul_size(output_regions[i], output.size())));
 
     this->inputs_mat_q.push(inputs);
     this->free_outputs_mat_q.push(outputs);
-}
-
-void AsyncMultiMapperImpl::push(std::vector<cv::Mat> & inputs, cv::Mat & output) {
-    std::vector<cv::Mat> out({output});
-    this->push(inputs, out);
 }
 
 void AsyncMultiMapperImpl::pop() {
     this->outputs_mat_q.pop();
 }
 
-AsyncMultiMapper * AsyncMultiMapper::New(const MapperTemplate & m, std::vector<cv::Size> in_sizes, 
-                                         int blend, bool enable_gain_compensator, cv::Size scale_output,
-                                         cv::Size preview_size,
-                                         int input_pix_fmt) {
-    return AsyncMultiMapper::New(std::vector<MapperTemplate>({m}), in_sizes, 
-                                 blend, enable_gain_compensator,
-                                 std::vector<cv::Size>({scale_output}),
-                                 preview_size, input_pix_fmt);
-}
-AsyncMultiMapper * AsyncMultiMapper::New(const std::vector<MapperTemplate> & m, std::vector<cv::Size> in_sizes, 
-                                         int blend, bool enable_gain_compensator,
-                                         std::vector<cv::Size> scale_outputs,
-                                         cv::Size preview_size,
-                                         int input_pix_fmt) {
-    return static_cast<AsyncMultiMapper *>(new AsyncMultiMapperImpl(m, in_sizes, blend, enable_gain_compensator, scale_outputs, preview_size, input_pix_fmt));
+AsyncMultiMapper * AsyncMultiMapper::New(const std::vector<MapperTemplate> & m,
+                                         std::vector<cv::Size> in_sizes, 
+                                         cv::Size out_size,
+                                         std::vector<int> blend_modes,
+                                         std::vector<int> gain_modes,
+                                         std::vector<cv::Rect_<double>> output_regions,
+                                         int input_pix_fmt,
+                                         cv::Size preview_size) {
+    return static_cast<AsyncMultiMapper *>(new AsyncMultiMapperImpl(m,
+                                                                    in_sizes,
+                                                                    out_size,
+                                                                    blend_modes,
+                                                                    gain_modes,
+                                                                    output_regions,
+                                                                    input_pix_fmt,
+                                                                    preview_size));
 }
 
-AsyncMultiMapperImpl::AsyncMultiMapperImpl(const std::vector<MapperTemplate> & mts, std::vector<cv::Size> in_sizes, 
-                                           int blend, bool enable_gain_compensator, 
-                                           std::vector<cv::Size> scale_outputs,
-                                           cv::Size _preview_size,
-                                           int input_pix_fmt):
-input_pix_fmt(input_pix_fmt), fps_timer("FPS Timer"){
+AsyncMultiMapperImpl::AsyncMultiMapperImpl(const std::vector<MapperTemplate> & mts,
+                                           std::vector<cv::Size> in_sizes, 
+                                           cv::Size out_size,
+                                           std::vector<int> blend_modes,
+                                           std::vector<int> gain_modes,
+                                           std::vector<cv::Rect_<double>> output_regions,
+                                           int input_pix_fmt,
+                                           cv::Size _preview_size):
+fps_timer("FPS Timer"){
+
     this->preview_size = cv::Size(0, 0);
 #ifdef HAVE_QT5
     this->preview_size = _preview_size;
 #endif
 
+    this->input_pix_fmt = input_pix_fmt;
     this->in_sizes = in_sizes;
-    this->do_blend = (blend != 0);
+    this->out_size = out_size;
+    this->gain_modes = gain_modes;
+    this->output_regions = output_regions;
+
     for(int i = 0 ; i < mts.size() ; i += 1) {
-        cv::Size scale_output = i < scale_outputs.size() ? scale_outputs[i] : cv::Size(0, 0);
-        this->mappers.emplace_back(new Mapper(mts[i], in_sizes, 
-                                              blend, enable_gain_compensator,
-                                              scale_output));
-        this->out_sizes.push_back(scale_output.area() == 0 ? mts[i].out_size : scale_output);
+        auto r = _rect_mul_size(output_regions[i], out_size);
+        this->mappers.emplace_back(new Mapper(mts[i],
+                                              in_sizes,
+                                              blend_modes[i],
+                                              gain_modes[i] != 0,
+                                              r.size()
+                                              ));
+        this->out_sizes.push_back(r.size());
     }
 
 #define BUF_SIZE 3

@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-04-24
+* @Last Modified time: 2016-04-26
 */
 
 #ifndef VR_LIBMAP_BASE_H
@@ -90,16 +90,14 @@ struct CV_EXPORTS_W PreviewDataHeader {
 
 class CV_EXPORTS_W AsyncMultiMapper {
 public:
-    static AsyncMultiMapper * New(const std::vector<MapperTemplate> & mts, std::vector<cv::Size> in_sizes, 
-                                  int blend=128, bool enable_gain_compensator=true,
-                                  std::vector<cv::Size> scale_outputs=std::vector<cv::Size>(),
-                                  cv::Size preview_size=cv::Size(0, 0),
-                                  int input_pix_fmt=OCTVR_UYVY422);
-    static AsyncMultiMapper * New(const MapperTemplate & mt, std::vector<cv::Size> in_sizes, 
-                                  int blend=128, bool enable_gain_compensator=true,
-                                  cv::Size scale_output=cv::Size(0, 0),
-                                  cv::Size preview_size=cv::Size(0, 0),
-                                  int input_pix_fmt=OCTVR_UYVY422);
+    static AsyncMultiMapper * New(const std::vector<MapperTemplate> & mts,
+                                  std::vector<cv::Size> in_sizes,
+                                  cv::Size out_size,
+                                  std::vector<int> blend_modes,
+                                  std::vector<int> gain_modes,
+                                  std::vector<cv::Rect_<double>> output_regions,
+                                  int input_pix_fmt,
+                                  cv::Size preview_size);
 
     /**
      * Push one frame
@@ -107,9 +105,7 @@ public:
      * @param output Output images, in UYVY422
      */
     virtual void push(std::vector<cv::Mat> & inputs,
-                      std::vector<cv::Mat> & outputs) = 0;
-    // Single output
-    virtual void push(std::vector<cv::Mat> & inputs, cv::Mat & outputs) = 0;
+                      cv::Mat & output) = 0;
     virtual void pop() = 0;
 
     virtual ~AsyncMultiMapper() {}
