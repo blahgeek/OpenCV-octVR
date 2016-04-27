@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-04-24
+* @Last Modified time: 2016-04-26
 */
 
 #include <iostream>
@@ -216,7 +216,8 @@ Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes,
 
 void Mapper::stitch(std::vector<GpuMat> & inputs,
                     GpuMat & output, GpuMat & preview_output,
-                    bool mix_input_channels) {
+                    bool mix_input_channels,
+                    std::vector<double> gains) {
 #ifdef WITH_DONGLE_LICENSE
     if (!with_logo){
         this->lic_cnt += 1;
@@ -267,7 +268,10 @@ void Mapper::stitch(std::vector<GpuMat> & inputs,
     if(this->compensator) {
         std::vector<GpuMat> partial_warped_imgs_scale(warped_imgs_scale.begin(),
                                                       warped_imgs_scale.begin() + nonoverlay_num);
-        compensator->feed(partial_warped_imgs_scale);
+        if(gains.size() == 0)
+            compensator->feed(partial_warped_imgs_scale);
+        else
+            compensator->set_gains(gains);
         timer.tick("Compensator");
 
         compensator->apply(partial_warped_imgs, partial_masks);
