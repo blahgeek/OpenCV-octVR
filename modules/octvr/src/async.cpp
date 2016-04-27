@@ -58,9 +58,12 @@ void AsyncMultiMapperImpl::run_do_mapping() {
     // split preview output for every output
     for(int i = 0 ; i < outputs.size() ; i += 1) {
         auto preview = preview_output(_rect_mul_size(output_regions[i], preview_output.size()));
+        std::vector<double> predefined_gain_list;
+        if(gain_modes[i] < i && gain_modes[i] >= 0)
+            predefined_gain_list = gains_list[gain_modes[i]];
         this->mappers[i]->stitch(gpumats, outputs[i], preview, 
                                  i == 0 && input_pix_fmt == OCTVR_UYVY422,
-                                 gain_modes[i] > 0 ? gains_list[gain_modes[i]] : std::vector<double>());
+                                 predefined_gain_list);
         gains_list.push_back(this->mappers[i]->gains());
     }
 
@@ -194,7 +197,7 @@ fps_timer("FPS Timer"){
         this->mappers.emplace_back(new Mapper(mts[i],
                                               in_sizes,
                                               blend_modes[i],
-                                              gain_modes[i] != 0,
+                                              gain_modes[i] >= 0,
                                               r.size()
                                               ));
         this->out_sizes.push_back(r.size());

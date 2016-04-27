@@ -77,7 +77,7 @@ public:
                          std::vector<cv::Size> in_sizes, 
                          cv::Size out_size,
                          std::vector<int> blend_modes,
-                         std::vector<int> gain_modes, // -1 means do it, 0 means don't do it, x means copy from No.x
+                         std::vector<int> gain_modes, // -1 means don't do it, N (self id) means do it, [0, N) means copy from No.x
                          std::vector<cv::Rect_<double>> output_regions,
                          int input_pix_fmt,
                          cv::Size preview_size);
