@@ -445,6 +445,32 @@
                  </property>
                 </widget>
                </item>
+               <item row="3" column="0">
+                <widget class="QLabel" name="label_19">
+                 <property name="text">
+                  <string>Projection</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="3" column="1">
+                <widget class="QComboBox" name="paranoma_projection">
+                 <item>
+                  <property name="text">
+                   <string>Mono360</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>3DV (3d)</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Cylinder Slice 9:4 (3d)</string>
+                  </property>
+                 </item>
+                </widget>
+               </item>
               </layout>
               <zorder>paranoma_width</zorder>
               <zorder>paranoma_algorithm</zorder>
@@ -452,6 +478,8 @@
               <zorder>label_5</zorder>
               <zorder>label_8</zorder>
               <zorder>paranoma_height</zorder>
+              <zorder>label_19</zorder>
+              <zorder>paranoma_projection</zorder>
              </widget>
             </item>
             <item>
@@ -1072,6 +1100,60 @@
   </widget>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
+ <tabstops>
+  <tabstop>inputs_width</tabstop>
+  <tabstop>inputs_height</tabstop>
+  <tabstop>inputs_fps</tabstop>
+  <tabstop>inputs_crop_x</tabstop>
+  <tabstop>inputs_crop_w</tabstop>
+  <tabstop>inputs_action_save</tabstop>
+  <tabstop>inputs_audio</tabstop>
+  <tabstop>tabWidget</tabstop>
+  <tabstop>template_3d_check</tabstop>
+  <tabstop>template_lon_select_check</tabstop>
+  <tabstop>template_lon_select_num</tabstop>
+  <tabstop>template_load_left</tabstop>
+  <tabstop>template_tree_view_left</tabstop>
+  <tabstop>template_load_right</tabstop>
+  <tabstop>template_tree_view_right</tabstop>
+  <tabstop>paranoma_algorithm</tabstop>
+  <tabstop>paranoma_width</tabstop>
+  <tabstop>paranoma_height</tabstop>
+  <tabstop>preview_width</tabstop>
+  <tabstop>preview_height</tabstop>
+  <tabstop>preview_enable</tabstop>
+  <tabstop>tabWidget_2</tabstop>
+  <tabstop>hls_enable</tabstop>
+  <tabstop>hls_codec</tabstop>
+  <tabstop>hls_bitrate</tabstop>
+  <tabstop>hls_gopsize</tabstop>
+  <tabstop>hls_segment_time</tabstop>
+  <tabstop>hls_list_size</tabstop>
+  <tabstop>hls_path</tabstop>
+  <tabstop>hls_path_select</tabstop>
+  <tabstop>rtmp_enable</tabstop>
+  <tabstop>rtmp_codec</tabstop>
+  <tabstop>rtmp_bitrate</tabstop>
+  <tabstop>rtmp_gopsize</tabstop>
+  <tabstop>rtmp_url</tabstop>
+  <tabstop>file_enable</tabstop>
+  <tabstop>file_codec</tabstop>
+  <tabstop>file_bitrate</tabstop>
+  <tabstop>file_gopsize</tabstop>
+  <tabstop>file_path</tabstop>
+  <tabstop>file_path_select</tabstop>
+  <tabstop>decklink_enable</tabstop>
+  <tabstop>decklink_device</tabstop>
+  <tabstop>decklink_output_fps</tabstop>
+  <tabstop>pushButton_run</tabstop>
+  <tabstop>pushButton_stop</tabstop>
+  <tabstop>check_cheat</tabstop>
+  <tabstop>pushButton_encrypt_cmd</tabstop>
+  <tabstop>line_cmd_encrypted</tabstop>
+  <tabstop>pushButton_gen_cmd</tabstop>
+  <tabstop>line_cmd</tabstop>
+  <tabstop>paranoma_projection</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

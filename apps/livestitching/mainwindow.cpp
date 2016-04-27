@@ -45,6 +45,21 @@ void MainWindow::onGenerateCMD() {
         }
     }
 
+    if(!is_3d && std::any_of(projection_mode.begin(), projection_mode.end(), [](const struct _ProjectionModeOutput o) {
+        return o.input_id > 0;
+    })) {
+        QMessageBox::warning(this, "", "2D mode template is used but 3D projection mode is selected");
+        this->ui->line_cmd->setText("");
+        return;
+    }
+    if(is_3d && std::all_of(projection_mode.begin(), projection_mode.end(), [](const struct _ProjectionModeOutput o) {
+        return o.input_id == 0;
+    })) {
+        QMessageBox::warning(this, "", "3D mode template is used but 2D projection mode is selected");
+        this->ui->line_cmd->setText("");
+        return;
+    }
+
     // Prepare preview video widgets
     bool preview_enable = ui->preview_enable->checkState() == Qt::Checked;
     int preview_width = preview_enable ? ui->preview_width->value() : 0;
@@ -55,26 +70,43 @@ void MainWindow::onGenerateCMD() {
     QStringList args = this->inputs_selector->getInputArgs(this->ui->inputs_width->value(),
                                                            this->ui->inputs_height->value());
 
-    // BEGIN filter args
+    // PREPARE filter args PREPARE
     int _blend_presets[] = {128, 64, 32, -1};
+
+    QStringList opt_blend, opt_exposure, opt_region, opt_output;
+    int last_computed_exposure = -1;
+    for(size_t i = 0 ; i < projection_mode.size() ; i += 1) {
+        const auto & p = projection_mode[i];
+        opt_blend.append(QString::number(p.should_use_multiband ? 
+                                         _blend_presets[ui->paranoma_algorithm->currentIndex()] :
+                                         -1));
+        opt_exposure.append(QString::number(p.should_compute_exposure ? i : last_computed_exposure));
+        if(p.should_compute_exposure)
+            last_computed_exposure = i;
+        opt_region.append(QString("%1/%2/%3/%4").arg(p.region.x).arg(p.region.y)
+                                                .arg(p.region.width).arg(p.region.height));
+        opt_output.append(QString::number(i) + ".dat");
+    }
+
+    // BEGIN filter args
     QString filter_complex = QString("[0]setpts=N/(%1*TB)[p];[p]").arg(ui->inputs_fps->value());
     for(int i = 1 ; i < selected_cams.size() ; i += 1)
         filter_complex.append(QString("[%1]").arg(i));
-    filter_complex.append(QString("vr_map=inputs=%1:outputs=%2:crop_x=%3:crop_w=%4:blend=%5")
+    filter_complex.append(QString("vr_map=inputs=%1:outputs=%2:crop_x=%3:crop_w=%4:blend=%5:exposure=%6:region=%7:width=%8:height=%9")
                           .arg(selected_cams.size())
-                          .arg(is_3d ? "left.dat|right.dat" : "left.dat")
+                          .arg(opt_output.join("|"))
                           .arg(ui->inputs_crop_x->value())
                           .arg(ui->inputs_crop_w->value())
-                          .arg(_blend_presets[ui->paranoma_algorithm->currentIndex()]) );
-    if(is_3d)
-        filter_complex.append(":merge=1");
+                          .arg(opt_blend.join("|"))
+                          .arg(opt_exposure.join("|"))
+                          .arg(opt_region.join("|"))
+                          .arg(ui->paranoma_width->value())
+                          .arg(ui->paranoma_height->value())
+                          );
     if(this->preview_video->isValid())
         filter_complex.append(QString(":preview_ow=%1:preview_oh=%2")
                               .arg(preview_width)
                               .arg(preview_height));
-    filter_complex.append(QString(":scale_ow=%1:scale_oh=%2")
-                          .arg(ui->paranoma_width->value())
-                          .arg(ui->paranoma_height->value()));
 
     // BEGIN output args
     QStringList output_args;
@@ -147,25 +179,38 @@ void MainWindow::onEncryptCMD() {
         );
 }
 
-void MainWindow::run() {
-    bool is_3d = ui->template_3d_check->checkState() == Qt::Checked;
+void MainWindow::onProjectionModeChanged(int __unused) {
+    switch(ui->paranoma_projection->currentIndex()) {
+        default:
+        case 0: this->projection_mode = PROJECTION_MODE_MONO360; break;
+        case 1: this->projection_mode = PROJECTION_MODE_3DV; break;
+        case 2: this->projection_mode = PROJECTION_MODE_3DV_CYLINDER_SLICE_2X25_3DV; break;
+    }
+}
 
+void MainWindow::run() {
+    if(ui->check_cheat->checkState() != Qt::Checked)
+        this->onGenerateCMD();
+    QString args = this->ui->line_cmd->text();
+    if(args.isEmpty())
+        return;
+
+    bool is_3d = ui->template_3d_check->checkState() == Qt::Checked;
     auto json_doc_left = this->pto_template_left->getJsonDocument();
     QJsonDocument json_doc_right; // empty
     if(is_3d)
         json_doc_right = this->pto_template_right->getJsonDocument();
 
-    if(ui->check_cheat->checkState() != Qt::Checked)
-        this->onGenerateCMD();
+    std::vector<std::pair<QJsonDocument, cv::Size>> json_docs;
+    for(const auto & p: projection_mode) {
+        int w = p.region.width * ui->paranoma_width->value();
+        int h = p.region.height * ui->paranoma_height->value();
+        QJsonObject obj = (p.input_id == 0 ? json_doc_left : json_doc_right).object();
+        obj["output"] = p.output_options.object();
+        json_docs.push_back(std::make_pair(QJsonDocument(obj), cv::Size(w, h)));
+    }
 
-    QString args = this->ui->line_cmd->text();
-    if(args.isEmpty())
-        return;
-
-    this->runner->start(json_doc_left, json_doc_right,
-                        ui->paranoma_width->value(), 
-                        ui->paranoma_height->value() / (is_3d ? 2 : 1),
-                        args);
+    this->runner->start(json_docs, args);
 }
 
 void MainWindow::onRunningStatusChanged() {
@@ -352,6 +397,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->template_3d_check, &QCheckBox::stateChanged, this, &MainWindow::on3DModeChanged);
     connect(ui->template_lon_select_check, &QCheckBox::stateChanged, this, &MainWindow::on3DLonSelectChanged);
     connect(ui->template_lon_select_num, static_cast<void(QSpinBox::*)(int)>(&QSpinBox::valueChanged), this, &MainWindow::on3DLonSelectValueChanged);
+    connect(ui->paranoma_projection, static_cast<void(QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, &MainWindow::onProjectionModeChanged);
 
     connect(ui->pushButton_gen_cmd, &QPushButton::clicked, this, &MainWindow::onGenerateCMD);
     connect(ui->check_cheat, &QCheckBox::stateChanged, this, &MainWindow::onCheatStateChanged);
