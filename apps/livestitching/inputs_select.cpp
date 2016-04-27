@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2016-02-21
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-04-25
+* @Last Modified time: 2016-04-27
 */
 
 #include <iostream>
@@ -36,7 +36,13 @@ static long get_camera_order(const QCameraInfo & info) {
 
 InputsSelector::InputsSelector(QGridLayout * _grid, QComboBox * _audio_combo): 
 grid(_grid), audio_combo(_audio_combo) {
-    this->camera_infos = QCameraInfo::availableCameras();
+
+    // QUICK HACK for integrated camera
+    auto all_cam_infos = QCameraInfo::availableCameras();
+    foreach(const QCameraInfo & info, all_cam_infos)
+        if(!info.description().contains("BisonCam", Qt::CaseInsensitive))
+            this->camera_infos.append(info);
+
     std::stable_sort(camera_infos.begin(), camera_infos.end(), [](const QCameraInfo & a, const QCameraInfo & b) {
         return get_camera_order(a) < get_camera_order(b);
     });
