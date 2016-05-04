@@ -77,9 +77,10 @@ public:
                    const rapidjson::Value & from_opts, 
                    bool overlay=false,
                    bool use_roi=true);
-    void reverse_points(std::vector<cv::Point2d> pts);
     // Prepare seam masks with provided images (optional)
     void create_masks(const std::vector<cv::Mat> & imgs = std::vector<cv::Mat>());
+    void morph_controlpoints(const rapidjson::Value & control_points);
+    
     void dump(std::ofstream & f);
 
     // Load existing template

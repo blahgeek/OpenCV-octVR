@@ -93,25 +93,26 @@ void DistanceSeamFinder::find(const std::vector<UMat> &,
     for(auto & umask: umasks)
         masks.push_back(umask.getMat(ACCESS_RW));
 
-    std::vector<Mat> distances(count);
+    this->distances.resize(count);
     for(size_t i = 0 ; i < count ; i += 1)
         cv::distanceTransform(umasks[i], distances[i], cv::DIST_L2, 3);
 
     for(int y = roi.y ; y < roi.br().y ; y += 1) {
         for(int x = roi.x ; x < roi.br().x ; x += 1) {
-            std::vector<float> ds;
+            std::vector<std::pair<int, float>> ds;
             for(size_t n = 0 ; n < count ; n += 1) {
                 if(y >= corners[n].y && x >= corners[n].x &&
                    y - corners[n].y < distances[n].rows &&
                    x - corners[n].x < distances[n].cols)
-                    ds.push_back(distances[n].ptr<float>(y - corners[n].y)[x - corners[n].x]);
+                    ds.emplace_back(n, distances[n].ptr<float>(y - corners[n].y)[x - corners[n].x]);
                 else
-                    ds.push_back(-1);
+                    ds.emplace_back(n, -1);
             }
-            int max_index = std::max_element(ds.begin(), ds.end()) - ds.begin();
-            for(size_t n = 0 ; n < count ; n += 1)
-                if(ds[n] >= 0 && max_index != n)
-                    masks[n].ptr<unsigned char>(y - corners[n].y)[x - corners[n].x] = 0;
+            std::sort(ds.begin(), ds.end(), [](std::pair<int, float> a, std::pair<int, float> b){return a.second > b.second;});
+
+            for(int n = max_n ; n < count ; n += 1)
+                if(ds[n].second >= 0)
+                    masks[ds[n].first].ptr<unsigned char>(y - corners[ds[n].first].y)[x - corners[ds[n].first].x] = 0;
         }
     }
 }

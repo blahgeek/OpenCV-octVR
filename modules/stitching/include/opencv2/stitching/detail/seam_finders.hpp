@@ -76,9 +76,14 @@ public:
 };
 
 class CV_EXPORTS DistanceSeamFinder: public SeamFinder {
+private:
+    int max_n;
+    std::vector<Mat> distances;
 public:
+    DistanceSeamFinder(int max_n=1): max_n(max_n) {}
     void find(const std::vector<UMat> &, const std::vector<Point> &,
               std::vector<UMat> &) override;
+    std::vector<Mat> getDistances() { return this->distances; }
 };
 
 /** @brief Stub seam estimator which does nothing.
