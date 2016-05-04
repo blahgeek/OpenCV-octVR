@@ -75,6 +75,12 @@ public:
               std::vector<UMat> &) override;
 };
 
+class CV_EXPORTS DistanceSeamFinder: public SeamFinder {
+public:
+    void find(const std::vector<UMat> &, const std::vector<Point> &,
+              std::vector<UMat> &) override;
+};
+
 /** @brief Stub seam estimator which does nothing.
  */
 class CV_EXPORTS NoSeamFinder : public SeamFinder
