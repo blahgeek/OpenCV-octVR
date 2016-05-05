@@ -30,13 +30,12 @@ using namespace vr;
 
 int main(int argc, char * const argv[]){
 
-    cv::ocl::setUseOpenCL(false);
-
     const char * usage = "Usage: %s [OPTIONS] -o OUTPUT_FILE CONFIG_JSON\n"
                          "Options:\n"
                          "    -w X:    Set output width, default to 0\n"
                          "    -h X:    Set output height, default to 0\n"
                          "    -d X:    Save masks to debug directory\n"
+                         "    -c:      Use control points to morph\n"
                          "    -n:      Do not use ROI based stitching\n"
                          "";
 
@@ -44,6 +43,7 @@ int main(int argc, char * const argv[]){
     int opt_height = 0;
     char * opt_debug = NULL;
     char * opt_outfile = NULL;
+    bool opt_control_points = false;
     bool opt_roi = true;
 
     int opt_ret;
@@ -53,6 +53,7 @@ int main(int argc, char * const argv[]){
             case 'h': opt_height = atoi(optarg); break;
             case 'o': opt_outfile = optarg; break;
             case 'd': opt_debug = optarg; break;
+            case 'c': opt_control_points = true; break;
             case 'n': opt_roi = false; break;
             default:
                 fprintf(stderr, usage, argv[0]);
@@ -91,7 +92,7 @@ int main(int argc, char * const argv[]){
         }
     }
 
-    if(options.HasMember("control_points"))
+    if(opt_control_points && options.HasMember("control_points"))
         mt.morph_controlpoints(options["control_points"]);
 
     std::vector<cv::Mat> imgs;
