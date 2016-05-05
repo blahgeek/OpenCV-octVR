@@ -89,7 +89,7 @@ void Runner::onDumperProcessFinished(int exitCode, QProcess::ExitStatus status) 
     // if necessary, encrypt the arguments
     ffmpeg_args = Encryptor::encryptArgString(ffmpeg_args);
 
-    QString _run = "\"" + QCoreApplication::applicationDirPath() + "/ffmpeg\""
+    QString _run = "\"" + QCoreApplication::applicationDirPath() + "/OwlLiveCore\""
                       + " " + ffmpeg_args;
     qDebug() << "Running ffmpeg: " << _run;
     ffmpeg_proc.start(_run);
