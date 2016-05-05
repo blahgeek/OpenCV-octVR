@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-04-26
+* @Last Modified time: 2016-05-05
 */
 
 #ifndef VR_LIBMAP_BASE_H
@@ -36,6 +36,13 @@
 
 namespace vr {
 
+class CV_EXPORTS_W CameraInterface {
+public:
+    virtual std::vector<cv::Point2d> obj_to_image(const std::vector<cv::Point2d> & lonlats) = 0;
+    virtual std::vector<cv::Point2d> image_to_obj(const std::vector<cv::Point2d> & xys) = 0;
+    virtual ~CameraInterface() {}
+};
+
 // Multiple input -> single output
 class CV_EXPORTS_W MapperTemplate {
 public:
@@ -49,6 +56,7 @@ public:
         cv::Mat map1, map2;
         cv::Mat mask;
         cv::Mat vignette;
+        std::vector<cv::Vec6f> src_triangles, dst_triangles;
     } Input;
 
     std::vector<Input> inputs;
@@ -56,6 +64,9 @@ public:
 
     std::vector<cv::Mat> seam_masks;  // only for inputs (not overlay_inputs)
     std::vector<bool> visible_mask; // only used in dumper (for green mask of PTGui)
+
+    CameraInterface * output_cam = nullptr;
+    std::vector<CameraInterface *> input_cams;
 
 public:
     // Create new template
@@ -69,10 +80,13 @@ public:
                    bool use_roi=true);
     // Prepare seam masks with provided images (optional)
     void create_masks(const std::vector<cv::Mat> & imgs = std::vector<cv::Mat>());
+    void morph_controlpoints(const rapidjson::Value & control_points);
+    
     void dump(std::ofstream & f);
 
     // Load existing template
     explicit MapperTemplate(std::ifstream & f);
+    ~MapperTemplate();
 };
 
 #define OCTVR_PREVIEW_DATA0_MEMORY_KEY "opencv_octvr_preview_0"

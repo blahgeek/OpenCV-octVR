@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-20
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-03-14
+* @Last Modified time: 2016-05-03
 */
 
 #ifndef VR_LIBMAP_CAMERA_H
@@ -21,6 +21,8 @@
 #include <string>
 #include <tuple>
 #include "opencv2/core.hpp"
+
+#include "octvr.hpp"
 
 namespace vr {
 
@@ -43,7 +45,7 @@ class NotImplemented: std::exception {};
 /**
  * Camera model
  */
-class Camera {
+class Camera: public CameraInterface {
 protected:
     std::vector<double> rotate_vector;
     cv::Mat rotate_matrix;
@@ -71,6 +73,7 @@ public:
      * Provide "rotate" optionally
      */
     Camera(const rapidjson::Value & options);
+    ~Camera() {}
 
     /**
      * Return aspect ratio of mapped image
@@ -103,7 +106,7 @@ public:
     /**
      * Map object points to image points
      */
-    virtual std::vector<cv::Point2d> obj_to_image(const std::vector<cv::Point2d> & lonlats);
+    virtual std::vector<cv::Point2d> obj_to_image(const std::vector<cv::Point2d> & lonlats) override;
     
     /**
      * Get points that are forced to be visible after blending.
@@ -114,7 +117,7 @@ public:
     /**
      * Map image points to object points
      */
-    virtual std::vector<cv::Point2d> image_to_obj(const std::vector<cv::Point2d> & xys);
+    virtual std::vector<cv::Point2d> image_to_obj(const std::vector<cv::Point2d> & xys) override;
 
 public:
     static std::unique_ptr<Camera> New(const std::string & type, const rapidjson::Value & opts);

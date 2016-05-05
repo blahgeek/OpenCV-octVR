@@ -37,6 +37,7 @@ class PTXParser:
         self.inputs = []
         self.processing_input = dict()
         self.input_stacks = []
+        self.control_points = []
 
     def process_input_line(self, line):
         fields = line.strip().split(' ')
@@ -74,6 +75,20 @@ class PTXParser:
         self.inputs.append(self.processing_input)
         self.processing_input = dict()
         logging.info("New input added")
+
+    def process_cp_line(self, line):
+        match = re.match(r'c n(\d+) N(\d+) x([0-9\.]+) y([0-9\.]+) X([0-9\.]+) Y([0-9\.]+) t0', line.strip())
+        if match is None:
+            return
+        left = int(match.group(1))
+        right = int(match.group(2))
+        inputs = list(self.dump_inputs())
+        self.control_points.append([left, right,
+                                    float(match.group(3)) / inputs[left]["options"]["width"],
+                                    float(match.group(4)) / inputs[left]["options"]["height"],
+                                    float(match.group(5)) / inputs[right]["options"]["width"],
+                                    float(match.group(6)) / inputs[right]["options"]["height"],
+                                    ])
 
     def process_mask_line(self, line):
         match = re.match(r'k i(\d+) t(\d+) p"(.*)"', line.strip())
@@ -168,6 +183,8 @@ class PTXParser:
             self.process_input_line(line)
         elif line.startswith('k'):
             self.process_mask_line(line)
+        elif line.startswith('c'):
+            self.process_cp_line(line)
 
     def dump_equirectangular_options(self, img):
         assert float(img['v']) == 360, 'FOV must be 360 degree for equirectangular'
@@ -184,7 +201,7 @@ class PTXParser:
             "exposure": float(img.get("Eev", "0")),
         }
 
-    def dump(self):
+    def dump_inputs(self):
         for img in self.inputs:
             if 'dummyimage' in img:
                 continue
@@ -239,7 +256,7 @@ if __name__ == '__main__':
             parser.process_line(line)
     parser.process_stack_masks()
 
-    result_inputs = parser.dump()
+    result_inputs = parser.dump_inputs()
     if args.lon_select:
         result_inputs = longitude_select(result_inputs, *map(float, args.lon_select.split(',')))
 
@@ -255,6 +272,7 @@ if __name__ == '__main__':
             }
         }, 
         "inputs": list(result_inputs),
+        "control_points": parser.control_points,
     }
     if args.min_lat:
         result["output"]["options"]["min_lat"] = deg_to_rad(args.min_lat)
