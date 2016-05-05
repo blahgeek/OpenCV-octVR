@@ -47,7 +47,7 @@ int main(int argc, char * const argv[]){
     bool opt_roi = true;
 
     int opt_ret;
-    while((opt_ret = getopt(argc, argv, "w:h:o:d:n")) != -1) {
+    while((opt_ret = getopt(argc, argv, "w:h:o:d:cn")) != -1) {
         switch(opt_ret) {
             case 'w': opt_width = atoi(optarg); break;
             case 'h': opt_height = atoi(optarg); break;
