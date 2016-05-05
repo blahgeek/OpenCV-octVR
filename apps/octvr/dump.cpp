@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-11-09
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-04-24
+* @Last Modified time: 2016-05-05
 */
 
 #include <iostream>
@@ -29,6 +29,8 @@
 using namespace vr;
 
 int main(int argc, char * const argv[]){
+
+    cv::ocl::setUseOpenCL(false);
 
     const char * usage = "Usage: %s [OPTIONS] -o OUTPUT_FILE CONFIG_JSON\n"
                          "Options:\n"
@@ -88,19 +90,22 @@ int main(int argc, char * const argv[]){
             mt.add_input((*i)["type"].GetString(), (*i)["options"], true, opt_roi);
         }
     }
-    
+
+    if(options.HasMember("control_points"))
+        mt.morph_controlpoints(options["control_points"]);
+
+    std::vector<cv::Mat> imgs;
     if(!(argc == 1 || argc - 1 == options["inputs"].Size())) {
         fprintf(stderr, "Invalid argument\n");
         return 1;
     }
     if(argc > 1) {
-        std::vector<cv::Mat> imgs;
         for(int i = 1 ; i < argc ; i += 1) {
             fprintf(stderr, "Reading image %s...\n", argv[i]);
             cv::Mat img = cv::imread(argv[i], 1);
             imgs.push_back(img);
         }
-        mt.create_masks(imgs);
+        // mt.create_masks(imgs);
     }
 
     std::ofstream of(opt_outfile, std::ios::binary);
@@ -125,6 +130,38 @@ int main(int argc, char * const argv[]){
             SAVE_MAT(opt_debug, i, "masks", mt.inputs[i].mask);
             SAVE_MAT(opt_debug, i, "seam_masks", mt.seam_masks[i]);
         }
+
+        std::vector<cv::Mat> remapped_imgs;
+        for(int i = 0 ; i < imgs.size() ; i += 1) {
+            cv::Mat remapped_img;
+            cv::remap(imgs[i], remapped_img, 
+                      mt.inputs[i].map1 * imgs[i].cols,
+                      mt.inputs[i].map2 * imgs[i].rows,
+                      cv::INTER_LINEAR);
+            remapped_imgs.push_back(remapped_img);
+        }
+        SAVE_MAT_VEC(opt_debug, "img_cp", imgs);
+        SAVE_MAT_VEC(opt_debug, "img_remapped", remapped_imgs);
+
+        for(int i = 0 ; i < imgs.size() ; i += 1) {
+            auto T = [&](float x, float y) { return cv::Point2f(x * mt.out_size.width - mt.inputs[i].roi.x,
+                                                                y * mt.out_size.height - mt.inputs[i].roi.y);};
+            for(int k = 0 ; k < mt.inputs[i].src_triangles.size() ; k += 1) {
+                auto src = mt.inputs[i].src_triangles[k];
+                auto dst = mt.inputs[i].dst_triangles[k];
+                cv::Point2f src_ts[] = {T(src[0], src[1]), T(src[2], src[3]), T(src[4], src[5])};
+                cv::Point2f dst_ts[] = {T(dst[0], dst[1]), T(dst[2], dst[3]), T(dst[4], dst[5])};
+
+                cv::line(remapped_imgs[i], src_ts[0], src_ts[1], cv::Scalar(0,0,255));
+                cv::line(remapped_imgs[i], src_ts[0], src_ts[2], cv::Scalar(0,0,255));
+                cv::line(remapped_imgs[i], src_ts[1], src_ts[2], cv::Scalar(0,0,255));
+
+                cv::line(remapped_imgs[i], dst_ts[0], dst_ts[1], cv::Scalar(255,0,0));
+                cv::line(remapped_imgs[i], dst_ts[0], dst_ts[2], cv::Scalar(255,0,0));
+                cv::line(remapped_imgs[i], dst_ts[1], dst_ts[2], cv::Scalar(255,0,0));
+            }
+        }
+        SAVE_MAT_VEC(opt_debug, "img_remapped_tri", remapped_imgs);
     }
     // remapper->prepare(std::vector<cv::Size>(options["inputs"].size(), cv::Size(1,1)));
     // remapper->debug_save_mats();

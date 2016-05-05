@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2016-05-04
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-05-04
+* @Last Modified time: 2016-05-05
 */
 
 #include <iostream>
@@ -143,31 +143,63 @@ void MapperTemplate::morph_controlpoints(const rapidjson::Value & control_points
             }
         }
 
-        auto B = [&](float x, float y) { return cv::Point2f((x * umasks[i].cols + inputs[i].roi.x) / out_size.width,
-                                                            (y * umasks[i].rows + inputs[i].roi.y) / out_size.height); };
-        for(float x = 1e-3 ; x < 1.0 ; x += 0.19979) {
-            src_vertexes.push_back(B(x, 1e-3));
-            dst_vertexes.push_back(B(x, 1e-3));
-            src_vertexes.push_back(B(x, 1.0 - 1e-3));
-            dst_vertexes.push_back(B(x, 1.0 - 1e-3));
+        float bb_left=1., bb_right=0., bb_top=1., bb_bottom=0.;
+        for(auto v: src_vertexes) {
+            bb_left = std::min(bb_left, v.x);
+            bb_right = std::max(bb_right, v.x);
+            bb_top = std::min(bb_top, v.y);
+            bb_bottom = std::max(bb_bottom, v.y);
         }
-        for(float y = 0.2 ; y < 0.9 ; y += 0.2) {
-            src_vertexes.push_back(B(1e-3, y));
-            dst_vertexes.push_back(B(1e-3, y));
-            src_vertexes.push_back(B(1.0 - 1e-3, y));
-            dst_vertexes.push_back(B(1.0 - 1e-3, y));
+        for(auto v: dst_vertexes) {
+            bb_left = std::min(bb_left, v.x);
+            bb_right = std::max(bb_right, v.x);
+            bb_top = std::min(bb_top, v.y);
+            bb_bottom = std::max(bb_bottom, v.y);
         }
-        auto src_triangles = getTriangleList(src_vertexes);
-        auto dst_triangles = getTriangleListFromIndexes(dst_vertexes, getTriangleListIndexes(src_triangles, src_vertexes));
+        bb_left = std::max(1e-3, bb_left - 0.05);
+        bb_top = std::max(1e-3, bb_top - 0.05);
+        bb_right = std::min(1 - 1e-3, bb_right + 0.05);
+        bb_bottom = std::min(1 - 1e-3, bb_bottom + 0.05);
+
+        for(float x = bb_left ; x < bb_right + 1e-3 ; x += (bb_right - bb_left) / 10) {
+            src_vertexes.emplace_back(x, bb_top);
+            src_vertexes.emplace_back(x, bb_bottom);
+            dst_vertexes.emplace_back(x, bb_top);
+            dst_vertexes.emplace_back(x, bb_bottom);
+        }
+        for(float y = bb_top + (bb_bottom - bb_top) / 10; y < bb_bottom - (bb_bottom - bb_top) / 10 + 1e-3 ; y += (bb_bottom - bb_top) / 10) {
+            src_vertexes.emplace_back(bb_left, y);
+            src_vertexes.emplace_back(bb_right, y);
+            dst_vertexes.emplace_back(bb_left, y);
+            dst_vertexes.emplace_back(bb_right, y);
+        }
+
+        // auto B = [&](float x, float y) { return cv::Point2f((x * umasks[i].cols + inputs[i].roi.x) / out_size.width,
+        //                                                     (y * umasks[i].rows + inputs[i].roi.y) / out_size.height); };
+        // for(float x = 1e-3 ; x < 1.0 ; x += 0.19979) {
+        //     src_vertexes.push_back(B(x, 1e-3));
+        //     dst_vertexes.push_back(B(x, 1e-3));
+        //     src_vertexes.push_back(B(x, 1.0 - 1e-3));
+        //     dst_vertexes.push_back(B(x, 1.0 - 1e-3));
+        // }
+        // for(float y = 0.2 ; y < 0.9 ; y += 0.2) {
+        //     src_vertexes.push_back(B(1e-3, y));
+        //     dst_vertexes.push_back(B(1e-3, y));
+        //     src_vertexes.push_back(B(1.0 - 1e-3, y));
+        //     dst_vertexes.push_back(B(1.0 - 1e-3, y));
+        // }
+        inputs[i].src_triangles = getTriangleList(src_vertexes);
+        inputs[i].dst_triangles = getTriangleListFromIndexes(dst_vertexes, 
+                                        getTriangleListIndexes(inputs[i].src_triangles, src_vertexes));
 
         auto T = [&](float x, float y) { return cv::Point2f(x * out_size.width - inputs[i].roi.x,
                                                             y * out_size.height - inputs[i].roi.y);};
-        cv::Mat new_map1(inputs[i].map1.size(), inputs[i].map1.type());
-        cv::Mat new_map2(inputs[i].map2.size(), inputs[i].map2.type());
-        cv::Mat new_mask(inputs[i].mask.size(), inputs[i].mask.type());
-        for(int k = 0 ; k < src_triangles.size() ; k += 1) {
-            auto src = src_triangles[k];
-            auto dst = dst_triangles[k];
+        cv::Mat new_map1 = inputs[i].map1.clone();
+        cv::Mat new_map2 = inputs[i].map2.clone();
+        cv::Mat new_mask = inputs[i].mask.clone();
+        for(int k = 0 ; k < inputs[i].src_triangles.size() ; k += 1) {
+            auto src = inputs[i].src_triangles[k];
+            auto dst = inputs[i].dst_triangles[k];
             cv::Point2f src_ts[] = {T(src[0], src[1]), T(src[2], src[3]), T(src[4], src[5])};
             cv::Point2f dst_ts[] = {T(dst[0], dst[1]), T(dst[2], dst[3]), T(dst[4], dst[5])};
             auto warp_mat = cv::getAffineTransform(src_ts, dst_ts);

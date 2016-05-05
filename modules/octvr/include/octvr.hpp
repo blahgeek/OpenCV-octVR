@@ -56,6 +56,7 @@ public:
         cv::Mat map1, map2;
         cv::Mat mask;
         cv::Mat vignette;
+        std::vector<cv::Vec6f> src_triangles, dst_triangles;
     } Input;
 
     std::vector<Input> inputs;
