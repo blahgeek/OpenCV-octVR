@@ -11,6 +11,7 @@
 #endif
 #include <QHeaderView>
 #include <QFileDialog>
+#include <QCoreApplication>
 
 #include "./pto_template.hpp"
 
@@ -53,7 +54,12 @@ void PTOTemplate::loadPTO() {
     qDebug() << "Parser args: " << parser_args;
 
     QProcess parser;
+#if defined ( _WIN32 )
+    parser.start("\"" + QCoreApplication::applicationDirPath() + "/python3/python3\"", parser_args);
+#else
     parser.start("python3", parser_args);
+#endif
+
     parser.waitForFinished();
     QString parsed_json = parser.readAllStandardOutput();
     this->json_model.loadJson(parsed_json.toUtf8());

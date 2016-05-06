@@ -158,7 +158,7 @@ void InputsSelector::saveImages(int crop_x, int crop_w) {
     QProcess proc;
     QString encrypted_args = Encryptor::encryptArgString(Encryptor::concatArgString(in_args + out_args));
     qDebug() << encrypted_args;
-    proc.start("\"" + QCoreApplication::applicationDirPath() + "/ffmpeg\" " + encrypted_args);
+    proc.start("\"" + QCoreApplication::applicationDirPath() + "/OwlLiveCore\" " + encrypted_args);
     bool finished = proc.waitForFinished();
     if(finished && proc.exitStatus() == QProcess::NormalExit && proc.exitCode() == 0)
         QMessageBox::information(nullptr, "", "Images saved");
