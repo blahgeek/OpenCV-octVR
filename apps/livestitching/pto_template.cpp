@@ -6,9 +6,6 @@
 */
 
 #include <iostream>
-#if defined(_WIN32)
-#define Q_COMPILER_INITIALIZER_LISTS value
-#endif
 #include <QHeaderView>
 #include <QFileDialog>
 

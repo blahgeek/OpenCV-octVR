@@ -27,6 +27,7 @@
 #elif defined(ANDROID)
 #include <time.h>
 #elif defined(_WIN32)
+#define NOMINMAX
 #include <windows.h>
 #include <time.h>
 #endif
