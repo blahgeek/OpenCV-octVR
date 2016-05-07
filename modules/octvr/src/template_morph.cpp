@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2016-05-04
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-05-05
+* @Last Modified time: 2016-05-07
 */
 
 #include <iostream>
@@ -45,7 +45,8 @@ static std::vector<cv::Vec3i> getTriangleListIndexes(const std::vector<cv::Vec6f
     std::vector<cv::Vec3i> ret;
     for(auto tri: triangleList) {
         auto cmp = [](cv::Point2f a, cv::Point2f b) {
-            return std::fabs(a.x - b.x) + std::fabs(a.y - b.y) < 1e-5;
+            return a == b;
+            // return std::fabs(a.x - b.x) + std::fabs(a.y - b.y) < 1e-5;
         };
         int i0 = std::find_if(vertexes.begin(), vertexes.end(), [&](cv::Point2f x) {return cmp(x, cv::Point2f(tri[0], tri[1])); }) - vertexes.begin();
         int i1 = std::find_if(vertexes.begin(), vertexes.end(), [&](cv::Point2f x) {return cmp(x, cv::Point2f(tri[2], tri[3])); }) - vertexes.begin();
@@ -108,19 +109,25 @@ void MapperTemplate::morph_controlpoints(const rapidjson::Value & control_points
         int dst1_local_x = cp.dst1.x * out_size.width - inputs[cp.n1].roi.x;
         int dst1_local_y = cp.dst1.y * out_size.height - inputs[cp.n1].roi.y;
 
-        if(dst0_local_x < 0 || dst0_local_x >= inputs[cp.n0].roi.width ||
-           dst0_local_y < 0 || dst0_local_y >= inputs[cp.n0].roi.height)
-            continue;
-        if(dst1_local_x < 0 || dst1_local_x >= inputs[cp.n1].roi.width ||
-           dst1_local_y < 0 || dst1_local_y >= inputs[cp.n1].roi.height)
-            continue;
+        // if(dst0_local_x < 0 || dst0_local_x >= inputs[cp.n0].roi.width ||
+        //    dst0_local_y < 0 || dst0_local_y >= inputs[cp.n0].roi.height)
+        //     continue;
+        // if(dst1_local_x < 0 || dst1_local_x >= inputs[cp.n1].roi.width ||
+        //    dst1_local_y < 0 || dst1_local_y >= inputs[cp.n1].roi.height)
+        //     continue;
 
-        if(masks_h[cp.n0].at<unsigned char>(dst0_local_y, dst0_local_x) == 0 ||
-           masks_h[cp.n1].at<unsigned char>(dst1_local_y, dst1_local_x) == 0)
+        // if(masks_h[cp.n0].at<unsigned char>(dst0_local_y, dst0_local_x) == 0 ||
+        //    masks_h[cp.n1].at<unsigned char>(dst1_local_y, dst1_local_x) == 0)
+        //     continue;
+
+        if(std::fabs(cp.dst0.x - cp.dst1.x) + std::fabs(cp.dst0.y - cp.dst1.y) > 0.1)
             continue;
 
         float weight0 = distances[cp.n0].at<float>(dst0_local_y, dst0_local_x);
         float weight1 = distances[cp.n1].at<float>(dst1_local_y, dst1_local_x);
+
+        if(weight0 + weight1 < 1e-3)
+            weight0 = weight1 = 1.0;
 
         cp.dst_mid.x = (cp.dst0.x * weight0 + cp.dst1.x * weight1) / (weight0 + weight1);
         cp.dst_mid.y = (cp.dst0.y * weight0 + cp.dst1.y * weight1) / (weight0 + weight1);
