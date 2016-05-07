@@ -9,14 +9,15 @@
 #include "./async.hpp"
 #include <iostream>
 #include <thread>
+#include <cmath>
 
 using namespace vr;
 
 static cv::Rect _rect_mul_size(cv::Rect_<double> region, cv::Size size) {
-    int x = region.x * size.width;
-    int y = region.y * size.height;
-    int w = region.width * size.width;
-    int h = region.height * size.height;
+    int x = std::round(region.x * size.width);
+    int y = std::round(region.y * size.height);
+    int w = std::round(region.width * size.width);
+    int h = std::round(region.height * size.height);
     if(x + w >= size.width)
         w = size.width - x;
     if(y + h >= size.height)
@@ -194,6 +195,7 @@ fps_timer("FPS Timer"){
 
     for(int i = 0 ; i < mts.size() ; i += 1) {
         auto r = _rect_mul_size(output_regions[i], out_size);
+        std::cerr << "No." << i << ": " << output_regions[i] << ", " << r << std::endl;
         this->mappers.emplace_back(new Mapper(mts[i],
                                               in_sizes,
                                               blend_modes[i],

@@ -104,7 +104,7 @@ void MainWindow::onGenerateCMD() {
                           .arg(ui->paranoma_height->value())
                           );
     if(this->preview_video->isValid())
-        filter_complex.append(QString(":preview_ow=%1:preview_oh=%2")
+        filter_complex.append(QString(":preview_width=%1:preview_height=%2")
                               .arg(preview_width)
                               .arg(preview_height));
 

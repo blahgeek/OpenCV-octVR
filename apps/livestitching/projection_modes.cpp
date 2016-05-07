@@ -62,7 +62,7 @@ ProjectionMode PROJECTION_MODE_3DV_CYLINDER_SLICE_2X25_3DV = {
                                             }
                                             )JSON")),
     },
-    {cv::Rect_<double>(2048./2304., 256./2304., 256./2304., 256./1024.), false, false, 0,
+    {cv::Rect_<double>(2048./2304., 256./1024., 256./2304., 256./1024.), false, false, 0,
         QJsonDocument::fromJson(QByteArray(R"JSON(
                                             {
                                                 "options": {
@@ -93,7 +93,7 @@ ProjectionMode PROJECTION_MODE_3DV_CYLINDER_SLICE_2X25_3DV = {
                                             }
                                             )JSON")),
     },
-    {cv::Rect_<double>(2048./2304., 768./2304., 256./2304., 256./1024.), false, false, 1,
+    {cv::Rect_<double>(2048./2304., 768./1024., 256./2304., 256./1024.), false, false, 1,
         QJsonDocument::fromJson(QByteArray(R"JSON(
                                             {
                                                 "options": {

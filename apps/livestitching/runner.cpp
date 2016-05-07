@@ -75,11 +75,12 @@ void Runner::onDumperProcessFinished(int exitCode, QProcess::ExitStatus status) 
     auto this_json = json_queues.back();
     json_queues.pop_back();
 
-    QString json_path = QString::number(json_queues.size()) + ".json";
-    QString dat_path = QString::number(json_queues.size()) + ".dat";
+    QString json_path = temp_dir.path() + QDir::separator() + QString::number(json_queues.size()) + ".json";
+    QString dat_path = temp_dir.path() + QDir::separator() + QString::number(json_queues.size()) + ".dat";
     QFile json_f(json_path);
     json_f.open(QIODevice::WriteOnly);
     json_f.write(this_json.first.toJson());
+    json_f.close();
     QString dumper = QCoreApplication::applicationDirPath() + "/octvr_dump";
     dumper_proc.start(dumper, QStringList({"-w", QString::number(this_json.second.width), 
                                            "-h", QString::number(this_json.second.height),
