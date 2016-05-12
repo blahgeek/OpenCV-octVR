@@ -89,7 +89,7 @@ int main(int argc, char const *argv[]) {
     std::ifstream map_file(map_filename);
 
     MapperTemplate map_template(map_file);
-#ifdef HAVE_CUDA
+#if 0 // FIXME
     auto async_remapper = AsyncMultiMapper::New(map_template, in_sizes);
     assert(async_remapper != NULL);
 #else
@@ -99,7 +99,7 @@ int main(int argc, char const *argv[]) {
     auto output_size = map_template.out_size;
     std::cerr << "Done. Output size = " << output_size << std::endl;
 
-#ifdef HAVE_CUDA
+#if 0 // FIXME
     std::vector<cv::Mat> ms;
     for(auto & um: imgs) {
         cv::Mat x;

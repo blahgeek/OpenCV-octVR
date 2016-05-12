@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2016-02-21
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-03-30
+* @Last Modified time: 2016-04-27
 */
 
 #include <iostream>
@@ -14,6 +14,7 @@
 #include <QCameraViewfinderSettings>
 #include <QCoreApplication>
 #include <QRegularExpression>
+#include <QAudio>
 
 #include "./inputs_select.hpp"
 #include "./encryptor.hpp"
@@ -33,8 +34,15 @@ static long get_camera_order(const QCameraInfo & info) {
     return ret;
 }
 
-InputsSelector::InputsSelector(QGridLayout * _grid): grid(_grid) {
-    this->camera_infos = QCameraInfo::availableCameras();
+InputsSelector::InputsSelector(QGridLayout * _grid, QComboBox * _audio_combo): 
+grid(_grid), audio_combo(_audio_combo) {
+
+    // QUICK HACK for integrated camera
+    auto all_cam_infos = QCameraInfo::availableCameras();
+    foreach(const QCameraInfo & info, all_cam_infos)
+        if(!info.description().contains("BisonCam", Qt::CaseInsensitive))
+            this->camera_infos.append(info);
+
     std::stable_sort(camera_infos.begin(), camera_infos.end(), [](const QCameraInfo & a, const QCameraInfo & b) {
         return get_camera_order(a) < get_camera_order(b);
     });
@@ -51,10 +59,18 @@ InputsSelector::InputsSelector(QGridLayout * _grid): grid(_grid) {
         this->cameras.back()->setViewfinder(this->views.back().get());
 
 #if defined(__linux__)
+        this->cameras.back()->load();
+        auto supported_settings = this->cameras.back()->supportedViewfinderSettings();
         QCameraViewfinderSettings settings;
-        settings.setResolution(QSize(640, 480));
-        settings.setMaximumFrameRate(3);
-        this->cameras.back()->setViewfinderSettings(settings);
+        foreach(const QCameraViewfinderSettings &s,supported_settings) {
+            if(s.resolution().width() <= 800 && (settings.isNull() || settings.maximumFrameRate() > s.maximumFrameRate()))
+                settings = s;
+        }
+        if(!settings.isNull()) {
+            qDebug() << "Setting camera to " << settings.resolution() << "@" <<
+                settings.minimumFrameRate() << ":" << settings.maximumFrameRate();
+            this->cameras.back()->setViewfinderSettings(settings);
+        }
 #endif
         this->cameras.back()->start();
 
@@ -77,6 +93,12 @@ InputsSelector::InputsSelector(QGridLayout * _grid): grid(_grid) {
             col = 0;
         }
     }
+
+    this->audio_infos = QAudioDeviceInfo::availableDevices(QAudio::AudioInput);
+    foreach(const QAudioDeviceInfo &info, audio_infos) {
+        qDebug() << "Audio info: " << info.deviceName();
+        audio_combo->addItem(info.deviceName());
+    }
 }
 
 void InputsSelector::start() {
@@ -85,8 +107,10 @@ void InputsSelector::start() {
 }
 
 void InputsSelector::stop() {
-    for(auto & c: cameras)
+    for(auto & c: cameras) {
         c->stop();
+        c->unload();
+    }
 }
 
 void InputsSelector::onInputsFpsChanged(int _fps) {
@@ -109,7 +133,7 @@ std::vector<QCameraInfo> InputsSelector::getAll() {
     return ret;
 }
 
-QStringList InputsSelector::getInputArgs() {
+QStringList InputsSelector::getInputArgs(int width, int height) {
     QStringList args;
 
     auto all_cams = this->getAll();
@@ -125,6 +149,7 @@ QStringList InputsSelector::getInputArgs() {
                 device_name_dup += 1;
         }
         args << "-f" << "dshow" << "-pixel_format" << "uyvy422"
+             << "-video_size" << QString("%1x%2").arg(width).arg(height)
              << "-video_device_number" << QString::number(device_name_dup)
              << "-framerate" << QString::number(this->fps)
              << "-i" << QString("video=%1").arg(input.description());
@@ -132,17 +157,32 @@ QStringList InputsSelector::getInputArgs() {
 #else
     for(auto & input: selected_cams)
         args << "-f" << "v4l2" << "-pixel_format" << "uyvy422"
+             << "-video_size" << QString("%1x%2").arg(width).arg(height)
              << "-framerate" << QString::number(this->fps) << "-i" << input.deviceName();
 #endif
+
+    if(this->audio_combo->currentIndex() != 0) {
+    #if defined(_WIN32)
+        args << "-f" << "dshow" << "-i" << QString("audio=%1").arg(this->audio_combo->currentText());
+    #else
+        args << "-f" << "alsa" << "-i" << this->audio_combo->currentText();
+    #endif
+        args << "-strict" << "-2";
+    }
 
     return args;
 }
 
-void InputsSelector::saveImages(int crop_x, int crop_w) {
+void InputsSelector::saveImages(int width, int height, int crop_x, int crop_w) {
+    for(auto & c: cameras) {
+        c->stop();
+        c->unload();
+    }
+
     QString dir = QFileDialog::getExistingDirectory(nullptr, ("Choose Directory"),
                                                     "/home", QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
 
-    QStringList in_args = this->getInputArgs();
+    QStringList in_args = this->getInputArgs(width, height);
     QStringList out_args;
 
     auto selected = this->getSelected();
@@ -164,4 +204,7 @@ void InputsSelector::saveImages(int crop_x, int crop_w) {
         QMessageBox::information(nullptr, "", "Images saved");
     else
         QMessageBox::warning(nullptr, "", "Error occured while saving images");
+
+    for(auto & c: cameras)
+        c->start();
 }

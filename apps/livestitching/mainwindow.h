@@ -27,6 +27,7 @@
 #include "./preview_video.hpp"
 #include "./runner.hpp"
 #include "./encryptor.hpp"
+#include "./projection_modes.hpp"
 
 namespace Ui {
 class MainWindow;
@@ -54,6 +55,7 @@ public slots:
     void on3DModeChanged(int);
     void on3DLonSelectChanged(int);
     void on3DLonSelectValueChanged(int __unused=0);
+    void onProjectionModeChanged(int);
 
     void onHLSPathSelect();
     void onFilePathSelect();
@@ -76,6 +78,7 @@ private:
     std::unique_ptr<PTOTemplate> pto_template_left, pto_template_right;
     std::unique_ptr<PreviewVideoWidget> preview_video;
     std::unique_ptr<Runner> runner;
+    ProjectionMode projection_mode = PROJECTION_MODE_MONO360;
 
     QTimer preview_timer;
 

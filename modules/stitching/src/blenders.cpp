@@ -668,9 +668,6 @@ MultiBandGPUBlender::MultiBandGPUBlender(const std::vector<cuda::GpuMat> & masks
 }
 
 void MultiBandGPUBlender::do_blend(std::vector<cuda::GpuMat> & imgs, cuda::GpuMat & dst) {
-    CV_Assert(dst.cols >= align_result_roi.x + align_result_roi.width);
-    CV_Assert(dst.rows >= align_result_roi.y + align_result_roi.height);
-
     for(int n = 0 ; n < num_images ; n += 1)
         imgs[n].copyTo(src_pyr_laplaces[n][0](rois[n] - align_rois[n].tl()), streams[n]);
 
@@ -725,7 +722,11 @@ void MultiBandGPUBlender::do_blend(std::vector<cuda::GpuMat> & imgs, cuda::GpuMa
         cuda::add(dst_tmps[i-1], dst_pyr_laplace[i-1], dst_pyr_laplace[i-1], 
                   cv::noArray(), -1, streams[0]);
     }
-    dst_pyr_laplace[0].convertTo(dst(align_result_roi), CV_8UC3, streams[0]);
+
+    cv::Size crop_size(align_result_roi.width < dst.cols ? align_result_roi.width : dst.cols,
+                       align_result_roi.height < dst.rows ? align_result_roi.height : dst.rows);
+    dst_pyr_laplace[0](cv::Rect(cv::Point(0, 0), crop_size))
+        .convertTo(dst(cv::Rect(align_result_roi.tl(), crop_size)), CV_8UC3, streams[0]);
 
 #if defined(_WIN32)
     streams[0].queryIfComplete();

@@ -1,7 +1,7 @@
 /* * @Author: BlahGeek
 * @Date:   2015-10-20
-* @Last Modified by:   StrayWarrior
-* @Last Modified time: 2016-04-02
+* @Last Modified by:   BlahGeek
+* @Last Modified time: 2016-05-03
 */
 
 #include "./camera.hpp"
@@ -201,7 +201,7 @@ cv::Point3d Camera::sphere_lonlat_to_xyz(const cv::Point2d & lonlat) {
 
 void Camera::sphere_rotate(std::vector<cv::Point3d> & points, bool reverse) {
     cv::Mat m(points.size(), 3, CV_64F, points.data(), sizeof(cv::Point3d));
-    cv::Mat r = rotate_matrix;
+    cv::Mat r = rotate_matrix.clone();
     if(reverse) r = r.inv();
 
     cv::Mat rotated = m * r.t();

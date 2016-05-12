@@ -320,6 +320,12 @@ std::vector<double> GainCompensatorGPU::gains() const
     return gains_vec;
 }
 
+void GainCompensatorGPU::set_gains(std::vector<double> g) {
+    gains_ = cv::Mat_<double>(g.size(), 1);
+    for(size_t i = 0 ; i < g.size() ; i += 1)
+        gains_(i, 0) = g[i];
+}
+
 void GainCompensator::apply(int index, Point /*corner*/, InputOutputArray image, InputArray /*mask*/)
 {
     multiply(image, gains_(index, 0), image);

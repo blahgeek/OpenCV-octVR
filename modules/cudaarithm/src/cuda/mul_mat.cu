@@ -53,7 +53,9 @@
 using namespace cv::cudev;
 
 void mulMat(const GpuMat& src1, const GpuMat& src2, GpuMat& dst, const GpuMat&, double scale, Stream& stream, int);
+void mulMat_8uc3_32f(const GpuMat& src1, const GpuMat& src2, GpuMat& dst, Stream& stream);
 void mulMat_8uc4_32f(const GpuMat& src1, const GpuMat& src2, GpuMat& dst, Stream& stream);
+void mulMat_16sc3_32f(const GpuMat& src1, const GpuMat& src2, GpuMat& dst, Stream& stream);
 void mulMat_16sc4_32f(const GpuMat& src1, const GpuMat& src2, GpuMat& dst, Stream& stream);
 
 namespace
@@ -193,7 +195,7 @@ void mulMat(const GpuMat& src1, const GpuMat& src2, GpuMat& dst, const GpuMat&, 
 namespace
 {
     template <typename T>
-    struct MulOpSpecial : binary_function<T, float, T>
+    struct MulOpSpecial_c4 : binary_function<T, float, T>
     {
         __device__ __forceinline__ T operator ()(const T& a, float b) const
         {
@@ -210,14 +212,14 @@ namespace
         }
     };
 
-    template<>
-    struct MulOpSpecial<short3> : binary_function<short3, float, short3>
+    template <typename T>
+    struct MulOpSpecial_c3 : binary_function<T, float, T>
     {
-        __device__ __forceinline__ short3 operator ()(const short3& a, float b) const
+        __device__ __forceinline__ T operator ()(const T& a, float b) const
         {
-            typedef typename VecTraits<short3>::elem_type elem_type;
+            typedef typename VecTraits<T>::elem_type elem_type;
 
-            short3 res;
+            T res;
 
             res.x = saturate_cast<elem_type>(a.x * b);
             res.y = saturate_cast<elem_type>(a.y * b);
@@ -226,21 +228,27 @@ namespace
             return res;
         }
     };
+
+}
+
+void mulMat_8uc3_32f(const GpuMat& src1, const GpuMat& src2, GpuMat& dst, Stream& stream)
+{
+    gridTransformBinary(globPtr<uchar3>(src1), globPtr<float>(src2), globPtr<uchar3>(dst), MulOpSpecial_c3<uchar3>(), stream);
 }
 
 void mulMat_8uc4_32f(const GpuMat& src1, const GpuMat& src2, GpuMat& dst, Stream& stream)
 {
-    gridTransformBinary(globPtr<uchar4>(src1), globPtr<float>(src2), globPtr<uchar4>(dst), MulOpSpecial<uchar4>(), stream);
+    gridTransformBinary(globPtr<uchar4>(src1), globPtr<float>(src2), globPtr<uchar4>(dst), MulOpSpecial_c4<uchar4>(), stream);
 }
 
 void mulMat_16sc3_32f(const GpuMat& src1, const GpuMat& src2, GpuMat& dst, Stream& stream)
 {
-    gridTransformBinary(globPtr<short3>(src1), globPtr<float>(src2), globPtr<short3>(dst), MulOpSpecial<short3>(), stream);
+    gridTransformBinary(globPtr<short3>(src1), globPtr<float>(src2), globPtr<short3>(dst), MulOpSpecial_c3<short3>(), stream);
 }
 
 void mulMat_16sc4_32f(const GpuMat& src1, const GpuMat& src2, GpuMat& dst, Stream& stream)
 {
-    gridTransformBinary(globPtr<short4>(src1), globPtr<float>(src2), globPtr<short4>(dst), MulOpSpecial<short4>(), stream);
+    gridTransformBinary(globPtr<short4>(src1), globPtr<float>(src2), globPtr<short4>(dst), MulOpSpecial_c4<short4>(), stream);
 }
 
 #endif

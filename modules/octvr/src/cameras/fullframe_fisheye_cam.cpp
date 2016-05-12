@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-11-03
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-04-06
+* @Last Modified time: 2016-05-03
 */
 
 #include "./fullframe_fisheye_cam.hpp"
@@ -168,7 +168,7 @@ cv::Point2d FullFrameFisheyeCamera::do_reverse_radial_distort(cv::Point2d orig) 
     for(int i = 0 ; i < roots.rows ; i += 1) {
         double real = roots.at<double>(i, 0);
         double virt = roots.at<double>(i, 1);
-        if(fabs(virt) < 1e-5 && real > 0)
+        if(fabs(virt) < 1e-3 && real > 0 && (real < r || r < 0))
             r = real;
     }
     //CV_Assert(r > 0);
@@ -197,6 +197,8 @@ cv::Point2d FullFrameFisheyeCamera::obj_to_image_single(const cv::Point2d & lonl
 
     double x = - (theta * v0 / r) * distance;
     double y = - (theta * v1 / r) * distance;
+    if(fabs(lonlat.x) < 1e-5 && fabs(lonlat.y) < 1e-5)
+        x = y = 0;
     // double y = - (theta * v1 / r) / (this->hfov / double(crop.width) * double(crop.height) * 0.5);
 
     auto ret = this->do_radial_distort(cv::Point2d(x, y));
@@ -230,6 +232,9 @@ cv::Point2d FullFrameFisheyeCamera::image_to_obj_single(const cv::Point2d & _xy)
     xy.y *= double(this->crop.height);
 
     xy -= this->center_shift;
+    if(fabs(xy.x) < 1e-5 && fabs(xy.y) < 1e-5)
+        return cv::Point2d(0, 0);
+
     xy = this->do_reverse_radial_distort(xy);
 
     double distance = double(this->crop.width) / (this->hfov);
@@ -237,8 +242,8 @@ cv::Point2d FullFrameFisheyeCamera::image_to_obj_single(const cv::Point2d & _xy)
     double alpha = atan2(-xy.y, xy.x);
 
     double theta = - xy.y / distance / sin(alpha);
-    if(fabs(sin(alpha)) < 1e-1)
-        theta = xy.x / distance / cos(alpha);
+    if(fabs(sin(alpha)) < 1e-3)
+        theta = - xy.x / distance / cos(alpha);
 
     double lon = atan2(sin(theta) * cos(alpha), cos(theta));
     double lat = atan(tan(alpha) * sin(lon));

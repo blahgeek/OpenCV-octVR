@@ -1,8 +1,8 @@
 /* 
 * @Author: BlahGeek
 * @Date:   2015-10-13
-* @Last Modified by:   StrayWarrior
-* @Last Modified time: 2016-03-12
+* @Last Modified by:   BlahGeek
+* @Last Modified time: 2016-05-05
 */
 
 #ifndef VR_LIBMAP_BASE_H
@@ -37,6 +37,13 @@
 
 namespace vr {
 
+class CV_EXPORTS_W CameraInterface {
+public:
+    virtual std::vector<cv::Point2d> obj_to_image(const std::vector<cv::Point2d> & lonlats) = 0;
+    virtual std::vector<cv::Point2d> image_to_obj(const std::vector<cv::Point2d> & xys) = 0;
+    virtual ~CameraInterface() {}
+};
+
 // Multiple input -> single output
 class CV_EXPORTS_W MapperTemplate {
 public:
@@ -49,6 +56,8 @@ public:
         cv::Rect roi; // related to out_size
         cv::Mat map1, map2;
         cv::Mat mask;
+        cv::Mat vignette;
+        std::vector<cv::Vec6f> src_triangles, dst_triangles;
     } Input;
 
     std::vector<Input> inputs;
@@ -56,6 +65,9 @@ public:
 
     std::vector<cv::Mat> seam_masks;  // only for inputs (not overlay_inputs)
     std::vector<bool> visible_mask; // only used in dumper (for green mask of PTGui)
+
+    CameraInterface * output_cam = nullptr;
+    std::vector<CameraInterface *> input_cams;
 
 public:
     // Create new template
@@ -69,10 +81,13 @@ public:
                    bool use_roi=true);
     // Prepare seam masks with provided images (optional)
     void create_masks(const std::vector<cv::Mat> & imgs = std::vector<cv::Mat>());
+    void morph_controlpoints(const rapidjson::Value & control_points);
+    
     void dump(std::ofstream & f);
 
     // Load existing template
     explicit MapperTemplate(std::ifstream & f);
+    ~MapperTemplate();
 };
 
 #define OCTVR_PREVIEW_DATA0_MEMORY_KEY "opencv_octvr_preview_0"
@@ -85,26 +100,27 @@ struct CV_EXPORTS_W PreviewDataHeader {
     double fps;
 };
 
+#define OCTVR_UYVY422 1
+#define OCTVR_YUYV422 2
+
 class CV_EXPORTS_W AsyncMultiMapper {
 public:
-    static AsyncMultiMapper * New(const std::vector<MapperTemplate> & mts, std::vector<cv::Size> in_sizes, 
-                                  int blend=128, bool enable_gain_compensator=true,
-                                  std::vector<cv::Size> scale_outputs=std::vector<cv::Size>(),
-                                  cv::Size preview_size=cv::Size(0, 0));
-    static AsyncMultiMapper * New(const MapperTemplate & mt, std::vector<cv::Size> in_sizes, 
-                                  int blend=128, bool enable_gain_compensator=true,
-                                  cv::Size scale_output=cv::Size(0, 0),
-                                  cv::Size preview_size=cv::Size(0, 0));
+    static AsyncMultiMapper * New(const std::vector<MapperTemplate> & mts,
+                                  std::vector<cv::Size> in_sizes,
+                                  cv::Size out_size,
+                                  std::vector<int> blend_modes,
+                                  std::vector<int> gain_modes,
+                                  std::vector<cv::Rect_<double>> output_regions,
+                                  int input_pix_fmt,
+                                  cv::Size preview_size);
 
     /**
      * Push one frame
-     * @param inputs Input images, in UYVY422
+     * @param inputs Input images
      * @param output Output images, in UYVY422
      */
     virtual void push(std::vector<cv::Mat> & inputs,
-                      std::vector<cv::Mat> & outputs) = 0;
-    // Single output
-    virtual void push(std::vector<cv::Mat> & inputs, cv::Mat & outputs) = 0;
+                      cv::Mat & output) = 0;
     virtual void pop() = 0;
 
     virtual ~AsyncMultiMapper() {}

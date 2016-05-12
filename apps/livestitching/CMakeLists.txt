@@ -65,6 +65,7 @@ if (OWLLIVE_DISABLE_CONSOLE)
                        qjsonitem.cpp
                        qjsonmodel.cpp
                        encryptor.cpp
+                       projection_modes.cpp
                        icons.qrc
                        style.qrc
                        )
@@ -79,6 +80,7 @@ else(OWLLIVE_DISABLE_CONSOLE)
                        qjsonitem.cpp
                        qjsonmodel.cpp
                        encryptor.cpp
+                       projection_modes.cpp
                        icons.qrc
                        style.qrc
                        )

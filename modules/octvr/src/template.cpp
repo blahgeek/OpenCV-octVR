@@ -2,17 +2,20 @@
 * @Author: BlahGeek
 * @Date:   2015-12-07
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-04-08
+* @Last Modified time: 2016-05-05
 */
 
 #include "octvr.hpp"
 #include "./camera.hpp"
+#include "./vignette.hpp"
 #include <iostream>
 #include <stdio.h>
 #include "opencv2/imgproc.hpp"
 #include "opencv2/stitching/detail/seam_finders.hpp"
 #include "parallel_caller.hpp"
 
+#define VIG_MAP_WIDTH 512
+#define VIG_MAP_HEIGHT 512
 
 using namespace vr;
 
@@ -25,7 +28,7 @@ out_type(to), out_opts(&to_opts) {
     if(!out_camera)
         throw std::string("Invalid output camera type");
 
-    if((height <= 0 && width <= 0) || (height > 0 && width > 0))
+    if(height <= 0 && width <= 0)
         throw std::string("Output width/height invalid");
     double output_aspect_ratio = out_camera->get_aspect_ratio();
     if(height <= 0)
@@ -35,13 +38,15 @@ out_type(to), out_opts(&to_opts) {
     std::cerr << "Output type: " << to << ", Size: " << width << "x" << height << std::endl;
     this->out_size = cv::Size(width, height);
     this->visible_mask = std::vector<bool>(width * height, false);
+
+    this->output_cam = static_cast<CameraInterface *>(out_camera.release());
 }
 
 void MapperTemplate::add_input(const std::string & from,
                                const rapidjson::Value & from_opts,
                                bool overlay,
                                bool use_roi) {
-    std::unique_ptr<Camera> out_camera = Camera::New(out_type, *out_opts);
+    Camera * out_camera = static_cast<Camera *>(this->output_cam);
     std::unique_ptr<Camera> cam = Camera::New(from, from_opts);
     if(!cam)
         throw std::string("Invalid input camera type");
@@ -117,20 +122,24 @@ void MapperTemplate::add_input(const std::string & from,
 
     CV_Assert(min_h <= max_h && min_w <= max_w);
 
-    if(min_w > 0) min_w -= 1;
-    if(min_h > 0) min_h -= 1;
-    if(max_w < out_size.width - 1) max_w += 1;
-    if(max_h < out_size.height - 1) max_h += 1;
+    min_w = std::max(0, min_w - 8);
+    min_h = std::max(0, min_h - 8);
+    max_w = std::min(out_size.width - 1, max_w + 8);
+    max_h = std::min(out_size.height - 1, max_h + 8);
 
     cv::Rect roi(min_w, min_h, max_w + 1 - min_w, max_h + 1 - min_h);
     if(!use_roi)
         roi = cv::Rect(0, 0, out_size.width, out_size.height);
+
+    vr::Vignette vig(from_opts);
+    auto vig_map = vig.getMap(VIG_MAP_WIDTH, VIG_MAP_HEIGHT);
 
     MapperTemplate::Input input;
     input.map1 = map1(roi);
     input.map2 = map2(roi);
     input.mask = mask(roi);
     input.roi = roi;
+    input.vignette = vig_map;
 
     std::cerr << "ROI: " << roi << std::endl;
 
@@ -138,6 +147,8 @@ void MapperTemplate::add_input(const std::string & from,
         this->overlay_inputs.push_back(input);
     else
         this->inputs.push_back(input);
+
+    this->input_cams.push_back(static_cast<CameraInterface *>(cam.release()));
 }
 
 void MapperTemplate::create_masks(const std::vector<cv::Mat> & imgs) {
@@ -175,8 +186,8 @@ void MapperTemplate::create_masks(const std::vector<cv::Mat> & imgs) {
         // VoronoiSeamFinder do not care about image content
         // std::cerr << "Using voronoi seam finder..." << std::endl;
         // seam_finder = new cv::detail::VoronoiSeamFinder();
-        std::cerr << "Using BFS seam finder..." << std::endl;
-        seam_finder = new cv::detail::BFSSeamFinder();
+        std::cerr << "Using L2 distance seam finder..." << std::endl;
+        seam_finder = new cv::detail::DistanceSeamFinder();
     }
     else {
         std::cerr << "Using graph cut seam finder..." << std::endl;
@@ -191,7 +202,7 @@ void MapperTemplate::create_masks(const std::vector<cv::Mat> & imgs) {
     delete seam_finder;
 }
 
-static const char * DUMP_MAGIC = "VRv10";
+static const char * DUMP_MAGIC = "VRv11";
 
 void MapperTemplate::dump(std::ofstream & f) {
     if(this->seam_masks.empty())
@@ -211,6 +222,8 @@ void MapperTemplate::dump(std::ofstream & f) {
         W64i(m.type());
         W64i(m.rows);
         W64i(m.cols);
+        if(m.empty())
+            return;
         int elem_size = m.elemSize();
         for(int k = 0 ; k < m.rows ; k += 1)
             f.write(m.ptr<char>(k), m.cols * elem_size);
@@ -225,6 +238,7 @@ void MapperTemplate::dump(std::ofstream & f) {
         Wmat(input.map1);
         Wmat(input.map2);
         Wmat(input.mask);
+        Wmat(input.vignette);
     }
     assert(inputs.size() == seam_masks.size());
     for(auto & m: seam_masks)
@@ -236,6 +250,7 @@ void MapperTemplate::dump(std::ofstream & f) {
         Wmat(input.map1);
         Wmat(input.map2);
         Wmat(input.mask);
+        Wmat(input.vignette);
     }
 }
 
@@ -263,6 +278,8 @@ MapperTemplate::MapperTemplate(std::ifstream & f) {
         int type = R64i();
         int rows = R64i();
         int cols = R64i();
+        if(rows * cols == 0)
+            return cv::Mat();
         cv::Mat ret(rows, cols, type);
         int elem_size = ret.elemSize();
         for(int k = 0 ; k < rows ; k += 1)
@@ -279,6 +296,7 @@ MapperTemplate::MapperTemplate(std::ifstream & f) {
         input.map1 = Rmat();
         input.map2 = Rmat();
         input.mask = Rmat();
+        input.vignette = Rmat();
     }
     this->seam_masks.resize(this->inputs.size());
     for(size_t i = 0 ; i < this->seam_masks.size() ; i += 1)
@@ -290,5 +308,14 @@ MapperTemplate::MapperTemplate(std::ifstream & f) {
         input.map1 = Rmat();
         input.map2 = Rmat();
         input.mask = Rmat();
+        input.vignette = Rmat();
     }
+}
+
+MapperTemplate::~MapperTemplate() {
+    if(output_cam)
+        delete output_cam;
+    for(auto & p: input_cams)
+        if(p)
+            delete p;
 }

@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-20
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-04-14
+* @Last Modified time: 2016-04-26
 */
 
 #ifndef VR_LIBMAP_IMPL_H
@@ -42,6 +42,7 @@ private:
     std::vector<GpuMat> map1s; // CV_32FC1
     std::vector<GpuMat> map2s;
     std::vector<GpuMat> masks; 
+    std::vector<GpuMat> vignette_maps;
     std::vector<GpuMat> seam_masks;
     std::vector<cv::Rect> rois;
 
@@ -73,7 +74,13 @@ public:
            int blend=128, bool enable_gain_compensator=true, 
            cv::Size scale_output=cv::Size(0, 0));
     void stitch(std::vector<GpuMat> & inputs, GpuMat & output, 
-                GpuMat & preview_output, bool mix_input_channels=true);
+                GpuMat & preview_output,
+                bool mix_input_channels=true,
+                std::vector<double> gains=std::vector<double>());
+
+    std::vector<double> gains() const {
+        return compensator ? compensator->gains() : std::vector<double>();
+    }
 };
 
 }
