@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2016-02-21
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-04-27
+* @Last Modified time: 2016-05-12
 */
 
 #include <iostream>
@@ -190,7 +190,7 @@ void InputsSelector::saveImages(int width, int height, int crop_x, int crop_w) {
         out_args << "-map" << QString("%1").arg(i);
         if(crop_w > 0)
             out_args << "-vf" << QString("crop=w=%1:x=%2").arg(crop_w).arg(crop_x);
-        out_args << "-vframes" << "1"
+        out_args << "-vsync" << "drop" << "-vframes" << "1"
                  << "-y" << QString("%1/crop_\%d_%2.bmp").arg(dir).arg(i);
     }
     qDebug() << "Running: " << in_args << out_args;
