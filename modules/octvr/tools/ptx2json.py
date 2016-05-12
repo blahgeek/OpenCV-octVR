@@ -38,6 +38,7 @@ class PTXParser:
         self.processing_input = dict()
         self.input_stacks = []
         self.control_points = []
+        self.is_hugin = True
 
     def process_input_line(self, line):
         fields = line.strip().split(' ')
@@ -178,12 +179,13 @@ class PTXParser:
         if line.startswith('#-'):
             self.process_input_meta(line[2:])
         elif line.startswith('#'):
-            pass
+            if 'ptGui project' in line:
+                self.is_hugin = False
         elif line.startswith('o') or line.startswith('i'):
             self.process_input_line(line)
         elif line.startswith('k'):
             self.process_mask_line(line)
-        elif line.startswith('c'):
+        elif line.startswith('c') and self.is_hugin:
             self.process_cp_line(line)
 
     def dump_equirectangular_options(self, img):
