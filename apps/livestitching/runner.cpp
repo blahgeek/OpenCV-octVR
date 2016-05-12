@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2016-02-23
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-04-27
+* @Last Modified time: 2016-05-12
 */
 
 #include <iostream>
@@ -64,9 +64,9 @@ void Runner::onDumperProcessFinished(int exitCode, QProcess::ExitStatus status) 
     }
 
     if(json_queues.empty()) { // dump ok
-        QString _run = "\"" + QCoreApplication::applicationDirPath() + "/ffmpeg\""
+        QString _run = "\"" + QCoreApplication::applicationDirPath() + "/OwlLiveCore\""
                           + " " + ffmpeg_args;
-        qDebug() << "Running ffmpeg: " << _run;
+        qDebug() << "Running OwlLiveCore: " << _run;
         ffmpeg_proc.start(_run);
         emit statusChanged();
         return;

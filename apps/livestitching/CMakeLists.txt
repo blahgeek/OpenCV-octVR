@@ -86,6 +86,9 @@ else(OWLLIVE_DISABLE_CONSOLE)
                        )
 endif(OWLLIVE_DISABLE_CONSOLE)
 
+if (MSVC)
+    add_definitions(-DQ_COMPILER_INITIALIZER_LISTS)
+endif(MSVC)
 
 if (OWLLIVE_ENCRYPT_ARG)
     ocv_target_link_libraries(livestitching ${LIBSODIUM})

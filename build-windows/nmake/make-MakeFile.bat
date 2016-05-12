@@ -5,6 +5,7 @@ cmake -G "NMake Makefiles" ^
     -D WITH_FFMPEG=OFF ^
     -D CMAKE_CXX_FLAGS="-DCV_OPENCL_RUN_VERBOSE" ^
     -D WITH_CUDA=ON ^
+    -D WITH_CUFFT=OFF ^
     -D WITH_QT=ON ^
     -D CUDA_ARCH_BIN="5.2" ^
     -D CUDA_ARCH_PTX="5.2" ^

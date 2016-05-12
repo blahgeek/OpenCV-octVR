@@ -9,6 +9,7 @@ cmake \
     -D CMAKE_CXX_FLAGS="-std=c++11 -DCV_OPENCL_RUN_VERBOSE" \
     -D CUDA_NVCC_FLAGS="-std=c++11 --expt-relaxed-constexpr" \
     -D WITH_CUDA=ON \
+    -D WITH_CUFFT=OFF \
     -D WITH_QT=ON \
     -D BUILD_SHARED_LIBS=ON \
     -D CUDA_ARCH_BIN="5.2" \
