@@ -333,3 +333,7 @@ void Mapper::stitch(std::vector<GpuMat> & inputs,
     assert(false);
 #endif
 }
+
+void Mapper::override_logo_option(bool option) {
+    this->with_logo = option;
+}

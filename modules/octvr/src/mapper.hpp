@@ -81,6 +81,7 @@ public:
     std::vector<double> gains() const {
         return compensator ? compensator->gains() : std::vector<double>();
     }
+    void override_logo_option(bool option=true);
 };
 
 }

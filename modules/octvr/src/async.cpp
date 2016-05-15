@@ -193,12 +193,19 @@ fps_timer("FPS Timer"){
     this->gain_modes = gain_modes;
     this->output_regions = output_regions;
 
+    bool forced_logo = false;
 #ifdef WITH_DONGLE_LICENSE
     if (mts.size() > 1) {
-        // Check 3D license
-        if (!lic_runtime_test(603)) {
-            std::cerr << "3D License not found." << std::endl;
-            return;
+        if (lic_runtime_test(601)) {
+            // Basic license (2D only) is found and then check 3D license
+            if (!lic_runtime_test(603)) {
+                std::cerr << "3D License not found." << std::endl;
+                forced_logo = true;
+            }
+        }else {
+            // No Basic license is found
+            std::cerr << "Running in trial mode" << std::endl;
+            forced_logo = true;
         }
     }
 #endif
@@ -212,6 +219,8 @@ fps_timer("FPS Timer"){
                                               gain_modes[i] >= 0,
                                               r.size()
                                               ));
+        if (forced_logo)
+            this->mappers.back()->override_logo_option(true);
         this->out_sizes.push_back(r.size());
     }
 
