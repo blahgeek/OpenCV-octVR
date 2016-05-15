@@ -48,7 +48,7 @@ Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes,
                int blend, bool enable_gain_compensator,
                cv::Size scale_output) {
 #ifdef WITH_DONGLE_LICENSE
-    if (!lic_runtime_test(&(this->lic_t), 601)) {
+    if (!lic_runtime_test(601)) {
         with_logo = true;
     }
     else {

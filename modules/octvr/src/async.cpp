@@ -193,6 +193,16 @@ fps_timer("FPS Timer"){
     this->gain_modes = gain_modes;
     this->output_regions = output_regions;
 
+#ifdef WITH_DONGLE_LICENSE
+    if (mts.size() > 1) {
+        // Check 3D license
+        if (!lic_runtime_test(603)) {
+            std::cerr << "3D License not found." << std::endl;
+            return;
+        }
+    }
+#endif
+
     for(int i = 0 ; i < mts.size() ; i += 1) {
         auto r = _rect_mul_size(output_regions[i], out_size);
         std::cerr << "No." << i << ": " << output_regions[i] << ", " << r << std::endl;
