@@ -70,28 +70,7 @@ Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes,
 
 #ifdef WITH_OCTVR_LOGO
     if (with_logo) {
-        std::vector<unsigned char> logo_data_(OCTVR_LOGO_DATA, OCTVR_LOGO_DATA + OCTVR_LOGO_DATA_LEN);
-        cv::Mat logo_png = cv::imdecode(logo_data_, -1);
-        CV_Assert(logo_png.type() == CV_8UC4);
-
-        std::vector<cv::Mat> logo_channels(4);
-        cv::Mat logo_data_mat, logo_mask_mat;
-
-        cv::split(logo_png, logo_channels);
-        logo_mask_mat = logo_channels[3];
-        logo_channels.pop_back();
-
-        std::swap(logo_channels[0], logo_channels[2]);
-        cv::merge(logo_channels, logo_data_mat);
-
-        GpuMat logo_data_tmp, logo_mask_tmp;
-        logo_data_tmp.upload(logo_data_mat);
-        logo_mask_tmp.upload(logo_mask_mat);
-
-        cv::cuda::resize(logo_data_tmp, this->logo_data, this->stitch_size);
-        cv::cuda::resize(logo_mask_tmp, this->logo_mask, this->stitch_size);
-        CV_Assert(this->logo_data.type() == CV_8UC3 && this->logo_mask.type() == CV_8U);
-        
+        this->prepare_logo_data();
         timer.tick("Prepare logo");
     }
 #endif
@@ -336,4 +315,34 @@ void Mapper::stitch(std::vector<GpuMat> & inputs,
 
 void Mapper::override_logo_option(bool option) {
     this->with_logo = option;
+    if (option)
+        this->prepare_logo_data();
+}
+
+void Mapper::prepare_logo_data() {
+#ifdef WITH_OCTVR_LOGO
+    std::vector<unsigned char> logo_data_(OCTVR_LOGO_DATA, OCTVR_LOGO_DATA + OCTVR_LOGO_DATA_LEN);
+    cv::Mat logo_png = cv::imdecode(logo_data_, -1);
+    CV_Assert(logo_png.type() == CV_8UC4);
+
+    std::vector<cv::Mat> logo_channels(4);
+    cv::Mat logo_data_mat, logo_mask_mat;
+
+    cv::split(logo_png, logo_channels);
+    logo_mask_mat = logo_channels[3];
+    logo_channels.pop_back();
+
+    std::swap(logo_channels[0], logo_channels[2]);
+    cv::merge(logo_channels, logo_data_mat);
+
+    GpuMat logo_data_tmp, logo_mask_tmp;
+    logo_data_tmp.upload(logo_data_mat);
+    logo_mask_tmp.upload(logo_mask_mat);
+
+    cv::cuda::resize(logo_data_tmp, this->logo_data, this->stitch_size);
+    cv::cuda::resize(logo_mask_tmp, this->logo_mask, this->stitch_size);
+    CV_Assert(this->logo_data.type() == CV_8UC3 && this->logo_mask.type() == CV_8U);
+#else
+    return;
+#endif
 }

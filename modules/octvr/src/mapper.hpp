@@ -82,6 +82,9 @@ public:
         return compensator ? compensator->gains() : std::vector<double>();
     }
     void override_logo_option(bool option=true);
+
+private:
+    void prepare_logo_data();
 };
 
 }
