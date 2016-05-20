@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2016-02-21
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-05-12
+* @Last Modified time: 2016-05-20
 */
 
 #include <iostream>
@@ -188,9 +188,13 @@ void InputsSelector::saveImages(int width, int height, int crop_x, int crop_w) {
     auto selected = this->getSelected();
     for(size_t i = 0 ; i < selected.size() ; i += 1) {
         out_args << "-map" << QString("%1").arg(i);
+
+        // 0. SB magewell PCI-e capture card returns black image on first several frames
+        // 1. SB magewell USB capture card does not produce proper pts (so.. no `-ss`)
+        QString filter = "select=gte(n\\,5)";
         if(crop_w > 0)
-            out_args << "-vf" << QString("crop=w=%1:x=%2").arg(crop_w).arg(crop_x);
-        out_args << "-vsync" << "drop" << "-ss" << "0.1" << "-vframes" << "1"
+            filter += QString(",crop=w=%1:x=%2").arg(crop_w).arg(crop_x);
+        out_args << "-vf" << filter << "-vframes" << "1"
                  << "-y" << QString("%1/crop_\%d_%2.bmp").arg(dir).arg(i);
     }
     qDebug() << "Running: " << in_args << out_args;
