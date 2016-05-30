@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2016-03-15
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-04-14
+* @Last Modified time: 2016-05-20
 */
 
 #include <iostream>
@@ -106,13 +106,12 @@ int main(int argc, char const *argv[]) {
     for(size_t i = 0 ; i < stitch_template.inputs.size() ; i += 1) {
         auto r_template = load_template(argv[i]);
         CV_Assert(r_template.inputs.size() == 1);
-        CV_Assert(r_template.out_size == src_images[i].size());
 
         cv::UMat full_gain_map(stitch_template.out_size, CV_32F);
         full_gain_map.setTo(0);
         cv::resize(gain_maps[i], full_gain_map(stitch_template.inputs[i].roi), 
                    stitch_template.inputs[i].roi.size(), 0, 0, cv::INTER_LINEAR);
-        cv::UMat orig_gain_map;
+        cv::UMat orig_gain_map, orig_gain_map_full;
         cv::remap(full_gain_map, orig_gain_map,
                   r_template.inputs[0].map1 * stitch_template.out_size.width,
                   r_template.inputs[0].map2 * stitch_template.out_size.height,
@@ -121,6 +120,7 @@ int main(int argc, char const *argv[]) {
         int blur_size = ((int(BLUR_BLOCK / working_scale) >> 1) << 1) + 1;
         // cv::GaussianBlur(orig_gain_map, orig_gain_map, cv::Size(blur_size, blur_size), 0);
         cv::blur(orig_gain_map, orig_gain_map, cv::Size(blur_size, blur_size));
+        cv::resize(orig_gain_map, orig_gain_map_full, src_images[i].size());
 
 #if 0
         cv::UMat tmp_m;
@@ -134,7 +134,7 @@ int main(int argc, char const *argv[]) {
         cv::imwrite(tmp, tmp_m);
 #endif
 
-        cv::Mat_<float> gain = orig_gain_map.getMat(cv::ACCESS_READ);
+        cv::Mat_<float> gain = orig_gain_map_full.getMat(cv::ACCESS_READ);
 
         cv::Mat image = src_images[i].getMat(cv::ACCESS_RW);
         for (int y = 0; y < image.rows; ++y) {

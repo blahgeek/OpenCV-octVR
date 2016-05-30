@@ -29,7 +29,7 @@ void MainWindow::onGenerateCMD() {
     bool is_3d = ui->template_3d_check->checkState() == Qt::Checked;
 
     if(ui->check_cheat->checkState() != Qt::Checked) {
-        if(left_inputs_count != selected_cams.size() || 
+        if(left_inputs_count != selected_cams.size() ||
            (is_3d && right_inputs_count != selected_cams.size())) {
             QMessageBox::warning(this, "Bad Template", "Input count does not match");
             this->ui->line_cmd->setText("");
@@ -74,7 +74,7 @@ void MainWindow::onGenerateCMD() {
     int last_computed_exposure = -1;
     for(size_t i = 0 ; i < projection_mode.size() ; i += 1) {
         const auto & p = projection_mode[i];
-        opt_blend.append(QString::number(p.should_use_multiband ? 
+        opt_blend.append(QString::number(p.should_use_multiband ?
                                          _blend_presets[ui->paranoma_algorithm->currentIndex()] :
                                          -1));
         opt_exposure.append(QString::number(p.should_compute_exposure ? i : last_computed_exposure));
@@ -123,6 +123,14 @@ void MainWindow::onGenerateCMD() {
                     << "-y" << ui->hls_path->text();
         output_count += 1;
     }
+    if(this->ui->rawvideo_enable->checkState() == Qt::Checked) {
+        output_args << "-map" << QString("[o%1]").arg(output_count);
+        output_args << "-c:v" << "rawvideo"
+                    << "-pix_fmt" << "yuv420p"
+                    << "-f" << ui->rawvideo_format->currentText()
+                    << "-y" << ui->rawvideo_url->text();
+        output_count += 1;
+    }
     if(this->ui->file_enable->checkState() == Qt::Checked) {
         output_args << "-map" << QString("[o%1]").arg(output_count);
         output_args << "-c:v"  << ui->file_codec->currentText()
@@ -142,7 +150,7 @@ void MainWindow::onGenerateCMD() {
                     << this->ui->decklink_device->text();
         output_count += 1;
     }
-    if(this->ui->rtmp_enable->checkState() == Qt::Checked && 
+    if(this->ui->rtmp_enable->checkState() == Qt::Checked &&
        !this->ui->rtmp_url->text().isEmpty()) {
         output_args << "-map" << QString("[o%1]").arg(output_count);
         output_args << "-c:v"  << ui->rtmp_codec->currentText()
@@ -304,7 +312,7 @@ void MainWindow::on3DLonSelectChanged(int state) {
 
 void MainWindow::on3DLonSelectValueChanged(int __unused) {
     int value = (ui->template_lon_select_check->checkState() == Qt::Checked &&
-                 ui->template_3d_check->checkState() == Qt::Checked) ? 
+                 ui->template_3d_check->checkState() == Qt::Checked) ?
                 ui->template_lon_select_num->value() : 0;
     this->pto_template_left->setLonSelectionNumber(value);
     this->pto_template_right->setLonSelectionNumber(value);
