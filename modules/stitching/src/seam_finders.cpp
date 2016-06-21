@@ -83,6 +83,17 @@ void PairwiseSeamFinder::run()
     }
 }
 
+static void warpedDistanceTransform(const cv::Mat & src,
+                                    cv::Mat & dst,
+                                    int distanceType, int maskSize, int dstType=CV_32F) {
+    cv::Mat warped_src(src.rows, src.cols * 3, src.type());
+    cv::Mat warped_dst;
+    for(int i = 0 ; i < 3 ; i += 1)
+        src.copyTo(warped_src.colRange(i * src.cols, i * src.cols + src.cols));
+    cv::distanceTransform(warped_src, warped_dst, distanceType, maskSize, dstType);
+    warped_dst.colRange(src.cols, 2 * src.cols).copyTo(dst);
+}
+
 void DistanceSeamFinder::find(const std::vector<UMat> &,
                               const std::vector<Point> & corners,
                               std::vector<UMat> & umasks) {
@@ -94,8 +105,12 @@ void DistanceSeamFinder::find(const std::vector<UMat> &,
         masks.push_back(umask.getMat(ACCESS_RW));
 
     this->distances.resize(count);
-    for(size_t i = 0 ; i < count ; i += 1)
-        cv::distanceTransform(umasks[i], distances[i], cv::DIST_L2, 3);
+    for(size_t i = 0 ; i < count ; i += 1) {
+        if(corners[i].x == 0 && masks[i].cols == roi.width)
+            warpedDistanceTransform(masks[i], distances[i], cv::DIST_L2, 3);
+        else
+            cv::distanceTransform(masks[i], distances[i], cv::DIST_L2, 3);
+    }
 
     for(int y = roi.y ; y < roi.br().y ; y += 1) {
         for(int x = roi.x ; x < roi.br().x ; x += 1) {
@@ -117,7 +132,7 @@ void DistanceSeamFinder::find(const std::vector<UMat> &,
     }
 }
 
-void BFSSeamFinder::find(const std::vector<UMat> &, 
+void BFSSeamFinder::find(const std::vector<UMat> &,
                          const std::vector<Point> & corners,
                          std::vector<UMat> & umasks) {
 
