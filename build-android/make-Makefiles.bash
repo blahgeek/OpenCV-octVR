@@ -1,9 +1,10 @@
 #!/bin/bash
 export ANDROID_NDK="/usr/local/opt/android-ndk/"
 export ANDROID_SDK="/usr/local/opt/android-sdk/"
-cmake \
+/usr/local/opt/cmake31/bin/cmake \
     -DCMAKE_CXX_FLAGS="-std=c++11" \
     -DCMAKE_TOOLCHAIN_FILE=`pwd`/../platforms/android/android.toolchain.cmake \
+    -DANDROID_NDK_LAYOUT=RELEASE \
     -DWITH_OPENCL=ON \
     -DWITH_CUDA=OFF \
     -DWITH_IPP=OFF \
