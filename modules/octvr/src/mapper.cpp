@@ -320,7 +320,7 @@ void Mapper::override_logo_option(bool option) {
 }
 
 void Mapper::prepare_logo_data() {
-#ifdef WITH_OCTVR_LOGO
+#if defined(HAVE_CUDA) && defined(WITH_OCTVR_LOGO)
     std::vector<unsigned char> logo_data_(OCTVR_LOGO_DATA, OCTVR_LOGO_DATA + OCTVR_LOGO_DATA_LEN);
     cv::Mat logo_png = cv::imdecode(logo_data_, -1);
     CV_Assert(logo_png.type() == CV_8UC4);
