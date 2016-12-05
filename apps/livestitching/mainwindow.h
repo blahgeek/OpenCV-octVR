@@ -78,7 +78,7 @@ private:
     std::unique_ptr<PTOTemplate> pto_template_left, pto_template_right;
     std::unique_ptr<PreviewVideoWidget> preview_video;
     std::unique_ptr<Runner> runner;
-    ProjectionMode projection_mode = PROJECTION_MODE_MONO360;
+    ProjectionModeOutputs projection_mode;
 
     QTimer preview_timer;
 

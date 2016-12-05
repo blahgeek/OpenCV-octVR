@@ -1,4 +1,4 @@
-/* 
+/*
 * @Author: BlahGeek
 * @Date:   2016-04-27
 * @Last Modified by:   BlahGeek
@@ -25,10 +25,16 @@ struct _ProjectionModeOutput {
     QJsonDocument output_options;
 };
 
-using ProjectionMode = std::vector<struct _ProjectionModeOutput>;
+using ProjectionModeOutputs = std::vector<struct _ProjectionModeOutput>;
+using ProjectionMode = std::pair<ProjectionModeOutputs,
+                                 double>; // prefered aspect ratio
 
 extern ProjectionMode PROJECTION_MODE_MONO360;
 extern ProjectionMode PROJECTION_MODE_3DV;
 extern ProjectionMode PROJECTION_MODE_3DV_CYLINDER_SLICE_2X25_3DV;
+
+ProjectionModeOutputs get_projection_mode_outputs(const ProjectionMode & mode,
+                                                  int width, int height,
+                                                  bool keep_aspect_ratio);
 
 #endif

@@ -42,6 +42,8 @@ void MainWindow::onGenerateCMD() {
         }
     }
 
+    this->onProjectionModeChanged(0);
+
     if(!is_3d && std::any_of(projection_mode.begin(), projection_mode.end(), [](const struct _ProjectionModeOutput o) {
         return o.input_id > 0;
     })) {
@@ -185,12 +187,19 @@ void MainWindow::onEncryptCMD() {
 }
 
 void MainWindow::onProjectionModeChanged(int __unused) {
+    ProjectionMode mode;
     switch(ui->paranoma_projection->currentIndex()) {
         default:
-        case 0: this->projection_mode = PROJECTION_MODE_MONO360; break;
-        case 1: this->projection_mode = PROJECTION_MODE_3DV; break;
-        case 2: this->projection_mode = PROJECTION_MODE_3DV_CYLINDER_SLICE_2X25_3DV; break;
+        case 0: mode = PROJECTION_MODE_MONO360; break;
+        case 1: mode = PROJECTION_MODE_3DV; break;
+        case 2: mode = PROJECTION_MODE_3DV_CYLINDER_SLICE_2X25_3DV; break;
     }
+    this->projection_mode = get_projection_mode_outputs(
+                                mode,
+                                ui->paranoma_width->value(),
+                                ui->paranoma_height->value(),
+                                ui->paranoma_keep_aspect_ratio->checkState() == Qt::Checked,
+                                );
 }
 
 void MainWindow::run() {

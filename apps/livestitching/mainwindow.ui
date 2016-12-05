@@ -471,6 +471,13 @@
                  </item>
                 </widget>
                </item>
+               <item row="4" column="1">
+                <widget class="QCheckBox" name="paranoma_keep_aspect_ratio">
+                 <property name="text">
+                  <string>Keep Aspect Ratio</string>
+                 </property>
+                </widget>
+               </item>
               </layout>
               <zorder>paranoma_width</zorder>
               <zorder>paranoma_algorithm</zorder>
@@ -480,6 +487,7 @@
               <zorder>paranoma_height</zorder>
               <zorder>label_19</zorder>
               <zorder>paranoma_projection</zorder>
+              <zorder>paranoma_keep_aspect_ratio</zorder>
              </widget>
             </item>
             <item>
