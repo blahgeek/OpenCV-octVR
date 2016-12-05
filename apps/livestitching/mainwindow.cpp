@@ -198,7 +198,7 @@ void MainWindow::onProjectionModeChanged(int __unused) {
                                 mode,
                                 ui->paranoma_width->value(),
                                 ui->paranoma_height->value(),
-                                ui->paranoma_keep_aspect_ratio->checkState() == Qt::Checked,
+                                ui->paranoma_keep_aspect_ratio->checkState() == Qt::Checked
                                 );
 }
 
