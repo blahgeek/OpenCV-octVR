@@ -11,6 +11,10 @@
 #include <thread>
 #include <cmath>
 
+#ifdef HAVE_CUDA
+#include "opencv2/cudaimgproc.hpp"
+#endif
+
 using namespace vr;
 
 static cv::Rect _rect_mul_size(cv::Rect_<double> region, cv::Size size) {
@@ -238,7 +242,14 @@ fps_timer("FPS Timer"){
         std::vector<cv::cuda::GpuMat> outputs_gpumat;
         std::vector<cv::cuda::HostMem> outputs_hostmem;
         for(int i = 0 ; i < mts.size() ; i += 1) {
-            outputs_gpumat.push_back(cv::cuda::GpuMat(out_sizes[i], CV_8UC2));
+            cv::cuda::GpuMat black_output_rgb(out_sizes[i], CV_8UC3);
+            black_output_rgb.setTo(0);
+            cv::cuda::GpuMat black_output_yuv(out_sizes[i], CV_8UC2);
+#ifdef HAVE_CUDA
+            cv::cuda::cvtRGB24toYUYV422(black_output_rgb, black_output_yuv);
+#endif
+
+            outputs_gpumat.push_back(black_output_yuv);
             outputs_hostmem.push_back(cv::cuda::HostMem(out_sizes[i], CV_8UC2));
         }
         free_outputs_gpumat_q.push(std::move(outputs_gpumat));
@@ -246,6 +257,7 @@ fps_timer("FPS Timer"){
 
         if(this->preview_size.area() > 0) {
             auto preview_mat = cv::cuda::GpuMat(preview_size, CV_8UC3);
+            preview_mat.setTo(0); // set to black
             auto preview_mem = cv::cuda::HostMem(preview_size, CV_8UC3);
             free_previews_gpumat_q.push(std::move(preview_mat));
             free_previews_hostmem_q.push(std::move(preview_mem));
