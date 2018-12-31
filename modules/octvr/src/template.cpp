@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-12-07
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-05-05
+* @Last Modified time: 2018-12-31
 */
 
 #include "octvr.hpp"
@@ -10,6 +10,7 @@
 #include "./vignette.hpp"
 #include <iostream>
 #include <stdio.h>
+#include <cmath>
 #include "opencv2/imgproc.hpp"
 #include "opencv2/stitching/detail/seam_finders.hpp"
 #include "parallel_caller.hpp"
@@ -80,7 +81,7 @@ void MapperTemplate::add_input(const std::string & from,
                     auto index = w + out_size.width * h;
                     float x = tmp[index].x;
                     float y = tmp[index].y;
-                    if(isnan(x) || isnan(y) ||
+                    if(std::isnan(x) || std::isnan(y) ||
                        x < 0 || x >= 1.0f || y < 0 || y >= 1.0f ||  // out of border, should be black when doing remap()
                        visible_mask[index])                         // or this point has been selected to be visible by other image (not override)
                     {
