@@ -295,8 +295,8 @@ void Mapper::stitch(std::vector<GpuMat> & inputs,
 
     {
         // convert output rgb to yuv420
-        int w = output.cols;
-        int h = output.rows;
+        int w = this->scaled_output_size.width;
+        int h = this->scaled_output_size.height;
         cv::cuda::GpuMat output_y = output(cv::Rect(0, 0, w, h));
         cv::cuda::GpuMat output_u = output(cv::Rect(0, h, w/2, h/2));
         cv::cuda::GpuMat output_v = output(cv::Rect(w/2, h, w/2, h/2));
