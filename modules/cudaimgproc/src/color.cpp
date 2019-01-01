@@ -2273,8 +2273,8 @@ void cv::cuda::cvtYUV420PtoRGBA32(InputArray _y, InputArray _u, InputArray _v,
         cudaSafeCall( cudaDeviceSynchronize() );
 }
 
-CV_EXPORTS void cvtRGB24toYUV420P(InputArray _src, OutputArray _y, OutputArray _u, OutputArray _v,
-                                  Stream& _stream) {
+void cv::cuda::cvtRGB24toYUV420P(InputArray _src, OutputArray _y, OutputArray _u, OutputArray _v,
+                                 Stream& _stream) {
     GpuMat src = _src.getGpuMat();
     CV_Assert(src.type() == CV_8UC3);
     CV_Assert(src.cols % 2 == 0 && src.rows % 2 == 0);
