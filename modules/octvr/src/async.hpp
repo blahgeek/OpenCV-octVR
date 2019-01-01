@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-12-01
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-04-26
+* @Last Modified time: 2019-01-01
 */
 
 #ifndef LIBMAP_ASYNC_H_
@@ -32,15 +32,14 @@ class AsyncMultiMapperImpl: public AsyncMultiMapper {
 private:
     std::vector<int> gain_modes;
     std::vector<cv::Rect_<double>> output_regions;
-    int input_pix_fmt = OCTVR_UYVY422;
 private:
-    Queue<std::vector<cv::Mat>> inputs_mat_q;
+    Queue<std::vector<std::tuple<cv::Mat, cv::Mat, cv::Mat>>> inputs_mat_q;
     Queue<std::vector<cv::cuda::HostMem>> inputs_hostmem_q, free_inputs_hostmem_q;
     Queue<std::vector<cv::cuda::GpuMat>> inputs_gpumat_q, free_inputs_gpumat_q;
 
     Queue<std::vector<cv::cuda::GpuMat>> outputs_gpumat_q, free_outputs_gpumat_q;
     Queue<std::vector<cv::cuda::HostMem>> outputs_hostmem_q, free_outputs_hostmem_q;
-    Queue<std::vector<cv::Mat>> outputs_mat_q, free_outputs_mat_q;
+    Queue<std::vector<std::tuple<cv::Mat, cv::Mat, cv::Mat>>> outputs_mat_q, free_outputs_mat_q;
 
     // preview in RGB, using shared memory
     Queue<cv::cuda::GpuMat> previews_gpumat_q, free_previews_gpumat_q;
@@ -79,11 +78,10 @@ public:
                          std::vector<int> blend_modes,
                          std::vector<int> gain_modes, // -1 means don't do it, N (self id) means do it, [0, N) means copy from No.x
                          std::vector<cv::Rect_<double>> output_regions,
-                         int input_pix_fmt,
                          cv::Size preview_size);
 
-    void push(std::vector<cv::Mat> & inputs, 
-              cv::Mat & output) override;
+    void push(std::vector<std::tuple<cv::Mat, cv::Mat, cv::Mat>> & inputs, 
+              std::tuple<cv::Mat, cv::Mat, cv::Mat> & output) override;
     void pop() override;
 
     ~AsyncMultiMapperImpl() {

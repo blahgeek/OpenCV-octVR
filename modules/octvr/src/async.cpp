@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-12-01
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-04-26
+* @Last Modified time: 2019-01-01
 */
 
 
@@ -34,9 +34,23 @@ void AsyncMultiMapperImpl::run_copy_inputs_mat_to_hostmem() {
     auto hostmems = this->free_inputs_hostmem_q.pop();
 
     for(int i = 0 ; i < inputs_mat.size() ; i += 1) {
-        assert(inputs_mat[i].size() == hostmems[i].size());
-        assert(inputs_mat[i].type() == hostmems[i].type());
-        inputs_mat[i].copyTo(hostmems[i]);
+        int w = in_sizes[i].width;
+        int h = in_sizes[i].height;
+
+        cv::Mat y = std::get<0>(inputs_mat[i]);
+        cv::Mat u = std::get<1>(inputs_mat[i]);
+        cv::Mat v = std::get<2>(inputs_mat[i]);
+
+        assert(y.cols == w && y.rows == h && y.type() == CV_8U);
+        assert(u.cols == w / 2 && u.rows == h / 2 && u.type() == CV_8U);
+        assert(v.cols == w / 2 && v.rows == h / 2 && v.type() == CV_8U);
+        assert(hostmems[i].cols == w);
+        assert(hostmems[i].rows == h / 2 * 3);
+        assert(hostmems[i].type() == CV_8U);
+
+        y.copyTo(hostmems[i].createMatHeader()(cv::Rect(0, 0, w, h)));
+        u.copyTo(hostmems[i].createMatHeader()(cv::Rect(0, h, w/2, h/2)));
+        v.copyTo(hostmems[i].createMatHeader()(cv::Rect(w/2, h, w/2, h/2)));
     }
     this->inputs_hostmem_q.push(std::move(hostmems));
 }
@@ -67,7 +81,6 @@ void AsyncMultiMapperImpl::run_do_mapping() {
         if(gain_modes[i] < i && gain_modes[i] >= 0)
             predefined_gain_list = gains_list[gain_modes[i]];
         this->mappers[i]->stitch(gpumats, outputs[i], preview, 
-                                 i == 0 && input_pix_fmt == OCTVR_UYVY422,
                                  predefined_gain_list);
         gains_list.push_back(this->mappers[i]->gains());
     }
@@ -101,8 +114,26 @@ void AsyncMultiMapperImpl::run_copy_outputs_hostmem_to_mat() {
     auto mats = this->free_outputs_mat_q.pop();
     auto hostmems = this->outputs_hostmem_q.pop();
 
-    for(int i = 0 ; i < mats.size() ; i += 1)
-        hostmems[i].createMatHeader().copyTo(mats[i]);
+    for(int i = 0 ; i < mats.size() ; i += 1) {
+        int w = out_sizes[i].width;
+        int h = out_sizes[i].height;
+
+        cv::Mat & y = std::get<0>(mats[i]);
+        cv::Mat & u = std::get<1>(mats[i]);
+        cv::Mat & v = std::get<2>(mats[i]);
+        cv::Mat s = hostmems[i].createMatHeader();
+
+        assert(y.cols == w && y.rows == h && y.type() == CV_8U);
+        assert(u.cols == w / 2 && u.rows == h / 2 && u.type() == CV_8U);
+        assert(v.cols == w / 2 && v.rows == h / 2 && v.type() == CV_8U);
+        assert(s.cols == w);
+        assert(s.rows == h / 2 * 3);
+        assert(s.type() == CV_8U);
+
+        s(cv::Rect(0, 0, w, h)).copyTo(y);
+        s(cv::Rect(0, h, w/2, h/2)).copyTo(u);
+        s(cv::Rect(w/2, h, w/2, h/2)).copyTo(v);
+    }
 
     this->outputs_mat_q.push(std::move(mats));
     this->free_outputs_hostmem_q.push(std::move(hostmems));
@@ -140,15 +171,18 @@ void AsyncMultiMapperImpl::run_copy_outputs_hostmem_to_mat() {
     this->free_previews_hostmem_q.push(std::move(preview_hostmem));
 }
 
-void AsyncMultiMapperImpl::push(std::vector<cv::Mat> & inputs, 
-                                cv::Mat & output) {
+void AsyncMultiMapperImpl::push(std::vector<std::tuple<cv::Mat, cv::Mat, cv::Mat>> & inputs, 
+                                std::tuple<cv::Mat, cv::Mat, cv::Mat> & output) {
     CV_Assert(inputs.size() == in_sizes.size());
-    CV_Assert(output.size() == out_size);
+    CV_Assert(std::get<0>(output).size() == out_size);
 
-    std::vector<cv::Mat> outputs;
+    std::vector<std::tuple<cv::Mat, cv::Mat, cv::Mat>> outputs;
 
-    for(size_t i = 0 ; i < this->output_regions.size() ; i += 1)
-        outputs.push_back(output(_rect_mul_size(output_regions[i], output.size())));
+    for(size_t i = 0 ; i < this->output_regions.size() ; i += 1) {
+        outputs.emplace_back(std::get<0>(output)(_rect_mul_size(output_regions[i], std::get<0>(output).size())),
+                             std::get<1>(output)(_rect_mul_size(output_regions[i], std::get<1>(output).size())),
+                             std::get<2>(output)(_rect_mul_size(output_regions[i], std::get<2>(output).size())));
+    }
 
     this->inputs_mat_q.push(inputs);
     this->free_outputs_mat_q.push(outputs);
@@ -164,7 +198,6 @@ AsyncMultiMapper * AsyncMultiMapper::New(const std::vector<MapperTemplate> & m,
                                          std::vector<int> blend_modes,
                                          std::vector<int> gain_modes,
                                          std::vector<cv::Rect_<double>> output_regions,
-                                         int input_pix_fmt,
                                          cv::Size preview_size) {
     return static_cast<AsyncMultiMapper *>(new AsyncMultiMapperImpl(m,
                                                                     in_sizes,
@@ -172,7 +205,6 @@ AsyncMultiMapper * AsyncMultiMapper::New(const std::vector<MapperTemplate> & m,
                                                                     blend_modes,
                                                                     gain_modes,
                                                                     output_regions,
-                                                                    input_pix_fmt,
                                                                     preview_size));
 }
 
@@ -182,7 +214,6 @@ AsyncMultiMapperImpl::AsyncMultiMapperImpl(const std::vector<MapperTemplate> & m
                                            std::vector<int> blend_modes,
                                            std::vector<int> gain_modes,
                                            std::vector<cv::Rect_<double>> output_regions,
-                                           int input_pix_fmt,
                                            cv::Size _preview_size):
 fps_timer("FPS Timer"){
 
@@ -191,7 +222,6 @@ fps_timer("FPS Timer"){
     this->preview_size = _preview_size;
 #endif
 
-    this->input_pix_fmt = input_pix_fmt;
     this->in_sizes = in_sizes;
     this->out_size = out_size;
     this->gain_modes = gain_modes;
@@ -233,8 +263,11 @@ fps_timer("FPS Timer"){
         std::vector<cv::cuda::HostMem> inputs_hostmem;
         std::vector<cv::cuda::GpuMat> inputs_gpumat;
         for(auto & s: in_sizes) {
-            inputs_hostmem.push_back(cv::cuda::HostMem(s, CV_8UC2));
-            inputs_gpumat.push_back(cv::cuda::GpuMat(s, CV_8UC2));
+            assert(s.height % 2 == 0);
+            assert(s.width % 2 == 0);
+            cv::Size yuv_s = cv::Size(s.width, s.height / 2 * 3);
+            inputs_hostmem.push_back(cv::cuda::HostMem(yuv_s, CV_8U));
+            inputs_gpumat.push_back(cv::cuda::GpuMat(yuv_s, CV_8U));
         }
         free_inputs_hostmem_q.push(std::move(inputs_hostmem));
         free_inputs_gpumat_q.push(std::move(inputs_gpumat));
@@ -242,15 +275,24 @@ fps_timer("FPS Timer"){
         std::vector<cv::cuda::GpuMat> outputs_gpumat;
         std::vector<cv::cuda::HostMem> outputs_hostmem;
         for(int i = 0 ; i < mts.size() ; i += 1) {
+            int w = out_sizes[i].width;
+            int h = out_sizes[i].height;
+            assert(w % 2 == 0);
+            assert(h % 2 == 0);
+            cv::Size yuv_out_s = cv::Size(w, h / 2 * 3);
+
             cv::cuda::GpuMat black_output_rgb(out_sizes[i], CV_8UC3);
             black_output_rgb.setTo(0);
-            cv::cuda::GpuMat black_output_yuv(out_sizes[i], CV_8UC2);
+            cv::cuda::GpuMat black_output_yuv(yuv_out_s, CV_8U);
 #ifdef HAVE_CUDA
-            cv::cuda::cvtRGB24toYUYV422(black_output_rgb, black_output_yuv);
+            cv::cuda::cvtRGB24toYUV420P(black_output_rgb,
+                                        black_output_yuv(cv::Rect(0, 0, w, h)),
+                                        black_output_yuv(cv::Rect(0, h, w/2, h/2)),
+                                        black_output_yuv(cv::Rect(w/2, h, w/2, h/2)));
 #endif
 
             outputs_gpumat.push_back(black_output_yuv);
-            outputs_hostmem.push_back(cv::cuda::HostMem(out_sizes[i], CV_8UC2));
+            outputs_hostmem.push_back(cv::cuda::HostMem(yuv_out_s, CV_8U));
         }
         free_outputs_gpumat_q.push(std::move(outputs_gpumat));
         free_outputs_hostmem_q.push(std::move(outputs_hostmem));

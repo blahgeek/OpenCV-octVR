@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-05-05
+* @Last Modified time: 2019-01-01
 */
 
 #ifndef VR_LIBMAP_BASE_H
@@ -100,9 +100,6 @@ struct CV_EXPORTS_W PreviewDataHeader {
     double fps;
 };
 
-#define OCTVR_UYVY422 1
-#define OCTVR_YUYV422 2
-
 class CV_EXPORTS_W AsyncMultiMapper {
 public:
     static AsyncMultiMapper * New(const std::vector<MapperTemplate> & mts,
@@ -111,16 +108,13 @@ public:
                                   std::vector<int> blend_modes,
                                   std::vector<int> gain_modes,
                                   std::vector<cv::Rect_<double>> output_regions,
-                                  int input_pix_fmt,
                                   cv::Size preview_size);
 
     /**
-     * Push one frame
-     * @param inputs Input images
-     * @param output Output images, in UYVY422
+     * Push one frame, in YUV420P format
      */
-    virtual void push(std::vector<cv::Mat> & inputs,
-                      cv::Mat & output) = 0;
+    virtual void push(std::vector<std::tuple<cv::Mat, cv::Mat, cv::Mat>> & inputs,
+                      std::tuple<cv::Mat, cv::Mat, cv::Mat> & output) = 0;
     virtual void pop() = 0;
 
     virtual ~AsyncMultiMapper() {}

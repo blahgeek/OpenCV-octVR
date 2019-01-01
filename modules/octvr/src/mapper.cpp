@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-13
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-04-26
+* @Last Modified time: 2019-01-01
 */
 
 #include <iostream>
@@ -129,14 +129,12 @@ Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes,
     timer.tick("Uploading mats");
 
     this->streams.resize(mt.inputs.size() + mt.overlay_inputs.size() + 1);
-    this->rgb_inputs.resize(mt.inputs.size() + mt.overlay_inputs.size());
     this->rgba_inputs.resize(mt.inputs.size() + mt.overlay_inputs.size());
     this->warped_imgs.resize(mt.inputs.size() + mt.overlay_inputs.size());
 
     this->warped_imgs_scale.resize(mt.inputs.size() + mt.overlay_inputs.size());
     this->warped_imgs_rgb.resize(mt.inputs.size() + mt.overlay_inputs.size());
     for(int i = 0 ; i < mt.inputs.size() ; i += 1) {
-        rgb_inputs[i].create(in_sizes[i], CV_8UC3);
         rgba_inputs[i].create(in_sizes[i], CV_8UC4);
         warped_imgs[i].create(rois[i].size(), CV_8UC4);
         if(enable_gain_compensator)
@@ -147,7 +145,6 @@ Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes,
     }
 
     for(int i = mt.inputs.size() ; i < mt.inputs.size() + mt.overlay_inputs.size() ; i += 1) {
-        rgb_inputs[i].create(in_sizes[i], CV_8UC3);
         rgba_inputs[i].create(in_sizes[i], CV_8UC4);
         warped_imgs[i].create(rois[i].size(), CV_8UC4);
         warped_imgs_rgb[i].create(rois[i].size(), CV_8UC3);
@@ -195,7 +192,6 @@ Mapper::Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes,
 
 void Mapper::stitch(std::vector<GpuMat> & inputs,
                     GpuMat & output, GpuMat & preview_output,
-                    bool mix_input_channels,
                     std::vector<double> gains) {
 #ifdef WITH_DONGLE_LICENSE
     if (!with_logo){
@@ -210,23 +206,30 @@ void Mapper::stitch(std::vector<GpuMat> & inputs,
     Timer timer("Stitch");
 
     assert(inputs.size() == masks.size());
-    for(int i = 0 ; i < inputs.size() ; i += 1)
-        assert(inputs[i].type() == CV_8UC2); // UYVY422 or YUVY422
-    assert(output.type() == CV_8UC2 && output.size() == this->scaled_output_size);
-
-    const int swap_orders[] = {1, 0, 3, 2};
+    // YUV420
+    for(int i = 0 ; i < inputs.size() ; i += 1) {
+        assert(inputs[i].type() == CV_8U);
+        assert(inputs[i].cols == this->rgba_inputs[i].cols);
+        assert(inputs[i].rows / 3 * 2 == this->rgba_inputs[i].rows);
+    }
+    assert(output.type() == CV_8U);
+    assert(output.cols == this->scaled_output_size.cols);
+    assert(output.rows / 3 * 2 == this->scaled_output_size.rows);
 
     for(size_t i = 0 ; i < inputs.size() ; i += 1) {
         bool is_overlay = (i >= nonoverlay_num);
 
-        if(mix_input_channels) {
-            cv::cuda::GpuMat input_c4 = inputs[i].reshape(4);
-            cv::cuda::swapChannels(input_c4, swap_orders, streams[i]);
-        }
-        cv::cuda::cvtYUYV422toRGB24(inputs[i], rgb_inputs[i], streams[i]);
+        int w = inputs[i].cols;
+        int h = inputs[i].rows / 3 * 2;
+        cv::cuda::GpuMat input_y = inputs[i](cv::Rect(0, 0, w, h));
+        cv::cuda::GpuMat input_u = inputs[i](cv::Rect(0, h, w/2, h/2));
+        cv::cuda::GpuMat input_v = inputs[i](cv::Rect(w/2, h, w/2, h/2));
+
+        cv::cuda::cvtYUV420PtoRGBA32(input_y, input_u, input_v,
+                                     rgba_inputs[i], streams[i]);
         if(!this->vignette_maps[i].empty())
-            cv::cuda::multiply(rgb_inputs[i], this->vignette_maps[i], rgb_inputs[i], 1, -1, streams[i]);
-        cv::cuda::cvtColor(rgb_inputs[i], rgba_inputs[i], cv::COLOR_RGB2RGBA, 4, streams[i]);
+            cv::cuda::multiply(rgba_inputs[i], this->vignette_maps[i], rgba_inputs[i], 1, -1, streams[i]);
+
         cv::cuda::fastRemap(rgba_inputs[i], warped_imgs[i], map1s[i], map2s[i], !is_overlay, streams[i]);
         if(this->compensator && !is_overlay)
             cv::cuda::resize(warped_imgs[i], warped_imgs_scale[i],
@@ -290,9 +293,17 @@ void Mapper::stitch(std::vector<GpuMat> & inputs,
     else
         result_scaled = result;
 
-    cv::cuda::cvtRGB24toYUYV422(result_scaled, output, stream_final);
-    cv::cuda::GpuMat output_c4 = output.reshape(4);
-    cv::cuda::swapChannels(output_c4, swap_orders, stream_final);
+    {
+        // convert output rgb to yuv420
+        int w = output.cols;
+        int h = output.rows;
+        cv::cuda::GpuMat output_y = output(cv::Rect(0, 0, w, h));
+        cv::cuda::GpuMat output_u = output(cv::Rect(0, h, w/2, h/2));
+        cv::cuda::GpuMat output_v = output(cv::Rect(w/2, h, w/2, h/2));
+        cv::cuda::cvtRGB24toYUV420P(result_scaled,
+                                    output_y, output_u, output_v,
+                                    stream_final);
+    }
 
     if(!preview_output.empty()) {
         CV_Assert(preview_output.type() == CV_8UC3);
@@ -305,8 +316,6 @@ void Mapper::stitch(std::vector<GpuMat> & inputs,
 #endif
     stream_final.waitForCompletion();
     timer.tick("Convert output");
-
-    CV_Assert(output.type() == CV_8UC2);
 
 #else
     assert(false);

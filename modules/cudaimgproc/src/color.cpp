@@ -57,8 +57,12 @@ void cv::cuda::gammaCorrection(InputArray, OutputArray, bool, Stream&) { throw_n
 
 void cv::cuda::alphaComp(InputArray, InputArray, OutputArray, int, Stream&) { throw_no_cuda(); }
 
-void cv::cuda::cvtUYVY422toRGB24(InputArray , OutputArray , Stream& stream ) {throw_no_cuda(); }
-void cv::cuda::cvtRGB24toUYVY422(InputArray , OutputArray , Stream& stream ) {throw_no_cuda(); }
+void cv::cuda::cvtYUYV422toRGB24(InputArray , OutputArray , Stream& stream ) { throw_no_cuda(); }
+void cv::cuda::cvtRGB24toYUYV422(InputArray , OutputArray , Stream& stream ) { throw_no_cuda(); }
+void cv::cuda::cvtYUV420PtoRGBA32(InputArray , InputArray , InputArray ,
+                                  OutputArray, Stream& ) { throw_no_cuda(); }
+void cv::cuda::cvtRGB24toYUV420P(InputArray , OutputArray , OutputArray , OutputArray ,
+                                 Stream& _stream ) { throw_no_cuda(); }
 void cv::cuda::splitUYVY(InputArray, OutputArray, OutputArray, OutputArray, Stream & ) { throw_no_cuda(); }
 void cv::cuda::mergeUYVY(InputArray, InputArray , InputArray , OutputArray, Stream & ) { throw_no_cuda(); }
 
@@ -2229,6 +2233,81 @@ void cv::cuda::cvtRGB24toYUYV422(InputArray _src, OutputArray _dst, Stream& _str
     if (stream == 0)
         cudaSafeCall( cudaDeviceSynchronize() );
 
+}
+
+void cv::cuda::cvtYUV420PtoRGBA32(InputArray _y, InputArray _u, InputArray _v,
+                                  OutputArray _dst, Stream& _stream) {
+    NppiSize sz;
+    GpuMat src[3];
+    Npp8u* pSrc[3];
+    int stepSrc[3];
+
+    src[0] = _y.getGpuMat();
+    src[1] = _u.getGpuMat();
+    src[2] = _v.getGpuMat();
+
+    for (int i = 0 ; i < 3; i += 1) {
+        GpuMat s = src[i];
+        CV_Assert(s.type() == CV_8U);
+        if (i == 0) {
+            sz.width = s.cols;
+            sz.height = s.rows;
+        } else {
+            CV_Assert(sz.width == s.cols * 2);
+            CV_Assert(sz.height == s.rows * 2);
+        }
+        pSrc[i] = s.ptr<Npp8u>();
+        stepSrc[i] = static_cast<int>(s.step);
+    }
+
+    _dst.create(cv::Size(sz.width, sz.height), CV_8UC4);
+    GpuMat dst = _dst.getGpuMat();
+
+    cudaStream_t stream = StreamAccessor::getStream(_stream);
+    NppStreamHandler h(stream);
+
+    nppSafeCall(nppiYUV420ToRGB_8u_P3AC4R(pSrc, stepSrc,
+                                          dst.ptr<Npp8u>(), static_cast<int>(dst.step),
+                                          sz));
+    if (stream == 0)
+        cudaSafeCall( cudaDeviceSynchronize() );
+}
+
+CV_EXPORTS void cvtRGB24toYUV420P(InputArray _src, OutputArray _y, OutputArray _u, OutputArray _v,
+                                  Stream& _stream) {
+    GpuMat src = _src.getGpuMat();
+    CV_Assert(src.type() == CV_8UC3);
+    CV_Assert(src.cols % 2 == 0 && src.rows % 2 == 0);
+
+    NppiSize sz;
+    sz.width = src.cols;
+    sz.height = src.rows;
+
+    GpuMat dst[3];
+    Npp8u* pDst[3];
+    int stepDst[3];
+
+    _y.create(src.size(), CV_8U);
+    _u.create(cv::Size(sz.width / 2, sz.height / 2), CV_8U);
+    _v.create(cv::Size(sz.width / 2, sz.height / 2), CV_8U);
+
+    dst[0] = _y.getGpuMat();
+    dst[1] = _u.getGpuMat();
+    dst[2] = _v.getGpuMat();
+
+    for (int i = 0 ; i < 3 ; i += 1) {
+        pDst[i] = dst[i].ptr<Npp8u>();
+        stepDst[i] = dst[i].step;
+    }
+
+    cudaStream_t stream = StreamAccessor::getStream(_stream);
+    NppStreamHandler h(stream);
+
+    nppSafeCall(nppiRGBToYUV420_8u_C3P3R(src.ptr<Npp8u>(), src.step,
+                                         pDst, stepDst, sz));
+
+    if (stream == 0)
+        cudaSafeCall( cudaDeviceSynchronize() );
 }
 
 ////////////////////////////////////////////////////////////////////////

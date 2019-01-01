@@ -2,7 +2,7 @@
 * @Author: BlahGeek
 * @Date:   2015-10-20
 * @Last Modified by:   BlahGeek
-* @Last Modified time: 2016-04-26
+* @Last Modified time: 2019-01-01
 */
 
 #ifndef VR_LIBMAP_IMPL_H
@@ -59,7 +59,6 @@ private:
 
 private:
     std::vector<cv::cuda::Stream> streams;
-    std::vector<GpuMat> rgb_inputs;
     std::vector<GpuMat> rgba_inputs;
     std::vector<GpuMat> warped_imgs;
     std::vector<GpuMat> warped_imgs_scale;
@@ -73,9 +72,17 @@ public:
     Mapper(const MapperTemplate & mt, std::vector<cv::Size> in_sizes, 
            int blend=128, bool enable_gain_compensator=true, 
            cv::Size scale_output=cv::Size(0, 0));
+    // inputs and output are in YUV420 pixel format, with special layout:
+    // preview_output are in RGB pixel format
+    //
+    // YYYYYYYYYYYY
+    // YYYYYYYYYYYY
+    // YYYYYYYYYYYY
+    // YYYYYYYYYYYY
+    // UUUUUUVVVVVV
+    // UUUUUUVVVVVV
     void stitch(std::vector<GpuMat> & inputs, GpuMat & output, 
                 GpuMat & preview_output,
-                bool mix_input_channels=true,
                 std::vector<double> gains=std::vector<double>());
 
     std::vector<double> gains() const {
